@@ -16,6 +16,10 @@ on:
         description: 'URL to POST the IPA file to (optional)'
         required: false
         type: string
+      output_filename:             # 👈 НОВОЕ: желаемое имя файла
+        description: 'Desired filename for the saved IPA (e.g., MyApp.ipa)'
+        required: false
+        type: string
 
 jobs:
   prepare:
@@ -136,13 +140,23 @@ jobs:
 
       - name: Send IPA to callback URL
         if: ${{ inputs.callback_url != '' }}
+        env:
+          # возьмём имя из inputs.output_filename, иначе дефолт с номером билда
+          DESIRED_FILENAME: ${{ inputs.output_filename }}
         run: |
           echo "Sending IPA to callback URL..."
+
+          FILENAME="${DESIRED_FILENAME}"
+          if [ -z "$FILENAME" ]; then
+            FILENAME="LiveContainer-build-${{ matrix.build-number }}.ipa"
+          fi
+
           curl -X POST \
             -F "file=@build/LiveContainer.ipa" \
             -F "build_number=${{ matrix.build-number }}" \
-            -F "filename=LiveContainer-build-${{ matrix.build-number }}.ipa" \
+            -F "filename=${FILENAME}" \
             "${{ inputs.callback_url }}"
+
           echo "IPA sent successfully"
 
       - name: Cleanup certificate
