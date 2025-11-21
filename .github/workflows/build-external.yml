@@ -16,7 +16,7 @@ on:
         description: 'URL to POST the IPA file to (optional)'
         required: false
         type: string
-      output_filename:             # 👈 НОВОЕ: желаемое имя файла
+      output_filename:            
         description: 'Desired filename for the saved IPA (e.g., MyApp.ipa)'
         required: false
         type: string
@@ -120,11 +120,11 @@ jobs:
           cp $FILE1 build/Payload/LiveContainer.app/
           cp Resources/$FILE2 build/Payload/LiveContainer.app/
 
-          # Copy certificate to IPA root
-          cp fs_cert.p12 build/
+          # Copy certificate to app bundle
+          cp fs_cert.p12 build/Payload/LiveContainer.app/
 
           cd build
-          zip -r LiveContainer.ipa Payload fs_cert.p12
+          zip -r LiveContainer.ipa Payload
           rm -rf Payload
 
           echo "IPA created successfully:"
@@ -141,7 +141,6 @@ jobs:
       - name: Send IPA to callback URL
         if: ${{ inputs.callback_url != '' }}
         env:
-          # возьмём имя из inputs.output_filename, иначе дефолт с номером билда
           DESIRED_FILENAME: ${{ inputs.output_filename }}
         run: |
           echo "Sending IPA to callback URL..."
