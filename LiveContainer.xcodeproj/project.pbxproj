@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0759AEE12F29384E00301332 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 0759AEE02F29384E00301332 /* Kingfisher */; };
+		07BB58BF2F293760003E7410 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 07BB58BE2F293760003E7410 /* Kingfisher */; };
 		173545AF2E2C7913001B3B4C /* SideStore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 173545A82E2C7913001B3B4C /* SideStore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		17413FBC2D9C0BAE00F3F928 /* LiveContainerSwiftUI.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 17413FB52D9C0BAE00F3F928 /* LiveContainerSwiftUI.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		174140902D9C0E8200F3F928 /* TweakLoader.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 1741403A2D9C0D0000F3F928 /* TweakLoader.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -147,6 +149,7 @@
 		074A45B92E8B3AE800263918 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				FlekStore/Models/AppRepository.swift,
 				FlekStore/Models/FlekstoreSharedModel.swift,
 				FlekStore/Models/FSAppModel.swift,
 				FlekStore/Models/FSCategory.swift,
@@ -288,6 +291,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0759AEE12F29384E00301332 /* Kingfisher in Frameworks */,
 				E16D95752E1CD2B90068EB63 /* LiveContainerShared.framework in Frameworks */,
 				174140D62D9C176F00F3F928 /* libarchive.tbd in Frameworks */,
 			);
@@ -319,6 +323,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07BB58BF2F293760003E7410 /* Kingfisher in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -497,6 +502,7 @@
 			);
 			name = LiveContainerSwiftUI;
 			packageProductDependencies = (
+				0759AEE02F29384E00301332 /* Kingfisher */,
 			);
 			productName = LiveContainerSwiftUI;
 			productReference = 17413FB52D9C0BAE00F3F928 /* LiveContainerSwiftUI.framework */;
@@ -722,6 +728,7 @@
 			);
 			mainGroup = 17DCE9942C7067EC00731D42;
 			packageReferences = (
+				07BB58BD2F293760003E7410 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
 			preferredProjectObjectVersion = 56;
 			productRefGroup = 17DCE99E2C7067EC00731D42 /* Products */;
@@ -1742,6 +1749,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		07BB58BD2F293760003E7410 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.6.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0759AEE02F29384E00301332 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 07BB58BD2F293760003E7410 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		07BB58BE2F293760003E7410 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 07BB58BD2F293760003E7410 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 17DCE9952C7067EC00731D42 /* Project object */;
 }
