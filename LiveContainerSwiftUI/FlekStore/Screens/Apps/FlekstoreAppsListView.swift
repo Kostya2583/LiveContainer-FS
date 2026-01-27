@@ -14,7 +14,7 @@ import SwiftUI
 struct FlekstoreAppsListView: View {
     @StateObject private var viewModel = FlekstoreAppsListViewModel()
     @Binding var selectedTab: Int
-
+    @State private var showRepositorySelect = false
     var body: some View {
         NavigationView {
             VStack {
@@ -82,7 +82,26 @@ struct FlekstoreAppsListView: View {
                 }
             }
             .navigationTitle("FlekSt0re")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.automatic)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showRepositorySelect = true
+                    } label: {
+                        HStack {
+                            Image("fsLogoRound")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 25, height: 25)
+                            Text("FlekSt0re")
+                        }
+                    }
+                }
+                
+            }
+            .sheet(isPresented: $showRepositorySelect) {
+                //AppRepositoryListView()
+            }
             .searchable(
                 text: $viewModel.searchQuery,
                 placement: .navigationBarDrawer(displayMode: .always),
@@ -187,3 +206,9 @@ struct AppRow: View {
 }
 
 
+#Preview {
+    FlekstoreAppsListView(
+        selectedTab: .constant(0)
+    )
+    .environmentObject(FlekstoreSharedModel())
+}
