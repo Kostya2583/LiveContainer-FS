@@ -10,6 +10,7 @@ import SwiftUI
 // MARK: - View
 // FlekstoreAppsListView.swift
 import SwiftUI
+import Kingfisher
 
 struct FlekstoreAppsListView: View {
     @StateObject private var viewModel = FlekstoreAppsListViewModel()
@@ -204,15 +205,14 @@ struct AppRow: View {
     @EnvironmentObject private var flekstoreSharedModel: FlekstoreSharedModel
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            AsyncImage(url: URL(string: app.app_icon)) { image in
-                image
-                    .resizable()
-                    .scaledToFit()
-            } placeholder: {
-                Color.gray.opacity(0.2)
-            }
-            .frame(width: 60, height: 60)
-            .cornerRadius(12)
+            KFImage(URL(string: app.app_icon))
+                .placeholder {
+                    Color.gray.opacity(0.2)
+                }
+                .resizable()
+                .scaledToFit()
+                .frame(width: 60, height: 60)
+                .cornerRadius(12)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(app.app_name)
