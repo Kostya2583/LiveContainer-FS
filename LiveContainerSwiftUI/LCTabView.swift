@@ -52,6 +52,7 @@ struct LCTabView: View {
             Text(errorInfo)
         }
         .onAppear {
+            setupInitialRepositoriesIfNeeded()
             if !UserDefaults.standard.bool(forKey: "DidOpenSettingsOnce") {
                 selectedTab = 3 // programmatically open Settings tab
                 UserDefaults.standard.set(true, forKey: "DidOpenSettingsOnce")
@@ -79,7 +80,7 @@ struct LCTabView: View {
     func switchTab(to index: Int) {
         selectedTab = index
     }
-
+    
     // MARK: - Existing helper functions
     func closeDuplicatedWindow() {
         if let session = sceneDelegate.window?.windowScene?.session, DataManager.shared.model.mainWindowOpened {
@@ -180,5 +181,46 @@ struct LCTabView: View {
             errorShow = true
             return
         }
+    }
+    
+    private func setupInitialRepositoriesIfNeeded() {
+        let didSetupKey = "DidSetupDefaultRepositories"
+
+        guard !UserDefaults.standard.bool(forKey: didSetupKey) else {
+            return
+        }
+        
+        let defaultApps: [AppRepository] = [
+            AppRepository(
+                name: "FlekSt0re Lib",
+                iconUrl: "https://flekstore.com/pro_app/icons/apple-touch-icon.png",
+                sourceURL: "Default app catalog",
+                isSelected: true
+            ),
+            AppRepository(
+                name: "Nabzclan - App Store",
+                iconUrl: "https://cdn.nabzclan.vip/popupv3/imgs/logo-tras.png",
+                sourceURL: "https://appstore.nabzclan.vip/repos/altstore.php",
+                isSelected: false
+            ),
+            AppRepository(
+                name: "AppTesters IPA Repo",
+                iconUrl: "https://apptesters.org/apptesters-512x512.png",
+                sourceURL: "https://repository.apptesters.org/",
+                isSelected: false
+            ),
+            AppRepository(
+                name: "Quantum Source",
+                iconUrl: "https://quarksources.github.io/assets/ElementQ-Circled.png",
+                sourceURL: "https://quarksources.github.io/dist/quantumsource.min.json",
+                isSelected: false
+            )
+        ]
+
+        if let data = try? JSONEncoder().encode(defaultApps) {
+            UserDefaults.standard.set(data, forKey: "savedRepositories")
+        }
+
+        UserDefaults.standard.set(true, forKey: didSetupKey)
     }
 }

@@ -10,7 +10,7 @@ import Foundation
 import Kingfisher
 
 struct AppRepositoryListView: View {
-    @State private var apps: [AppRepository] = []
+    @State private var repos: [AppRepository] = []
     @State private var newRepoURL: String = ""
     private let userDefaultsKey = "savedRepositories"
     
@@ -51,15 +51,15 @@ struct AppRepositoryListView: View {
                     
                     // MARK: - App list
                     List {
-                        ForEach(apps.indices, id: \.self) { index in
-                            AppRepositoryRow(app: apps[index])
+                        ForEach(repos.indices, id: \.self) { index in
+                            AppRepositoryRow(repo: repos[index])
                                 .contentShape(Rectangle())
                                 .onTapGesture { select(at: index) }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    if apps[index].name != "FlekSt0re Lib" {
+                                    if repos[index].name != "FlekSt0re Lib" {
                                         Button(role: .destructive) {
-                                            apps.remove(at: index)
-                                            saveApps()
+                                            repos.remove(at: index)
+                                            saveRepos()
                                         } label: {
                                             Label("Delete", systemImage: "trash")
                                         }
@@ -104,7 +104,7 @@ struct AppRepositoryListView: View {
                     }
                 }
             }
-            .onAppear { loadApps() }
+            .onAppear { loadRepos() }
             .alert("Repository Error", isPresented: $showError) {
                 Button("OK", role: .cancel) { }
             } message: {
@@ -113,8 +113,8 @@ struct AppRepositoryListView: View {
         }
     }
     private func select(at index: Int) {
-        for i in apps.indices {
-            apps[i].isSelected = (i == index)
+        for i in repos.indices {
+            repos[i].isSelected = (i == index)
         }
     }
     // MARK: - Add repository
@@ -156,8 +156,8 @@ struct AppRepositoryListView: View {
                 )
                 
                 DispatchQueue.main.async {
-                    apps.append(newRepo)
-                    saveApps()
+                    repos.append(newRepo)
+                    saveRepos()
                     newRepoURL = ""
                 }
                 
@@ -176,62 +176,33 @@ struct AppRepositoryListView: View {
     
     // MARK: - User defaults
     
-    private func loadApps() {
+    private func loadRepos() {
         if let data = UserDefaults.standard.data(forKey: userDefaultsKey),
-           let savedApps = try? JSONDecoder().decode([AppRepository].self, from: data) {
-            self.apps = savedApps
-        } else {
-            // First launch – load default data
-            self.apps = [
-                AppRepository(
-                    name: "FlekSt0re Lib",
-                    iconUrl: "https://flekstore.com/pro_app/icons/apple-touch-icon.png",
-                    sourceURL: "Default app catalog",
-                    isSelected: true
-                ),
-                AppRepository(
-                    name: "Nabzclan - App Store",
-                    iconUrl: "https://cdn.nabzclan.vip/popupv3/imgs/logo-tras.png",
-                    sourceURL: "https://appstore.nabzclan.vip/repos/altstore.php",
-                    isSelected: false
-                ),
-                AppRepository(
-                    name: "AppTesters IPA Repo",
-                    iconUrl: "https://apptesters.org/apptesters-512x512.png",
-                    sourceURL: "https://repository.apptesters.org/",
-                    isSelected: false
-                ),
-                AppRepository(
-                    name: "Quantum Source",
-                    iconUrl: "https://quarksources.github.io/assets/ElementQ-Circled.png",
-                    sourceURL: "https://quarksources.github.io/dist/quantumsource.min.json",
-                    isSelected: false
-                )
-            ]
-            saveApps()
+           let savedRepos = try? JSONDecoder().decode([AppRepository].self, from: data) {
+            self.repos = savedRepos
         }
     }
     
-    private func saveApps() {
-        if let data = try? JSONEncoder().encode(apps) {
+    private func saveRepos() {
+        if let data = try? JSONEncoder().encode(repos) {
             UserDefaults.standard.set(data, forKey: userDefaultsKey)
         }
     }
     
     private func delete(at offsets: IndexSet) {
         // Filter out Flekstore
-        let filteredOffsets = offsets.filter { apps[$0].name != "FlekSt0re Lib" }
-        apps.remove(atOffsets: IndexSet(filteredOffsets))
-        saveApps()
+        let filteredOffsets = offsets.filter { repos[$0].name != "FlekSt0re Lib" }
+        repos.remove(atOffsets: IndexSet(filteredOffsets))
+        saveRepos()
     }
 }
 
 struct AppRepositoryRow: View {
-    let app: AppRepository
+    let repo: AppRepository
     
     var body: some View {
         HStack(spacing: 12) {
-            KFImage(URL(string: app.iconUrl))
+            KFImage(URL(string: repo.iconUrl))
                 .resizable()
                 .placeholder {
                     Color.gray.opacity(0.3)
@@ -241,17 +212,17 @@ struct AppRepositoryRow: View {
                 .cornerRadius(8)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(app.name)
+                Text(repo.name)
                     .font(.headline)
                 
-                Text(app.sourceURL)
+                Text(repo.sourceURL)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
             
             Spacer()
             
-            if app.isSelected {
+            if repo.isSelected {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(.blue)
             }
