@@ -17,7 +17,6 @@ struct FlekstoreAppsListView: View {
     @Binding var selectedTab: Int
 
     @State private var showRepositorySheet = false
-    @State private var useCustomRepo = false
     @State private var repos: [AppRepository] = []
 
     var body: some View {
@@ -33,37 +32,38 @@ struct FlekstoreAppsListView: View {
                 )
                 .padding(.horizontal)
                
-
-                // Categories
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: 8) {
-                        CategoryButton(
-                            title: "Updates",
-                            isSelected: viewModel.selectedCategoryID == nil
-                        ) {
-                            viewModel.selectCategory(nil)
-                        }
-
-                        CategoryButton(
-                            title: "Top",
-                            isSelected: viewModel.selectedCategoryID == "downloads"
-                        ) {
-                            viewModel.selectCategory("downloads")
-                        }
-
-                        ForEach(viewModel.categories) { cat in
+                if (viewModel.repository == .flekstore)
+                {
+                    // Categories
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHStack(spacing: 8) {
                             CategoryButton(
-                                title: cat.name,
-                                isSelected: viewModel.selectedCategoryID == cat.id
+                                title: "Updates",
+                                isSelected: viewModel.selectedCategoryID == nil
                             ) {
-                                viewModel.selectCategory(cat.id)
+                                viewModel.selectCategory(nil)
+                            }
+                            
+                            CategoryButton(
+                                title: "Top",
+                                isSelected: viewModel.selectedCategoryID == "downloads"
+                            ) {
+                                viewModel.selectCategory("downloads")
+                            }
+                            
+                            ForEach(viewModel.categories) { cat in
+                                CategoryButton(
+                                    title: cat.name,
+                                    isSelected: viewModel.selectedCategoryID == cat.id
+                                ) {
+                                    viewModel.selectCategory(cat.id)
+                                }
                             }
                         }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
+                    .frame(height: 44)
                 }
-                .frame(height: 44)
-
                 // Content
                 Group {
                     if viewModel.apps.isEmpty && viewModel.isLoading {
@@ -131,6 +131,7 @@ struct FlekstoreAppsListView: View {
     // MARK: - Repos
 
     private func switchRepository(_ repo: AppRepository) {
+        //hard coded sourceURL for Flekstore instead of real one so it doesnt show the api endpoint in the UI for users
         if repo.sourceURL == "Default app catalog" {
             viewModel.repository = .flekstore
         } else {
