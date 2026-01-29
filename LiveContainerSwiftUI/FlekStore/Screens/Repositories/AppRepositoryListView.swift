@@ -10,7 +10,8 @@ import Foundation
 import Kingfisher
 
 struct AppRepositoryListView: View {
-    @State private var repos: [AppRepository] = []
+    @Binding var repos: [AppRepository]
+    var onSelect: ((AppRepository) -> Void)?
     @State private var newRepoURL: String = ""
     private let userDefaultsKey = "savedRepositories"
     
@@ -120,6 +121,11 @@ struct AppRepositoryListView: View {
     private func select(at index: Int) {
         for i in repos.indices {
             repos[i].isSelected = (i == index)
+        }
+        
+        // Notify parent
+        if let selectedRepo = repos.first(where: { $0.isSelected }) {
+            onSelect?(selectedRepo)
         }
     }
     // MARK: - Add repository
@@ -235,6 +241,6 @@ struct AppRepositoryRow: View {
         .padding(.vertical, 6)
     }
 }
-#Preview {
-    AppRepositoryListView()
-}
+//#Preview {
+//    AppRepositoryListView()
+//}

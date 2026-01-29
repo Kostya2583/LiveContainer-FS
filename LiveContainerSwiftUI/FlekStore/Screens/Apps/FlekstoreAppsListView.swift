@@ -121,7 +121,12 @@ struct FlekstoreAppsListView: View {
                 }
             }
             .sheet(isPresented: $showRepositorySheet) {
-                AppRepositoryListView()
+                AppRepositoryListView(
+                    repos: $repos,
+                    onSelect: { repo in
+                        switchRepository(repo)
+                    }
+                )
             }
         }
         .onAppear {
@@ -139,6 +144,7 @@ struct FlekstoreAppsListView: View {
     // MARK: - Repos
 
     private func switchRepository(_ repo: AppRepository) {
+        //make search field empty so search is not automatically applied when user switches repos 
         viewModel.searchQuery = ""
 
         if repo.sourceURL == "Default app catalog" {
@@ -237,7 +243,7 @@ struct AppRow: View {
             VStack {
                 Spacer()
                 Button(action: {
-                    selectedTab = 1
+                    selectedTab = 0
                     flekstoreSharedModel.appInstallURL = app.install_url
                 }) {
                     Text("GET")
