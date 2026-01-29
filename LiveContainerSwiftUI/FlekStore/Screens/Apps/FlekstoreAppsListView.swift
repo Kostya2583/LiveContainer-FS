@@ -18,31 +18,21 @@ struct FlekstoreAppsListView: View {
 
     @State private var showRepositorySheet = false
     @State private var useCustomRepo = false
+    @State private var repos: [AppRepository] = []
 
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
 
-                // Repository switch
-                HStack {
-                    Text("Repository")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-
-                    Spacer()
-
-                    Picker("", selection: $useCustomRepo) {
-                        Text("Flekstore").tag(false)
-                        Text("Custom").tag(true)
+                RepositoryPicker(
+                    repositories: $repos,
+                    showSheet: $showRepositorySheet,
+                    onSelect: { repo in
+                        switchRepository(repo)
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 200)
-                }
+                )
                 .padding(.horizontal)
-                .padding(.top, 8)
-                .onChange(of: useCustomRepo) { value in
-                    switchRepository(value)
-                }
+               
 
                 // Categories
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -115,8 +105,6 @@ struct FlekstoreAppsListView: View {
                     }
                 }
             }
-            .navigationTitle("FlekSt0re")
-            .navigationBarTitleDisplayMode(.automatic)
             .searchable(
                 text: $viewModel.searchQuery,
                 placement: .navigationBarDrawer(displayMode: .always),
@@ -127,42 +115,40 @@ struct FlekstoreAppsListView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showRepositorySheet = true
-                    } label: {
-                        Image("fsLogoRound")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                    }
                 }
             }
             .sheet(isPresented: $showRepositorySheet) {
                 AppRepositoryListView()
             }
         }
+        .onAppear { loadRepos() }
         .task {
             await viewModel.fetchApps()
         }
+        
     }
 
-    // MARK: - Repo Switching
+    // MARK: - Repos
 
-    private func switchRepository(_ useCustom: Bool) {
-        if useCustom {
-            viewModel.repository = .custom(
-                url: "https://appstore.nabzclan.vip/repos/altstore.php"
-            )
-        } else {
+    private func switchRepository(_ repo: AppRepository) {
+        if repo.sourceURL == "Default app catalog" {
             viewModel.repository = .flekstore
+        } else {
+            viewModel.repository = .custom(url: repo.sourceURL)
         }
 
         Task {
             await viewModel.resetAndFetchApps()
         }
     }
+    private func loadRepos() {
+        if let data = UserDefaults.standard.data(forKey: "savedRepositories"),
+           let savedRepos = try? JSONDecoder().decode([AppRepository].self, from: data) {
+            self.repos = savedRepos
+        }
+    }
+    
 }
-
 
 fileprivate struct CategoryButton: View {
     let title: String
@@ -196,7 +182,6 @@ fileprivate struct CategoryButton: View {
         .buttonStyle(PlainButtonStyle())
     }
 }
-
 
 // MARK: - Row
 struct AppRow: View {
@@ -251,7 +236,6 @@ struct AppRow: View {
         .padding(.vertical, 6)
     }
 }
-
 
 #Preview {
     FlekstoreAppsListView(
