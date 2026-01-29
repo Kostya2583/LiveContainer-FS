@@ -26,20 +26,19 @@ struct LCTabView: View {
         let appListView = LCAppListView(appDataFolderNames: $appDataFolderNames, tweakFolderNames: $tweakFolderNames)
 
         TabView(selection: $selectedTab) {
-            FlekstoreAppsListView(selectedTab: $selectedTab)
-                .tabItem { Image("fsLogo").renderingMode(.template)
-                            Text("FlekSt0re") }
-                .tag(0)
-            
             appListView
                 .tabItem { Label("lc.tabView.apps".loc, systemImage: "square.stack.3d.up.fill") }
+                .tag(0)
+            
+            FlekstoreAppsListView(selectedTab: $selectedTab)
+                .tabItem { Label("Browse", systemImage: "globe") }
                 .tag(1)
 
-            if DataManager.shared.model.multiLCStatus != 2 {
-                LCTweaksView(tweakFolders: $tweakFolderNames)
-                    .tabItem { Label("lc.tabView.tweaks".loc, systemImage: "wrench.and.screwdriver") }
-                    .tag(2)
-            }
+//            if DataManager.shared.model.multiLCStatus != 2 {
+//                LCTweaksView(tweakFolders: $tweakFolderNames)
+//                    .tabItem { Label("lc.tabView.tweaks".loc, systemImage: "wrench.and.screwdriver") }
+//                    .tag(2)
+//            }
 
             LCSettingsView(appDataFolderNames: $appDataFolderNames)
                 .tabItem { Label("lc.tabView.settings".loc, systemImage: "gearshape.fill") }
@@ -57,7 +56,7 @@ struct LCTabView: View {
                 selectedTab = 3 // programmatically open Settings tab
                 UserDefaults.standard.set(true, forKey: "DidOpenSettingsOnce")
             } else {
-                selectedTab = 1 
+                selectedTab = 0
             }
             closeDuplicatedWindow()
             checkLastLaunchError()
