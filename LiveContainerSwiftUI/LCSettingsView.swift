@@ -86,28 +86,65 @@ struct LCSettingsView: View {
         NavigationView {
             Form {
                 Section(header: Text("User information")) {
-                    HStack {
-                        Text(udid)
-                            .lineLimit(1)
-                            .scaledToFit()
-                            .minimumScaleFactor(0.3)
+                        HStack {
+                            Text(udid)
+                                .lineLimit(1)
+                                .scaledToFit()
+                                .minimumScaleFactor(0.3)
 
-                        Spacer()
+                            Spacer()
 
-                        Button(action: {
-                            UIPasteboard.general.string = udid
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        }) {
-                            Text("Copy UDID")
-                                .font(.subheadline)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 6)
-                                .background(Color.gray.opacity(0.2))
-                                .cornerRadius(30)
+                            Button(action: {
+                                UIPasteboard.general.string = udid
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            }) {
+                                Text("Copy UDID")
+                                    .font(.subheadline)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                    .background(Color.gray.opacity(0.2))
+                                    .cornerRadius(30)
+                            }
                         }
+                        .padding(.vertical, 4)
+
+                        // MARK: - Subscription Status
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                // Replace these placeholders with your actual data
+                                let hasSubscription = false  // Bool
+                                let subscriptionEndDate = "2025-03-03" // String
+                                
+                                if hasSubscription {
+                                    Text("Valid till: \(subscriptionEndDate)")
+                                        .foregroundColor(.green)
+                                        .font(.subheadline)
+                                } else if !hasSubscription && subscriptionEndDate != "" {
+                                    Text("Ended: \(subscriptionEndDate)")
+                                        .foregroundColor(.red)
+                                        .font(.subheadline)
+                                } else {
+                                    Text("No active subscription")
+                                        .foregroundColor(.gray)
+                                        .font(.subheadline)
+                                }
+                            }
+
+                            Spacer()
+
+                            Button(action: {
+                                // TODO: trigger manual subscription refresh
+                            }) {
+                                Text("Refresh")
+                                    .font(.subheadline)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                    .background(Color.gray.opacity(0.2))
+                                    .cornerRadius(30)
+                            }
+                        }
+                        .padding(.vertical, 4)
                     }
-                    .padding(.vertical, 4)
-                }
                 if sharedModel.multiLCStatus != 2 {
                     Section{
                         if !certificateDataFound {
@@ -630,6 +667,29 @@ struct LCSettingsView: View {
     func resetSymbolOffsets() {
         LCUtils.appGroupUserDefault.removeObject(forKey: "symbolOffsetCache")
     }
+    
+    func checkSubscription(for udid: String) async {
+        let urlString = "https://nestapi.flekstore.com/device/\(udid)"
+        guard let url = URL(string: urlString) else { return }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let decoded = try JSONDecoder().decode(DeviceStatusResponse.self, from: data)
+            
+            if let service = decoded.service, let firstService = service.first {
+                // Save only end_date to UserDefaults
+                UserDefaults.standard.set(firstService.end_date, forKey: "subscriptionEndDate")
+                print("Subscription end date saved: \(firstService.end_date)")
+            } else {
+                // No active subscription
+                UserDefaults.standard.removeObject(forKey: "subscriptionEndDate")
+                print("No active subscription")
+            }
+        } catch {
+            print("Error fetching subscription: \(error)")
+        }
+    }
+
     
     func saveUDIDToUserDefaults() {
         let userDefaultsKey = "deviceUDID"
