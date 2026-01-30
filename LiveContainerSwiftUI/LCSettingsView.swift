@@ -23,8 +23,11 @@ struct LCSettingsView: View {
     @State var successInfo = ""
     @State private var udid: String = ""
     
+    @State private var subscriptionEndDate: String?
+    @State private var hasSubscription: Bool = false
+    
     @Binding var appDataFolderNames: [String]
-
+    
     @StateObject private var installLC2Alert = AlertHelper<Int>()
     @State private var certificateDataFound = false
     
@@ -80,71 +83,87 @@ struct LCSettingsView: View {
         }
         return "12345"
     }()
-
+    
     
     var body: some View {
         NavigationView {
             Form {
                 Section(header: Text("User information")) {
-                        HStack {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("UDID")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                            
                             Text(udid)
                                 .lineLimit(1)
                                 .scaledToFit()
                                 .minimumScaleFactor(0.3)
+                        }
+                        Spacer()
+                        
+                        Button(action: {
+                            UIPasteboard.general.string = udid
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }) {
+                            Text("Copy UDID")
+                                .font(.subheadline)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 6)
+                                .background(Color.gray.opacity(0.2))
+                                .cornerRadius(30)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                    
+                    // MARK: - Subscription Status
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Subscription status")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
 
-                            Spacer()
-
-                            Button(action: {
-                                UIPasteboard.general.string = udid
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            }) {
-                                Text("Copy UDID")
+                            if hasSubscription, let endDate = subscriptionEndDate {
+                                Text("Valid till \(endDate)")
                                     .font(.subheadline)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 6)
-                                    .background(Color.gray.opacity(0.2))
-                                    .cornerRadius(30)
+                                    .foregroundColor(.green)
+                                    .fontWeight(.semibold)
+                            } else if let endDate = subscriptionEndDate {
+                                Text("Ended \(endDate)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.red)
+                                    .fontWeight(.semibold)
+                            } else {
+                                Text("No active subscription")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
                             }
                         }
-                        .padding(.vertical, 4)
 
-                        // MARK: - Subscription Status
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                // Replace these placeholders with your actual data
-                                let hasSubscription = false  // Bool
-                                let subscriptionEndDate = "2025-03-03" // String
-                                
-                                if hasSubscription {
-                                    Text("Valid till: \(subscriptionEndDate)")
-                                        .foregroundColor(.green)
-                                        .font(.subheadline)
-                                } else if !hasSubscription && subscriptionEndDate != "" {
-                                    Text("Ended: \(subscriptionEndDate)")
-                                        .foregroundColor(.red)
-                                        .font(.subheadline)
-                                } else {
-                                    Text("No active subscription")
-                                        .foregroundColor(.gray)
-                                        .font(.subheadline)
+                        Spacer()
+
+                        Button {
+                            Task {
+                                if !udid.isEmpty {
+                                    await checkSubscription(for: udid)
                                 }
                             }
-
-                            Spacer()
-
-                            Button(action: {
-                                // TODO: trigger manual subscription refresh
-                            }) {
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.clockwise")
                                 Text("Refresh")
-                                    .font(.subheadline)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 6)
-                                    .background(Color.gray.opacity(0.2))
-                                    .cornerRadius(30)
                             }
+                            .font(.subheadline)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(Color.gray.opacity(0.15))
+                            )
                         }
-                        .padding(.vertical, 4)
                     }
+                    .padding(.vertical, 6)
+                }
                 if sharedModel.multiLCStatus != 2 {
                     Section{
                         if !certificateDataFound {
@@ -164,24 +183,24 @@ struct LCSettingsView: View {
                                 }
                             }
                         }
-//                        if store == .AltStore || store == .SideStore {
-//                            Button {
-//                                Task{ await importCertificateFromSideStore() }
-//                            } label: {
-//                                if certificateDataFound {
-//                                    Text("lc.settings.refreshCertificateFromStore %@".localizeWithFormat(storeName))
-//                                } else {
-//                                    Text("lc.settings.importCertificateFromStore %@".localizeWithFormat(storeName))
-//                                }
-//                            }
-//                        }
+                        //                        if store == .AltStore || store == .SideStore {
+                        //                            Button {
+                        //                                Task{ await importCertificateFromSideStore() }
+                        //                            } label: {
+                        //                                if certificateDataFound {
+                        //                                    Text("lc.settings.refreshCertificateFromStore %@".localizeWithFormat(storeName))
+                        //                                } else {
+                        //                                    Text("lc.settings.importCertificateFromStore %@".localizeWithFormat(storeName))
+                        //                                }
+                        //                            }
+                        //                        }
                         
                         NavigationLink {
                             LCJITLessDiagnoseView()
                         } label: {
                             Text("lc.settings.jitlessDiagnose".loc)
                         }
-
+                        
                     } header: {
                         Text("lc.settings.jitLess".loc)
                     } footer: {
@@ -243,7 +262,7 @@ struct LCSettingsView: View {
                     } label: {
                         Text("lc.settings.jitEnabler".loc)
                     }
-
+                    
                 } header: {
                     Text("JIT")
                 } footer: {
@@ -258,7 +277,7 @@ struct LCSettingsView: View {
                 } footer: {
                     Text("Enabling this option will grant access to applications with strict age restrictions and the \"Adult\" category.")
                 }
-
+                
                 Section{
                     Toggle(isOn: $dynamicColors) {
                         Text("lc.settings.dynamicColors".loc)
@@ -349,7 +368,7 @@ struct LCSettingsView: View {
                 } footer: {
                     Text("lc.settings.dontSignDesc".loc)
                 }
-                    
+                
                 Section {
                     NavigationLink {
                         LCDataManagementView(appDataFolderNames: $appDataFolderNames)
@@ -395,11 +414,11 @@ struct LCSettingsView: View {
                             .foregroundStyle(.gray)
                         Link("FlekSt0re", destination: URL(string: "https://flekstore.com")!)
                     }
-
+                    
                 }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    .background(Color(UIColor.systemGroupedBackground))
-                    .listRowInsets(EdgeInsets())
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .background(Color(UIColor.systemGroupedBackground))
+                .listRowInsets(EdgeInsets())
                 
                 if sharedModel.developerMode {
                     Section {
@@ -482,7 +501,7 @@ struct LCSettingsView: View {
                 } label: {
                     Text("lc.common.continue".loc)
                 }
-
+                
                 Button("lc.common.cancel".loc, role: .cancel) {
                     installLC2Alert.close(result: 0)
                 }
@@ -495,7 +514,7 @@ struct LCSettingsView: View {
                 } label: {
                     Text("lc.common.ok".loc)
                 }
-
+                
                 Button("lc.common.cancel".loc, role: .cancel) {
                     certificateImportAlert.close(result: false)
                 }
@@ -508,7 +527,7 @@ struct LCSettingsView: View {
                 } label: {
                     Text("lc.common.ok".loc)
                 }
-
+                
                 Button("lc.common.cancel".loc, role: .cancel) {
                     certificateRemoveAlert.close(result: false)
                 }
@@ -671,44 +690,72 @@ struct LCSettingsView: View {
     func checkSubscription(for udid: String) async {
         let urlString = "https://nestapi.flekstore.com/device/\(udid)"
         guard let url = URL(string: urlString) else { return }
-        
+
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
             let decoded = try JSONDecoder().decode(DeviceStatusResponse.self, from: data)
-            
-            if let service = decoded.service, let firstService = service.first {
-                // Save only end_date to UserDefaults
-                UserDefaults.standard.set(firstService.end_date, forKey: "subscriptionEndDate")
-                print("Subscription end date saved: \(firstService.end_date)")
-            } else {
-                // No active subscription
-                UserDefaults.standard.removeObject(forKey: "subscriptionEndDate")
-                print("No active subscription")
+
+            let now = Date()
+            let calendar = Calendar.current
+
+            await MainActor.run {
+                guard
+                    let service = decoded.service?.first,
+                    let endDate = apiDateFormatter.date(from: service.end_date)
+                else {
+                    clearSubscription()
+                    return
+                }
+
+                // Compare only by day, not time
+                let endDay = calendar.startOfDay(for: endDate)
+                let today = calendar.startOfDay(for: now)
+
+                let isActive = endDay >= today
+
+                let formattedEndDate = displayDateFormatter.string(from: endDate)
+                let formattedToday = displayDateFormatter.string(from: now)
+
+                subscriptionEndDate = formattedEndDate
+                hasSubscription = isActive
+
+                UserDefaults.standard.set(formattedEndDate, forKey: "subscriptionEndDate")
+                UserDefaults.standard.set(formattedToday, forKey: "lastSubscriptionCheckDate")
+                UserDefaults.standard.set(isActive, forKey: "hasActiveSubscription")
             }
+
         } catch {
-            print("Error fetching subscription: \(error)")
+            print("Subscription check failed:", error)
         }
     }
+    
+    private func clearSubscription() {
+        subscriptionEndDate = nil
+        hasSubscription = false
 
+        UserDefaults.standard.removeObject(forKey: "subscriptionEndDate")
+        UserDefaults.standard.removeObject(forKey: "hasActiveSubscription")
+    }
     
     func saveUDIDToUserDefaults() {
         let userDefaultsKey = "deviceUDID"
-
+        
         if let existingUDID = UserDefaults.standard.string(forKey: userDefaultsKey) {
             if existingUDID.isEmpty {
                 udid = "UDID in UserDefaults is empty"
             } else {
                 udid = existingUDID
+                Task { await checkSubscription(for: existingUDID) }
                 return
             }
         } else {
-            // Key not found in UserDefaults, read from Info.plist
             if let plistUDID = Bundle.main.object(forInfoDictionaryKey: "UDID") as? String {
                 if plistUDID.isEmpty {
                     udid = "UDID is empty"
                 } else {
                     UserDefaults.standard.set(plistUDID, forKey: userDefaultsKey)
                     udid = plistUDID
+                    Task { await checkSubscription(for: plistUDID) }
                 }
             } else {
                 udid = "UDID key not found"
@@ -740,12 +787,12 @@ struct LCSettingsView: View {
             errorShow = true
             return
         }
-
+        
         LCUtils.appGroupUserDefault.set(certificateData, forKey: "LCCertificateData")
         LCUtils.appGroupUserDefault.set(certificatePassword, forKey: "LCCertificatePassword")
         LCUtils.appGroupUserDefault.set(NSDate.now, forKey: "LCCertificateUpdateDate")
         certificateDataFound = true
-
+        
         UserDefaults.standard.set(LCUtils.appGroupID(), forKey: "LCAppGroupID")
     }
     
@@ -758,27 +805,27 @@ struct LCSettingsView: View {
                 break
             }
         }
-
+        
         guard let certificateURL = foundURL else {
             errorInfo = "FlekSt0re certificate not found in bundle (fs_cert.*). Make sure it's added to Copy Bundle Resources."
             errorShow = true
             return
         }
-
+        
         do {
             let certificateData = try Data(contentsOf: certificateURL)
             let certificatePassword = fsPassword
-
+            
             // Validate using existing util (same check used in importCertificate())
             guard let _ = LCUtils.getCertTeamId(withKeyData: certificateData, password: certificatePassword) else {
                 errorInfo = "lc.settings.invalidCertError".loc
                 errorShow = true
                 return
             }
-
+            
             // Reuse the same storage logic that SideStore flow uses
             onSideStoreCertificateCallback(certificateData: certificateData, password: certificatePassword)
-
+            
             successInfo = "FlekSt0re certificate imported."
             successShow = true
         } catch {
@@ -849,12 +896,12 @@ struct LCSettingsView: View {
         guard let doRemove = await certificateRemoveAlert.open(), doRemove else {
             return
         }
-
+        
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificateData")
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificatePassword")
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificateUpdateDate")
         certificateDataFound = false
-
+        
         UserDefaults.standard.set(nil, forKey: "LCAppGroupID")
     }
     
