@@ -29,7 +29,6 @@ struct PremiumRequiredView: View {
                 .font(Font.caption)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
-                .padding(.vertical)
             
             Image("premiumSuggestion")
                 .resizable()
