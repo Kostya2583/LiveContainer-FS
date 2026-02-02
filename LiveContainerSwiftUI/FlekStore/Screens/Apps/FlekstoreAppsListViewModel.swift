@@ -322,16 +322,36 @@ class FlekstoreAppsListViewModel: ObservableObject {
     private func decodeCustomRepo(_ data: Data) throws -> [FSAppModel] {
         let response = try JSONDecoder().decode(RepoResponse.self, from: data)
 
-        return response.apps.enumerated().map { index, app in
-            FSAppModel(
-                app_id: index,
-                app_icon: app.iconURL,
-                app_name: app.name,
-                app_version: app.version,
-                app_short_description: app.localizedDescription,
-                app_isAdult: 0,
-                install_url: app.downloadURL
-            )
+        return response.apps.enumerated().compactMap { index, app in
+
+            // Versioned repo
+            if let latest = app.versions?.first {
+                return FSAppModel(
+                    app_id: index,
+                    app_icon: app.iconURL ?? "",
+                    app_name: app.name,
+                    app_version: latest.absoluteVersion ?? latest.version ?? "Unknown",
+                    app_short_description: app.localizedDescription ?? "",
+                    app_isAdult: 0,
+                    install_url: latest.downloadURL
+                )
+            }
+
+            // Flat repo
+            if let version = app.version,
+               let downloadURL = app.downloadURL {
+                return FSAppModel(
+                    app_id: index,
+                    app_icon: app.iconURL ?? "",
+                    app_name: app.name,
+                    app_version: version,
+                    app_short_description: app.localizedDescription ?? "",
+                    app_isAdult: 0,
+                    install_url: downloadURL
+                )
+            }
+
+            return nil
         }
     }
 }

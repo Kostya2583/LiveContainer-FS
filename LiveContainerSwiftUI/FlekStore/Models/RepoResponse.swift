@@ -13,16 +13,20 @@ struct RepoResponse: Codable {
 
 struct RepoApp: Codable {
     let name: String
-    let version: String
-    let localizedDescription: String
-    let iconURL: String
-    let downloadURL: String
+    let localizedDescription: String?
+    let iconURL: String?
 
-    enum CodingKeys: String, CodingKey {
-        case name
-        case version
-        case localizedDescription
-        case iconURL
-        case downloadURL
-    }
+    // Simple repos
+    let version: String?
+    let downloadURL: String?
+
+    // Versioned repos
+    let versions: [RepoAppVersion]?
+}
+
+struct RepoAppVersion: Codable {
+    let absoluteVersion: String?
+    let version: String?
+    let downloadURL: String
+    let date: String?
 }
