@@ -111,7 +111,7 @@ struct FlekstoreAppsListView: View {
                         }
                         .listStyle(.plain)
                         .refreshable {
-                            await viewModel.resetAndFetchApps()
+                            Task { await viewModel.resetAndFetchApps() }
                         }
                     }
                 }
