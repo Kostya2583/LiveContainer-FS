@@ -7,16 +7,12 @@
 
 import Foundation
 
-
-let apiDateFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSS"
-    f.locale = Locale(identifier: "en_US_POSIX")
-    return f
-}()
-
-let displayDateFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.dateFormat = "yyyy-MM-dd"
-    return f
-}()
+extension DateFormatter {
+    static let deviceServiceFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0) // adjust if needed
+        return formatter
+    }()
+}

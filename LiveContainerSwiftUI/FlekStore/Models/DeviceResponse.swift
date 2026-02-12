@@ -9,9 +9,8 @@
 import Foundation
 
 struct DeviceStatusResponse: Codable {
-    let service: [Service]?
+    let status: Bool
+    let endDate: Date
+    let udid: String
 }
 
-struct Service: Codable {
-    let end_date: String
-}
