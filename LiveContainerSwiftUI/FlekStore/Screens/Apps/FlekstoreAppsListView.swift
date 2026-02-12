@@ -147,12 +147,6 @@ struct FlekstoreAppsListView: View {
         }
         .onAppear {
             Task {
-                guard let udid, !udid.isEmpty else {
-                    return
-                }
-                
-                await viewModel.checkSubscriptionIfNeeded(for: udid)
-                
                 if let repo = await loadRepos() {
                     switchRepository(repo)
                 } else {

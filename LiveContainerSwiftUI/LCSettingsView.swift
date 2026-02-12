@@ -151,7 +151,7 @@ struct LCSettingsView: View {
                         Button {
                             Task {
                                 if !udid.isEmpty {
-                                    await checkSubscription(for: udid)
+                                    //await checkSubscription(for: udid)
                                 }
                             }
                         } label: {
@@ -585,8 +585,6 @@ struct LCSettingsView: View {
             if !certificateDataFound {
                 Task { await importEmbeddedCertificate() }
             }
-            
-            saveUDIDToUserDefaults()
         }
         .sheet(isPresented: $showShareSheet) {
             if let shareURL = shareURL {
@@ -703,81 +701,6 @@ struct LCSettingsView: View {
         LCUtils.appGroupUserDefault.removeObject(forKey: "symbolOffsetCache")
     }
     
-    func checkSubscription(for udid: String) async {
-        let urlString = "https://nestapi.flekstore.com/device/\(udid)"
-        guard let url = URL(string: urlString) else { return }
-
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let decoded = try JSONDecoder().decode(DeviceStatusResponse.self, from: data)
-
-            let now = Date()
-            let calendar = Calendar.current
-
-            await MainActor.run {
-                guard
-                    let service = decoded.service?.first,
-                    let endDate = apiDateFormatter.date(from: service.end_date)
-                else {
-                    clearSubscription()
-                    return
-                }
-
-                // Compare only by day, not time
-                let endDay = calendar.startOfDay(for: endDate)
-                let today = calendar.startOfDay(for: now)
-
-                let isActive = endDay >= today
-
-                let formattedEndDate = displayDateFormatter.string(from: endDate)
-                let formattedToday = displayDateFormatter.string(from: now)
-
-                subscriptionEndDate = formattedEndDate
-                hasSubscription = isActive
-
-                UserDefaults.standard.set(formattedEndDate, forKey: "subscriptionEndDate")
-                UserDefaults.standard.set(formattedToday, forKey: "lastSubscriptionCheckDate")
-                UserDefaults.standard.set(isActive, forKey: "hasActiveSubscription")
-            }
-
-        } catch {
-            print("Subscription check failed:", error)
-        }
-    }
-    
-    private func clearSubscription() {
-        subscriptionEndDate = nil
-        hasSubscription = false
-
-        UserDefaults.standard.removeObject(forKey: "subscriptionEndDate")
-        UserDefaults.standard.removeObject(forKey: "hasActiveSubscription")
-    }
-    
-    func saveUDIDToUserDefaults() {
-        let userDefaultsKey = "deviceUDID"
-        
-        if let existingUDID = UserDefaults.standard.string(forKey: userDefaultsKey) {
-            if existingUDID.isEmpty {
-                udid = "UDID in UserDefaults is empty"
-            } else {
-                udid = existingUDID
-                Task { await checkSubscription(for: existingUDID) }
-                return
-            }
-        } else {
-            if let plistUDID = Bundle.main.object(forInfoDictionaryKey: "UDID") as? String {
-                if plistUDID.isEmpty {
-                    udid = "UDID is empty"
-                } else {
-                    UserDefaults.standard.set(plistUDID, forKey: userDefaultsKey)
-                    udid = plistUDID
-                    Task { await checkSubscription(for: plistUDID) }
-                }
-            } else {
-                udid = "UDID key not found"
-            }
-        }
-    }
     
     func importCertificate() async {
         guard let doImport = await certificateImportAlert.open(), doImport else {
