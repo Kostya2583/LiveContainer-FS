@@ -18,8 +18,8 @@
 	<string>$(DEVELOPMENT_TEAM)</string>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.SideStore.SideStore.THS5M4V5GL</string>
-		<string>group.com.rileytestut.AltStore.THS5M4V5GL</string>
+		<string>group.com.SideStore.SideStore.2V7F92VA47</string>
+		<string>group.com.rileytestut.AltStore.2V7F92VA47</string>
 	</array>
 	<key>get-task-allow</key>
 	<true/>
