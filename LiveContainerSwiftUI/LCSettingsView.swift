@@ -25,6 +25,7 @@ struct LCSettingsView: View {
     
     @State private var subscriptionEndDate: String?
     @State private var hasSubscription: Bool = false
+    @State private var isSubscriptionLoading: Bool = false
     
     @Binding var appDataFolderNames: [String]
     @Binding var tweakFolderNames: [String]
@@ -162,7 +163,15 @@ struct LCSettingsView: View {
                                 .font(.footnote)
                                 .foregroundColor(.secondary)
 
-                            if hasSubscription, let endDate = subscriptionEndDate {
+                            if isSubscriptionLoading {
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                    Text("Checking…")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
+                            } else if hasSubscription, let endDate = subscriptionEndDate {
                                 Text("Valid till \(formattedSubscriptionDate(endDate))")
                                     .font(.subheadline)
                                     .foregroundColor(.green)
@@ -200,6 +209,7 @@ struct LCSettingsView: View {
                                     .fill(Color.gray.opacity(0.15))
                             )
                         }
+                        .disabled(isSubscriptionLoading)
                     }
                     .padding(.vertical, 6)
                 }
@@ -945,6 +955,9 @@ struct LCSettingsView: View {
     
     private func checkSubscription() async {
         guard !encryptedUDID.isEmpty else { return }
+        if isSubscriptionLoading { return }
+        isSubscriptionLoading = true
+        defer { isSubscriptionLoading = false }
         
         guard let url = URL(
             string: "https://nestapitest.flekstore.com/device-service/get-status/\(encryptedUDID)"
