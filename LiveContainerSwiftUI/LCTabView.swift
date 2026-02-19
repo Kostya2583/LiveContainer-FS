@@ -11,9 +11,9 @@ import SwiftUI
 struct LCTabView: View {
     @Binding var appDataFolderNames: [String]
     @Binding var tweakFolderNames: [String]
-
+    
     @State private var selectedTab: Int = 0
-
+    
     @State var errorShow = false
     @State var errorInfo = ""
     
@@ -24,7 +24,7 @@ struct LCTabView: View {
     @State var shouldToggleMainWindowOpen = false
     @Environment(\.scenePhase) var scenePhase
     let pub = NotificationCenter.default.publisher(for: UIScene.didDisconnectNotification)
-
+    
     
     var body: some View {
         Group {
@@ -46,7 +46,7 @@ struct LCTabView: View {
                         }
                     }
                     Tab("lc.tabView.settings".loc, systemImage: "gearshape.fill", value: LCTabIdentifier.settings) {
-                        LCSettingsView(appDataFolderNames: $appDataFolderNames)
+                        LCSettingsView(appDataFolderNames: $appDataFolderNames, tweakFolderNames: $tweakFolderNames)
                     }
                     Tab("Search".loc, systemImage: "magnifyingglass", value: LCTabIdentifier.search, role: .search) {
                         if previousSelectedTab == .sources {
@@ -56,7 +56,7 @@ struct LCTabView: View {
                             appListView
                                 .searchable(text: appListView.$searchContext.query)
                         }
-
+                        
                     }
                 }
             } else {
@@ -81,7 +81,7 @@ struct LCTabView: View {
                             .tag(LCTabIdentifier.tweaks)
                     }
                     
-                    LCSettingsView(appDataFolderNames: $appDataFolderNames)
+                    LCSettingsView(appDataFolderNames: $appDataFolderNames, tweakFolderNames: $tweakFolderNames)
                         .tabItem {
                             Label("lc.tabView.settings".loc, systemImage: "gearshape.fill")
                         }
@@ -154,10 +154,10 @@ struct LCTabView: View {
             }
             
         } while(false)
-
+        
         sharedModel.deepLink = url
     }
-
+    
     // MARK: - Programmatic tab switch helper
     func switchTab(to index: Int) {
         selectedTab = index
@@ -174,7 +174,7 @@ struct LCTabView: View {
         }
         DataManager.shared.model.mainWindowOpened = true
     }
-
+    
     func checkLastLaunchError() {
         var errorStr = UserDefaults.standard.string(forKey: "error")
         if errorStr == nil && UserDefaults.standard.bool(forKey: "SigningInProgress") {
@@ -186,9 +186,9 @@ struct LCTabView: View {
         errorInfo = errorStr
         errorShow = true
     }
-
+    
     func copyError() { UIPasteboard.general.string = errorInfo }
-
+    
     
     func checkTeamId() {
         if let certificateTeamId = UserDefaults.standard.string(forKey: "LCCertificateTeamId") {
@@ -265,23 +265,9 @@ struct LCTabView: View {
         }
     }
     
-    func checkPrivateContainerBookmark() {
-        if sharedModel.multiLCStatus == 2 {
-            return
-        }
-        if LCUtils.appGroupUserDefault.object(forKey: "LCLaunchExtensionPrivateDocBookmark") != nil {
-            return
-        }
-        
-        guard let bookmark = LCUtils.bookmark(for: LCPath.docPath) else {
-            errorInfo = "Failed to create bookmark for Documents folder?"
-            errorShow = true
-            return
-        }
-        LCUtils.appGroupUserDefault.set(bookmark, forKey: "LCLaunchExtensionPrivateDocBookmark")
     private func setupInitialRepositoriesIfNeeded() {
         let didSetupKey = "DidSetupDefaultRepositories"
-
+        
         guard !UserDefaults.standard.bool(forKey: didSetupKey) else {
             return
         }
@@ -312,11 +298,26 @@ struct LCTabView: View {
                 isSelected: false
             )
         ]
-
+        
         if let data = try? JSONEncoder().encode(defaultApps) {
             UserDefaults.standard.set(data, forKey: "savedRepositories")
         }
         UserDefaults.standard.set(true, forKey: didSetupKey)
-
+        
+    }
+    func checkPrivateContainerBookmark() {
+        if sharedModel.multiLCStatus == 2 {
+            return
+        }
+        if LCUtils.appGroupUserDefault.object(forKey: "LCLaunchExtensionPrivateDocBookmark") != nil {
+            return
+        }
+        
+        guard let bookmark = LCUtils.bookmark(for: LCPath.docPath) else {
+            errorInfo = "Failed to create bookmark for Documents folder?"
+            errorShow = true
+            return
+        }
+        LCUtils.appGroupUserDefault.set(bookmark, forKey: "LCLaunchExtensionPrivateDocBookmark")
     }
 }

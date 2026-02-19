@@ -9,14 +9,14 @@
 			<key>NSExtensionActivationRule</key>
 			<string>TRUEPREDICATE</string>
 		</dict>
-		<key>NSExtensionPointIdentifier</key>
-		<string>com.apple.AudioUnit-UI</string>
-		<key>NSExtensionPrincipalClass</key>
-		<string>LaunchAppExtensionHelperHandler</string>
 		<key>NSExtensionContextClass</key>
 		<string>NSExtensionContext</string>
 		<key>NSExtensionContextHostClass</key>
 		<string>NSExtensionContext</string>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.AudioUnit-UI</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>LaunchAppExtensionHelperHandler</string>
 	</dict>
 </dict>
 </plist>

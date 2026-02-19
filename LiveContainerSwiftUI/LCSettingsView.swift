@@ -93,7 +93,7 @@ struct LCSettingsView: View {
     
     let storeName = LCUtils.getStoreName()
     
-    init(appDataFolderNames: Binding<[String]>) {
+    init(appDataFolderNames: Binding<[String]>, tweakFolderNames: Binding<[String]>) {
         _certificateDataFound = State(initialValue: LCSharedUtils.certificatePassword() != nil)
         _store = State(initialValue: LCUtils.store())
 
@@ -660,11 +660,6 @@ struct LCSettingsView: View {
         .onAppear {
             if !certificateDataFound {
                 Task { await importEmbeddedCertificate() }
-            }
-        }
-        .sheet(isPresented: $showShareSheet) {
-            if let shareURL = shareURL {
-                ActivityViewController(activityItems: [shareURL])
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
