@@ -233,45 +233,45 @@ struct LCJITLessDiagnoseView : View {
                             .foregroundStyle(certificatePasswordFound ? .green : .red)
                     }
                     
-                    HStack {
-                        Text("lc.jitlessDiag.certLastUpdate".loc)
-                        Spacer()
-                        if let certLastUpdateDateStr {
-                            Text(certLastUpdateDateStr)
-                                .foregroundStyle(.green)
-                        } else {
-                            Text("lc.common.unknown".loc)
-                                .foregroundStyle(.red)
-                        }
-                        
-                    }
-                    if certificateDataFound && certTeamId != nil && certTeamId != expectedTeamId {
-                        HStack {
-                            Text("lc.jitlessDiag.expectedTeamId".loc)
-                            Spacer()
-                            Text(expectedTeamId ?? "lc.common.unknown".loc)
-                                .foregroundStyle(.gray)
-                        }
-                    }
+//                    HStack {
+//                        Text("lc.jitlessDiag.certLastUpdate".loc)
+//                        Spacer()
+//                        if let certLastUpdateDateStr {
+//                            Text(certLastUpdateDateStr)
+//                                .foregroundStyle(.green)
+//                        } else {
+//                            Text("lc.common.unknown".loc)
+//                                .foregroundStyle(.red)
+//                        }
+//                        
+//                    }
+//                    if certificateDataFound && certTeamId != nil && certTeamId != expectedTeamId {
+//                        HStack {
+//                            Text("lc.jitlessDiag.expectedTeamId".loc)
+//                            Spacer()
+//                            Text(expectedTeamId ?? "lc.common.unknown".loc)
+//                                .foregroundStyle(.gray)
+//                        }
+//                    }
                     if certificateDataFound {
-                        HStack {
-                            Text("lc.jitlessDiag.certTeamId".loc)
-                            Spacer()
-                            Text(certTeamId ?? "lc.common.unknown".loc)
-                                .foregroundStyle(certTeamId != nil && certTeamId == expectedTeamId ? .green : .red)
-                        }
+//                        HStack {
+//                            Text("lc.jitlessDiag.certTeamId".loc)
+//                            Spacer()
+//                            Text(certTeamId ?? "lc.common.unknown".loc)
+//                                .foregroundStyle(certTeamId != nil && certTeamId == expectedTeamId ? .green : .red)
+//                        }
                         HStack {
                             Text("lc.jitlessDiag.certificateStatus".loc)
                             Spacer()
                             Text(certificateStatus == -1 ? "lc.jitlessDiag.checking".loc : getStatusText(status: certificateStatus))
                                 .foregroundStyle(certificateStatus == 0 ? .green : .red)
                         }
-                        HStack {
-                            Text("lc.jitlessDiag.certificateValidateUntil".loc)
-                            Spacer()
-                            Text(certificateValidateUntil != nil ? certificateValidateUntil! : "lc.common.unknown".loc)
-                                .foregroundStyle(certificateStatus == 0 ? .green : .red)
-                        }
+//                        HStack {
+//                            Text("lc.jitlessDiag.certificateValidateUntil".loc)
+//                            Spacer()
+//                            Text(certificateValidateUntil != nil ? certificateValidateUntil! : "lc.common.unknown".loc)
+//                                .foregroundStyle(certificateStatus == 0 ? .green : .red)
+//                        }
                     }
                     
                 }
