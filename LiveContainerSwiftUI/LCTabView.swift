@@ -11,7 +11,9 @@ import SwiftUI
 struct LCTabView: View {
     @Binding var appDataFolderNames: [String]
     @Binding var tweakFolderNames: [String]
-    
+
+    @State private var selectedTab: Int = 0
+
     @State var errorShow = false
     @State var errorInfo = ""
     
@@ -87,16 +89,20 @@ struct LCTabView: View {
                 }
             }
         }
-        .alert("lc.common.error".loc, isPresented: $errorShow){
-            Button("lc.common.ok".loc, action: {
-            })
-            Button("lc.common.copy".loc, action: {
-                copyError()
-            })
+        .alert("lc.common.error".loc, isPresented: $errorShow) {
+            Button("lc.common.ok".loc) {}
+            Button("lc.common.copy".loc) { copyError() }
         } message: {
             Text(errorInfo)
         }
         .task {
+            setupInitialRepositoriesIfNeeded()
+            if !UserDefaults.standard.bool(forKey: "DidOpenSettingsOnce") {
+                selectedTab = 3 // programmatically open Settings tab
+                UserDefaults.standard.set(true, forKey: "DidOpenSettingsOnce")
+            } else {
+                selectedTab = 0
+            }
             closeDuplicatedWindow()
             checkLastLaunchError()
             checkTeamId()
@@ -151,7 +157,13 @@ struct LCTabView: View {
 
         sharedModel.deepLink = url
     }
+
+    // MARK: - Programmatic tab switch helper
+    func switchTab(to index: Int) {
+        selectedTab = index
+    }
     
+    // MARK: - Existing helper functions
     func closeDuplicatedWindow() {
         if let session = sceneDelegate.window?.windowScene?.session, DataManager.shared.model.mainWindowOpened {
             UIApplication.shared.requestSceneSessionDestruction(session, options: nil) { e in
@@ -162,26 +174,21 @@ struct LCTabView: View {
         }
         DataManager.shared.model.mainWindowOpened = true
     }
-    
+
     func checkLastLaunchError() {
         var errorStr = UserDefaults.standard.string(forKey: "error")
-        
         if errorStr == nil && UserDefaults.standard.bool(forKey: "SigningInProgress") {
             errorStr = "lc.signer.crashDuringSignErr".loc
             UserDefaults.standard.removeObject(forKey: "SigningInProgress")
         }
-        
-        guard let errorStr else {
-            return
-        }
+        guard let errorStr else { return }
         UserDefaults.standard.removeObject(forKey: "error")
         errorInfo = errorStr
         errorShow = true
     }
-    
-    func copyError() {
-        UIPasteboard.general.string = errorInfo
-    }
+
+    func copyError() { UIPasteboard.general.string = errorInfo }
+
     
     func checkTeamId() {
         if let certificateTeamId = UserDefaults.standard.string(forKey: "LCCertificateTeamId") {
@@ -272,5 +279,44 @@ struct LCTabView: View {
             return
         }
         LCUtils.appGroupUserDefault.set(bookmark, forKey: "LCLaunchExtensionPrivateDocBookmark")
+    private func setupInitialRepositoriesIfNeeded() {
+        let didSetupKey = "DidSetupDefaultRepositories"
+
+        guard !UserDefaults.standard.bool(forKey: didSetupKey) else {
+            return
+        }
+        
+        let defaultApps: [AppRepository] = [
+            AppRepository(
+                name: "FlekSt0re Lib",
+                iconUrl: "https://flekstore.com/pro_app/icons/apple-touch-icon.png",
+                sourceURL: "Default app catalog",
+                isSelected: true
+            ),
+            AppRepository(
+                name: "Nabzclan - App Store",
+                iconUrl: "https://cdn.nabzclan.vip/popupv3/imgs/logo-tras.png",
+                sourceURL: "https://appstore.nabzclan.vip/repos/altstore.php",
+                isSelected: false
+            ),
+            AppRepository(
+                name: "AppTesters IPA Repo",
+                iconUrl: "https://apptesters.org/apptesters-512x512.png",
+                sourceURL: "https://repository.apptesters.org/",
+                isSelected: false
+            ),
+            AppRepository(
+                name: "Quantum Source",
+                iconUrl: "https://quarksources.github.io/assets/ElementQ-Circled.png",
+                sourceURL: "https://quarksources.github.io/dist/quantumsource.min.json",
+                isSelected: false
+            )
+        ]
+
+        if let data = try? JSONEncoder().encode(defaultApps) {
+            UserDefaults.standard.set(data, forKey: "savedRepositories")
+        }
+        UserDefaults.standard.set(true, forKey: didSetupKey)
+
     }
 }

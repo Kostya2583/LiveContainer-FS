@@ -19,6 +19,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>encryptedUdid</key>
+	<string></string>
 	<key>CFBundleExecutable</key>
 	<string>LiveContainer</string>
 	<key>CFBundleIconName</key>
@@ -272,5 +274,7 @@
 	</array>
 	<key>UISupportsDocumentBrowser</key>
 	<true/>
+	<key>fsPassword</key>
+	<string>12345</string>
 </dict>
 </plist>

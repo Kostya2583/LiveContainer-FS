@@ -21,9 +21,17 @@ struct LCSettingsView: View {
     @State var errorInfo = ""
     @State var successShow = false
     @State var successInfo = ""
+    @State private var udid: String = ""
+    
+    @State private var subscriptionEndDate: String?
+    @State private var hasSubscription: Bool = false
+    @State private var isSubscriptionLoading: Bool = false
     
     @Binding var appDataFolderNames: [String]
-
+    @Binding var tweakFolderNames: [String]
+    
+    
+    @StateObject private var installLC2Alert = AlertHelper<Int>()
     @State private var certificateDataFound = false
     
     @StateObject private var certificateImportAlert = YesNoHelper()
@@ -66,6 +74,19 @@ struct LCSettingsView: View {
     @AppStorage("LCWaitForDebugger") var waitForDebugger = false
     @AppStorage("LCSharePrivateDataWithLiveProcess") var sharePrivateDataWithLiveProcess = false
     
+    ///Flekstore user defaults
+    @AppStorage("FSEncryptedUDID")
+    private var encryptedUDID: String = ""
+
+    @AppStorage("FSSubscriptionEndDate")
+    private var subscriptionEndDateStored: String = ""
+
+    @AppStorage("FSSubscriptionStatus")
+    private var subscriptionStatusStored: Bool = false
+    
+    @AppStorage("FSSubscriptionInitialized")
+    private var subscriptionInitialized: Bool = false
+    
     @EnvironmentObject private var sharedModel : SharedModel
     
     @State private var isViewAppeared = false
@@ -75,46 +96,166 @@ struct LCSettingsView: View {
     init(appDataFolderNames: Binding<[String]>) {
         _certificateDataFound = State(initialValue: LCSharedUtils.certificatePassword() != nil)
         _store = State(initialValue: LCUtils.store())
-        
+
         _appDataFolderNames = appDataFolderNames
+        _tweakFolderNames = tweakFolderNames
     }
+    
+    let fsPassword: String = {
+        if let dict = Bundle.main.infoDictionary,
+           let value = dict["fsPassword"] as? String,
+           !value.isEmpty {
+            return value
+        }
+        return "12345"
+    }()
+
+    private static let subscriptionDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone.current
+        return formatter
+    }()
+
+    private func formattedSubscriptionDate(_ dateString: String) -> String {
+        if let date = DateFormatter.deviceServiceFormatter.date(from: dateString) {
+            return Self.subscriptionDateFormatter.string(from: date)
+        }
+
+        if let dateOnly = dateString.split(separator: " ").first {
+            return String(dateOnly)
+        }
+
+        return dateString
+    }
+    
     
     var body: some View {
         NavigationView {
             Form {
+                Section(header: Text("User information")) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("UDID")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                            
+                            Text(udid)
+                                .lineLimit(1)
+                                .scaledToFit()
+                                .minimumScaleFactor(0.3)
+                        }
+                        Spacer()
+                        
+                        Button(action: {
+                            UIPasteboard.general.string = udid
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }) {
+                            Text("Copy UDID")
+                                .font(.subheadline)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 6)
+                                .background(Color.gray.opacity(0.2))
+                                .cornerRadius(30)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                    
+                    // MARK: - Subscription Status
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Subscription status")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+
+                            if isSubscriptionLoading {
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                    Text("Checking…")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
+                            } else if hasSubscription, let endDate = subscriptionEndDate {
+                                Text("Valid till \(formattedSubscriptionDate(endDate))")
+                                    .font(.subheadline)
+                                    .foregroundColor(.green)
+                                    .fontWeight(.semibold)
+                            } else if let endDate = subscriptionEndDate {
+                                Text("Ended \(formattedSubscriptionDate(endDate))")
+                                    .font(.subheadline)
+                                    .foregroundColor(.red)
+                                    .fontWeight(.semibold)
+                            } else {
+                                Text("No active subscription")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+
+                        Spacer()
+
+                        Button {
+                            Task {
+                                if !udid.isEmpty {
+                                    await checkSubscription()
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.clockwise")
+                                Text("Refresh")
+                            }
+                            .font(.subheadline)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(Color.gray.opacity(0.15))
+                            )
+                        }
+                        .disabled(isSubscriptionLoading)
+                    }
+                    .padding(.vertical, 6)
+                }
                 if sharedModel.multiLCStatus != 2 {
                     Section{
                         if !certificateDataFound {
-                            Button {
-                                Task{ await importCertificate() }
-                            } label: {
-                                Text("lc.settings.importCertificate".loc)
+                            Section {
+                                Button("Import Flekstore certificate") {
+                                    Task { await importEmbeddedCertificate() }
+                                }
+                                
+                                Button("lc.settings.importCertificate".loc) {
+                                    Task { await importCertificate() }
+                                }
                             }
                         } else {
-                            Button {
-                                Task{ await removeCertificate() }
-                            } label: {
-                                Text("lc.settings.removeCertificate".loc)
-                            }
-                        }
-                        if store == .AltStore || store == .SideStore {
-                            Button {
-                                Task{ await importCertificateFromSideStore() }
-                            } label: {
-                                if certificateDataFound {
-                                    Text("lc.settings.refreshCertificateFromStore %@".localizeWithFormat(storeName))
-                                } else {
-                                    Text("lc.settings.importCertificateFromStore %@".localizeWithFormat(storeName))
+                            Section {
+                                Button("lc.settings.removeCertificate".loc) {
+                                    Task { await removeCertificate() }
                                 }
                             }
                         }
+                        //                        if store == .AltStore || store == .SideStore {
+                        //                            Button {
+                        //                                Task{ await importCertificateFromSideStore() }
+                        //                            } label: {
+                        //                                if certificateDataFound {
+                        //                                    Text("lc.settings.refreshCertificateFromStore %@".localizeWithFormat(storeName))
+                        //                                } else {
+                        //                                    Text("lc.settings.importCertificateFromStore %@".localizeWithFormat(storeName))
+                        //                                }
+                        //                            }
+                        //                        }
                         
                         NavigationLink {
                             LCJITLessDiagnoseView()
                         } label: {
                             Text("lc.settings.jitlessDiagnose".loc)
                         }
-
+                        
                     } header: {
                         Text("lc.settings.jitLess".loc)
                     } footer: {
@@ -174,12 +315,31 @@ struct LCSettingsView: View {
                     } label: {
                         Text("lc.settings.jitEnabler".loc)
                     }
-
+                    
                 } header: {
                     Text("JIT")
                 } footer: {
                     Text("lc.settings.JitDesc".loc)
                 }
+                
+                
+                Section{
+                    AgeConfirmationView()
+                } header: {
+                    Text("Sensitive Content")
+                } footer: {
+                    Text("Enabling this option will grant access to applications with strict age restrictions and the \"Adult\" category.")
+                }
+                
+                Section{
+                    NavigationLink {
+                        LCTweaksView(tweakFolders: $tweakFolderNames)
+                    } label: {
+                        Label("Tweaks", systemImage: "wrench.and.screwdriver")
+                    }
+                } header: {
+                    Text("Tweaks")
+                } 
                 
                 Section{
                     Toggle(isOn: $dynamicColors) {
@@ -300,7 +460,7 @@ struct LCSettingsView: View {
                 } footer: {
                     Text("lc.settings.dontSignDesc".loc)
                 }
-                    
+                
                 Section {
                     NavigationLink {
                         LCDataManagementView(appDataFolderNames: $appDataFolderNames)
@@ -340,10 +500,17 @@ struct LCSettingsView: View {
                         .onTapGesture(count: 5) {
                             sharedModel.developerMode = true
                         }
+                    
+                    HStack(spacing:0){
+                        Text("Build: ")
+                            .foregroundStyle(.gray)
+                        Link("FlekSt0re", destination: URL(string: "https://flekstore.com")!)
+                    }
+                    
                 }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    .background(Color(UIColor.systemGroupedBackground))
-                    .listRowInsets(EdgeInsets())
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .background(Color(UIColor.systemGroupedBackground))
+                .listRowInsets(EdgeInsets())
                 
                 if sharedModel.developerMode {
                     Section {
@@ -409,6 +576,22 @@ struct LCSettingsView: View {
                 }
             }
             .navigationBarTitle("lc.tabView.settings".loc)
+            .onAppear {
+                loadEncryptedUDIDFromPlist()
+                
+                // Load cached values
+                udid = deviceUDID
+                hasSubscription = subscriptionStatusStored
+                subscriptionEndDate = subscriptionEndDateStored.isEmpty ? nil : subscriptionEndDateStored
+                
+                // Only call API once on initial start
+                if !subscriptionInitialized {
+                    Task {
+                        await checkSubscription()
+                        subscriptionInitialized = true
+                    }
+                }
+            }
             .alert("lc.common.error".loc, isPresented: $errorShow){
             } message: {
                 Text(errorInfo)
@@ -423,7 +606,7 @@ struct LCSettingsView: View {
                 } label: {
                     Text("lc.common.ok".loc)
                 }
-
+                
                 Button("lc.common.cancel".loc, role: .cancel) {
                     certificateImportAlert.close(result: false)
                 }
@@ -436,7 +619,7 @@ struct LCSettingsView: View {
                 } label: {
                     Text("lc.common.ok".loc)
                 }
-
+                
                 Button("lc.common.cancel".loc, role: .cancel) {
                     certificateRemoveAlert.close(result: false)
                 }
@@ -473,6 +656,16 @@ struct LCSettingsView: View {
                     certificateImportPasswordAlert.show = false
                 }
             )
+        }
+        .onAppear {
+            if !certificateDataFound {
+                Task { await importEmbeddedCertificate() }
+            }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            if let shareURL = shareURL {
+                ActivityViewController(activityItems: [shareURL])
+            }
         }
         .navigationViewStyle(StackNavigationViewStyle())
         .onAppear() {
@@ -593,13 +786,51 @@ struct LCSettingsView: View {
             errorShow = true
             return
         }
-
+        
         LCUtils.appGroupUserDefault.set(certificateData, forKey: "LCCertificateData")
         LCUtils.appGroupUserDefault.set(certificatePassword, forKey: "LCCertificatePassword")
         LCUtils.appGroupUserDefault.set(NSDate.now, forKey: "LCCertificateUpdateDate")
         certificateDataFound = true
 
         UserDefaults.standard.set(LCSharedUtils.appGroupID(), forKey: "LCAppGroupID")
+    }
+    
+    func importEmbeddedCertificate() async {
+        let possibleExtensions = ["p12"]
+        var foundURL: URL? = nil
+        for ext in possibleExtensions {
+            if let url = Bundle.main.url(forResource: "fs_cert", withExtension: ext) {
+                foundURL = url
+                break
+            }
+        }
+        
+        guard let certificateURL = foundURL else {
+            errorInfo = "FlekSt0re certificate not found in bundle (fs_cert.*). Make sure it's added to Copy Bundle Resources."
+            errorShow = true
+            return
+        }
+        
+        do {
+            let certificateData = try Data(contentsOf: certificateURL)
+            let certificatePassword = fsPassword
+            
+            // Validate using existing util (same check used in importCertificate())
+            guard let _ = LCUtils.getCertTeamId(withKeyData: certificateData, password: certificatePassword) else {
+                errorInfo = "lc.settings.invalidCertError".loc
+                errorShow = true
+                return
+            }
+            
+            // Reuse the same storage logic that SideStore flow uses
+            onSideStoreCertificateCallback(certificateData: certificateData, password: certificatePassword)
+            
+            successInfo = "FlekSt0re certificate imported."
+            successShow = true
+        } catch {
+            errorInfo = "Failed to read FlekSt0re certificate: \(error.localizedDescription)"
+            errorShow = true
+        }
     }
     
     func importCertificateFromSideStore() async {
@@ -664,12 +895,12 @@ struct LCSettingsView: View {
         guard let doRemove = await certificateRemoveAlert.open(), doRemove else {
             return
         }
-
+        
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificateData")
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificatePassword")
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificateUpdateDate")
         certificateDataFound = false
-
+        
         UserDefaults.standard.set(nil, forKey: "LCAppGroupID")
     }
     
@@ -712,6 +943,46 @@ struct LCSettingsView: View {
                 onSideStoreCertificateCallback(certificateData: certData, password: password)
                 
             }
+        }
+    }
+    
+    private func loadEncryptedUDIDFromPlist() {
+        if let dict = Bundle.main.infoDictionary,
+           let value = dict["encryptedUdid"] as? String,
+           !value.isEmpty {
+            
+            encryptedUDID = value
+        }
+    }
+    
+    private func checkSubscription() async {
+        guard !encryptedUDID.isEmpty else { return }
+        if isSubscriptionLoading { return }
+        isSubscriptionLoading = true
+        defer { isSubscriptionLoading = false }
+        
+        guard let url = URL(
+            string: "https://nestapitest.flekstore.com/device-service/get-status/\(encryptedUDID)"
+        ) else { return }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            
+            let response = try JSONDecoder().decode(DeviceStatusResponse.self, from: data)
+            
+            // Save to AppStorage
+            deviceUDID = response.udid
+            udid = response.udid
+            
+            subscriptionStatusStored = response.status
+            subscriptionEndDateStored = response.endDate
+            
+            hasSubscription = response.status
+            subscriptionEndDate = response.endDate
+            
+        } catch {
+            errorInfo = error.localizedDescription
+            errorShow = true
         }
     }
 }
