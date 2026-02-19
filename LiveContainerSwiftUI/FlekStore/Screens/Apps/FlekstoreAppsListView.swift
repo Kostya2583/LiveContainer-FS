@@ -14,7 +14,7 @@ import Kingfisher
 
 struct FlekstoreAppsListView: View {
     @StateObject private var viewModel = FlekstoreAppsListViewModel()
-    @Binding var selectedTab: Int
+    @Binding var selectedTab: LCTabIdentifier
     
     @State private var showRepositorySheet = false
     @State private var showPremiumRequiredSheet = false
@@ -307,7 +307,7 @@ fileprivate struct CategoryButton: View {
 // MARK: - Row
 struct AppRow: View {
     let app: FSAppModel
-    @Binding var selectedTab: Int
+    @Binding var selectedTab: LCTabIdentifier
     @EnvironmentObject private var flekstoreSharedModel: FlekstoreSharedModel
     
     let isCustomRepository: Bool
@@ -348,7 +348,7 @@ struct AppRow: View {
                         print("Subscription required")
                         onPremiumRequired()
                     } else {
-                        selectedTab = 0
+                        selectedTab = .apps
                         flekstoreSharedModel.appInstallURL = app.install_url
                     }
                 }) {
@@ -369,7 +369,7 @@ struct AppRow: View {
 
 #Preview {
     FlekstoreAppsListView(
-        selectedTab: .constant(0)
+        selectedTab: .constant(.apps)
     )
     .environmentObject(FlekstoreSharedModel())
 }

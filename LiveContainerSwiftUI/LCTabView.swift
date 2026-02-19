@@ -12,8 +12,6 @@ struct LCTabView: View {
     @Binding var appDataFolderNames: [String]
     @Binding var tweakFolderNames: [String]
     
-    @State private var selectedTab: Int = 0
-    
     @State var errorShow = false
     @State var errorInfo = ""
     
@@ -43,9 +41,9 @@ struct LCTabView: View {
                             Label("lc.tabView.apps".loc, systemImage: "square.stack.3d.up.fill")
                         }
                         .tag(LCTabIdentifier.apps)
-                    FlekstoreAppsListView(selectedTab: $selectedTab)
+                    FlekstoreAppsListView(selectedTab: $sharedModel.selectedTab)
                         .tabItem {
-                            Label("Flekstore", systemImage: "globe")
+                            Label("Browse", systemImage: "globe")
                         }
                         .tag(LCTabIdentifier.browse)
                     
@@ -65,10 +63,10 @@ struct LCTabView: View {
         .task {
             setupInitialRepositoriesIfNeeded()
             if !UserDefaults.standard.bool(forKey: "DidOpenSettingsOnce") {
-                selectedTab = 3 // programmatically open Settings tab
+                sharedModel.selectedTab = .settings // programmatically open Settings tab
                 UserDefaults.standard.set(true, forKey: "DidOpenSettingsOnce")
             } else {
-                selectedTab = 0
+                sharedModel.selectedTab = .apps
             }
             closeDuplicatedWindow()
             checkLastLaunchError()
@@ -123,11 +121,6 @@ struct LCTabView: View {
         } while(false)
         
         sharedModel.deepLink = url
-    }
-    
-    // MARK: - Programmatic tab switch helper
-    func switchTab(to index: Int) {
-        selectedTab = index
     }
     
     // MARK: - Existing helper functions

@@ -190,10 +190,6 @@
 				FlekStore/Models/FSAppModel.swift,
 				FlekStore/Models/FSCategory.swift,
 				FlekStore/Models/RepoResponse.swift,
-				FlekStore/Screens/Apps/FlekstoreAppsListView.swift,
-				FlekStore/Screens/Apps/FlekstoreAppsListViewModel.swift,
-				FlekStore/Screens/Premium/PremiumRequiredView.swift,
-				FlekStore/Screens/Repositories/AppRepositoryListView.swift,
 				FlekStore/Views/RepositoryPicker.swift,
 			);
 			target = 17DCE99C2C7067EC00731D42 /* LiveContainer */;
