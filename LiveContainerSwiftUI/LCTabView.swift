@@ -211,7 +211,7 @@ struct LCTabView: View {
         
         if(bundleId != correctBundleId) {
             errorInfo = "lc.settings.bundleIdMismatch %@ %@".localizeWithFormat(bundleId, correctBundleId)
-            errorShow = true
+            //errorShow = true
         }
         UserDefaults.standard.set(true, forKey: "LCBundleIdChecked")
     }
