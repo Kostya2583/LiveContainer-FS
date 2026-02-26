@@ -955,7 +955,7 @@ struct LCSettingsView: View {
         defer { isSubscriptionLoading = false }
         
         guard let url = URL(
-            string: "https://nestapitest.flekstore.com/device-service/get-status/\(encryptedUDID)"
+            string: "https://nestapi.flekstore.com/device-service/get-status/\(encryptedUDID)"
         ) else { return }
         
         do {

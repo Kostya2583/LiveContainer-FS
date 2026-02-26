@@ -265,7 +265,7 @@ class FlekstoreAppsListViewModel: ObservableObject {
         guard !encryptedUDID.isEmpty else { return }
 
         guard let url = URL(
-            string: "https://nestapitest.flekstore.com/device-service/get-status/\(encryptedUDID)"
+            string: "https://nestapi.flekstore.com/device-service/get-status/\(encryptedUDID)"
         ) else { return }
 
         do {
