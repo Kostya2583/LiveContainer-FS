@@ -17,6 +17,9 @@ class FlekstoreAppsListViewModel: ObservableObject {
     
     @Published var hasSubscription: Bool = false
     @Published var subscriptionEndDate: String?
+    @Published var isBanned: Bool = false
+    @Published var banReason: String = "Unavailable"
+    @Published var banMessage: String = "Your access has been limited by the service."
 
     @Published var deviceDateErrorMessage: String? = nil
     
@@ -278,8 +281,30 @@ class FlekstoreAppsListViewModel: ObservableObject {
 
             hasSubscription = response.status
             subscriptionEndDate = response.endDate
+
+            isBanned = response.isBanned
+            banReason = formattedBanReason(response.banReason)
+            banMessage = formattedBanMessage(response.message)
         } catch {
             // Silent fail: keep cached subscription status.
         }
+    }
+
+    private func formattedBanReason(_ rawReason: String?) -> String {
+        let trimmed = rawReason?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !trimmed.isEmpty else { return "Unavailable" }
+
+        return trimmed
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+    }
+
+    private func formattedBanMessage(_ rawMessage: String?) -> String {
+        let trimmed = rawMessage?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !trimmed.isEmpty else {
+            return "Your access has been limited by the service."
+        }
+
+        return trimmed
     }
 }

@@ -38,8 +38,12 @@ struct FlekstoreAppsListView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                
-                if (viewModel.repository == .flekstore)
+                if viewModel.isBanned {
+                    AccessBlockedView(
+                        reason: viewModel.banReason,
+                        message: viewModel.banMessage
+                    )
+                } else if (viewModel.repository == .flekstore)
                 {
                     // Categories
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -73,7 +77,9 @@ struct FlekstoreAppsListView: View {
                 }
                 // Content
                 Group {
-                    if viewModel.apps.isEmpty && viewModel.isLoading {
+                    if viewModel.isBanned {
+                        EmptyView()
+                    } else if viewModel.apps.isEmpty && viewModel.isLoading {
                         ProgressView("Loading apps…")
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else if let error = viewModel.errorMessage {

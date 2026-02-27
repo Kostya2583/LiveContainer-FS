@@ -16,6 +16,12 @@ struct LCTabView: View {
     @State var errorInfo = ""
     
     @State var previousSelectedTab : LCTabIdentifier = .apps
+    @State private var isBlocked = false
+    @State private var hasCheckedBlockedStatus = false
+    @State private var didFailBlockedStatusCheck = false
+    @State private var blockedReason = "Unavailable"
+    @State private var blockedMessage = "Your access has been limited by the service."
+    @AppStorage("FSEncryptedUDID") private var encryptedUDID: String = ""
     
     @EnvironmentObject var sharedModel : SharedModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
@@ -26,8 +32,22 @@ struct LCTabView: View {
     
     var body: some View {
         Group {
-            let appListView = LCAppListView(appDataFolderNames: $appDataFolderNames, tweakFolderNames: $tweakFolderNames)
-            //let sourcesView = LCSourcesView()
+            if !hasCheckedBlockedStatus {
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    ProgressView()
+                        .tint(.white)
+                }
+            } else if didFailBlockedStatusCheck {
+                AccessVerificationFailedView {
+                    Task {
+                        await refreshBlockedStatus()
+                    }
+                }
+            } else if isBlocked {
+                AccessBlockedView(reason: blockedReason, message: blockedMessage)
+            } else {
+                //let sourcesView = LCSourcesView()
                 TabView(selection: $sharedModel.selectedTab) {
 //                    if DataManager.shared.model.multiLCStatus != 2 {
 //                        sourcesView
@@ -36,7 +56,7 @@ struct LCTabView: View {
 //                            }
 //                            .tag(LCTabIdentifier.sources)
 //                    }
-                    appListView
+                    LCAppListView(appDataFolderNames: $appDataFolderNames, tweakFolderNames: $tweakFolderNames)
                         .tabItem {
                             Label("lc.tabView.apps".loc, systemImage: "square.stack.3d.up.fill")
                         }
@@ -53,6 +73,7 @@ struct LCTabView: View {
                         }
                         .tag(LCTabIdentifier.settings)
                 }
+            }
         }
         .alert("lc.common.error".loc, isPresented: $errorShow) {
             Button("lc.common.ok".loc) {}
@@ -62,6 +83,12 @@ struct LCTabView: View {
         }
         .task {
             setupInitialRepositoriesIfNeeded()
+            await refreshBlockedStatus()
+
+            guard !isBlocked, !didFailBlockedStatusCheck else {
+                return
+            }
+
             if !UserDefaults.standard.bool(forKey: "DidOpenSettingsOnce") {
                 sharedModel.selectedTab = .settings // programmatically open Settings tab
                 UserDefaults.standard.set(true, forKey: "DidOpenSettingsOnce")
@@ -93,6 +120,9 @@ struct LCTabView: View {
     }
     
     func dispatchURL(url: URL) {
+        if isBlocked || didFailBlockedStatusCheck || !hasCheckedBlockedStatus {
+            return
+        }
         repeat {
             if url.isFileURL {
                 sharedModel.selectedTab = .apps
@@ -265,6 +295,73 @@ struct LCTabView: View {
         UserDefaults.standard.set(true, forKey: didSetupKey)
         
     }
+    private func refreshBlockedStatus() async {
+        guard let resolvedEncryptedUDID = resolveEncryptedUDID() else {
+            await MainActor.run {
+                didFailBlockedStatusCheck = true
+                hasCheckedBlockedStatus = true
+            }
+            return
+        }
+
+        guard let url = URL(string: "https://nestapi.flekstore.com/device-service/get-status/\(resolvedEncryptedUDID)") else {
+            await MainActor.run {
+                didFailBlockedStatusCheck = true
+                hasCheckedBlockedStatus = true
+            }
+            return
+        }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let response = try JSONDecoder().decode(DeviceStatusResponse.self, from: data)
+
+            await MainActor.run {
+                isBlocked = response.isBanned
+                blockedReason = formatBanReason(response.banReason)
+                blockedMessage = formatBanMessage(response.message)
+                didFailBlockedStatusCheck = false
+                hasCheckedBlockedStatus = true
+            }
+        } catch {
+            await MainActor.run {
+                didFailBlockedStatusCheck = true
+                hasCheckedBlockedStatus = true
+            }
+        }
+    }
+
+    private func resolveEncryptedUDID() -> String? {
+        let stored = encryptedUDID.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !stored.isEmpty {
+            return stored
+        }
+
+        if let bundleValue = Bundle.main.infoDictionary?["encryptedUdid"] as? String {
+            let trimmed = bundleValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                encryptedUDID = trimmed
+                return trimmed
+            }
+        }
+
+        return nil
+    }
+
+    private func formatBanReason(_ rawReason: String?) -> String {
+        let trimmed = rawReason?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !trimmed.isEmpty else { return "Unavailable" }
+
+        return trimmed.replacingOccurrences(of: "_", with: " ").capitalized
+    }
+
+    private func formatBanMessage(_ rawMessage: String?) -> String {
+        let trimmed = rawMessage?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !trimmed.isEmpty else { return "Your access has been limited by the service." }
+
+        return trimmed
+    }
+
     func checkPrivateContainerBookmark() {
         if sharedModel.multiLCStatus == 2 {
             return
@@ -281,3 +378,46 @@ struct LCTabView: View {
         LCUtils.appGroupUserDefault.set(bookmark, forKey: "LCLaunchExtensionPrivateDocBookmark")
     }
 }
+private struct AccessVerificationFailedView: View {
+    let onRetry: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 40, weight: .bold))
+                    .foregroundStyle(.yellow)
+
+                Text("Unable to verify access")
+                    .font(.title2.bold())
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+
+                Text("Please check your internet connection and try again.")
+                    .font(.body)
+                    .foregroundStyle(Color.white.opacity(0.85))
+                    .multilineTextAlignment(.center)
+
+                Button(action: onRetry) {
+                    Text("Retry")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.blue)
+                .padding(.top, 8)
+            }
+            .padding(24)
+            .frame(maxWidth: 420)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color.white.opacity(0.10))
+            )
+            .padding(.horizontal, 24)
+        }
+    }
+}
+
