@@ -152,6 +152,7 @@ struct LCSettingsView: View {
                         
                         if udid.isEmpty {
                             Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 Task {
                                     await checkSubscription()
                                 }
@@ -220,6 +221,7 @@ struct LCSettingsView: View {
                         Spacer()
 
                         Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             Task {
                                 if !udid.isEmpty {
                                     await checkSubscription()
