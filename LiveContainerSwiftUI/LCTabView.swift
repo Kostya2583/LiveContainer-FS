@@ -19,6 +19,7 @@ struct LCTabView: View {
     @State private var isBlocked = false
     @State private var hasCheckedBlockedStatus = false
     @State private var didFailBlockedStatusCheck = false
+    @State private var accessVerificationFailureMessage = "Please check your internet connection and try again."
     @State private var blockedReason = "Unavailable"
     @State private var blockedMessage = "Your access has been limited by the service."
     @AppStorage("FSEncryptedUDID") private var encryptedUDID: String = ""
@@ -39,7 +40,7 @@ struct LCTabView: View {
                         .tint(.white)
                 }
             } else if didFailBlockedStatusCheck {
-                AccessVerificationFailedView {
+                AccessVerificationFailedView(message: accessVerificationFailureMessage) {
                     Task {
                         await refreshBlockedStatus()
                     }
@@ -298,6 +299,7 @@ struct LCTabView: View {
     private func refreshBlockedStatus() async {
         guard let resolvedEncryptedUDID = resolveEncryptedUDID() else {
             await MainActor.run {
+                accessVerificationFailureMessage = "User UDID is empty. Please contact FlekSt0re tech support."
                 didFailBlockedStatusCheck = true
                 hasCheckedBlockedStatus = true
             }
@@ -306,6 +308,7 @@ struct LCTabView: View {
 
         guard let url = URL(string: "https://nestapi.flekstore.com/device-service/get-status/\(resolvedEncryptedUDID)") else {
             await MainActor.run {
+                accessVerificationFailureMessage = "Please check your internet connection and try again."
                 didFailBlockedStatusCheck = true
                 hasCheckedBlockedStatus = true
             }
@@ -320,11 +323,13 @@ struct LCTabView: View {
                 isBlocked = response.isBanned
                 blockedReason = formatBanReason(response.banReason)
                 blockedMessage = formatBanMessage(response.message)
+                accessVerificationFailureMessage = "Please check your internet connection and try again."
                 didFailBlockedStatusCheck = false
                 hasCheckedBlockedStatus = true
             }
         } catch {
             await MainActor.run {
+                accessVerificationFailureMessage = "Please check your internet connection and try again."
                 didFailBlockedStatusCheck = true
                 hasCheckedBlockedStatus = true
             }
@@ -379,6 +384,7 @@ struct LCTabView: View {
     }
 }
 private struct AccessVerificationFailedView: View {
+    let message: String
     let onRetry: () -> Void
 
     var body: some View {
@@ -395,7 +401,7 @@ private struct AccessVerificationFailedView: View {
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
 
-                Text("Please check your internet connection and try again.")
+                Text(message)
                     .font(.body)
                     .foregroundStyle(Color.white.opacity(0.85))
                     .multilineTextAlignment(.center)
@@ -420,4 +426,3 @@ private struct AccessVerificationFailedView: View {
         }
     }
 }
-
