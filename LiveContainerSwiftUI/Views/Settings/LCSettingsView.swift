@@ -292,31 +292,30 @@ struct LCSettingsView: View {
                         Text("lc.settings.jitLessDesc".loc)
                     }
                 }
-                if (store != .Unknown && store != .ADP) || LCUtils.isAppGroupAltStoreLike() {
-                    Section{
-                        NavigationLink {
-                            LCMultiLCManagementView()
-                        } label: {
-                            if sharedModel.multiLCStatus == 0 {
-                                Text("lc.settings.multiLC".loc)
-                            } else if sharedModel.multiLCStatus == 2 {
-                                Text("lc.settings.multiLCIsSecond".loc)
-                            }
-                            
-                        }
-                        .disabled(sharedModel.multiLCStatus == 2)
-                        
-                        if(sharedModel.multiLCStatus == 2) {
-                            NavigationLink {
-                                LCJITLessDiagnoseView()
-                            } label: {
-                                Text("lc.settings.jitlessDiagnose".loc)
-                            }
-                        }
-                    } footer: {
-                        Text("lc.settings.multiLCDesc".loc)
-                    }
-                }
+                // Multiple LiveContainers option disabled
+                // if (store != .Unknown && store != .ADP) || LCUtils.isAppGroupAltStoreLike() {
+                //     Section{
+                //         NavigationLink {
+                //             LCMultiLCManagementView()
+                //         } label: {
+                //             if sharedModel.multiLCStatus == 0 {
+                //                 Text("lc.settings.multiLC".loc)
+                //             } else if sharedModel.multiLCStatus == 2 {
+                //                 Text("lc.settings.multiLCIsSecond".loc)
+                //             }
+                //         }
+                //         .disabled(sharedModel.multiLCStatus == 2)
+                //         if(sharedModel.multiLCStatus == 2) {
+                //             NavigationLink {
+                //                 LCJITLessDiagnoseView()
+                //             } label: {
+                //                 Text("lc.settings.jitlessDiagnose".loc)
+                //             }
+                //         }
+                //     } footer: {
+                //         Text("lc.settings.multiLCDesc".loc)
+                //     }
+                // }
                 
                 if #available(iOS 16.1, *) {
                     Section {
