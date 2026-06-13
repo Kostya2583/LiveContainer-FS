@@ -59,7 +59,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     @State var webViewURL : URL = URL(string: "about:blank")!
     @StateObject private var webViewUrlInput = InputHelper()
     
-    @StateObject private var downloadHelper = DownloadHelper()
+    @EnvironmentObject var downloadHelper: DownloadHelper
     @StateObject private var installUrlInput = InputHelper()
     
     @State private var jitLog = ""
@@ -86,11 +86,10 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     @EnvironmentObject private var flekstoreSharedModel: FlekstoreSharedModel
     
     @AppStorage("LCMultitaskMode", store: LCUtils.appGroupUserDefault) var multitaskMode: MultitaskMode = .virtualWindow
-    @AppStorage("LCLaunchInMultitaskMode") var launchInMultitaskMode = false
     
     @State private var isViewAppeared = false
     
-    @ObservedObject var searchContext = SearchContext()
+    @ObservedObject var searchContext: SearchContext
     var sortedApps: [LCAppModel] {
         return sharedAppSortManager.sortedApps
     }
@@ -123,10 +122,11 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
         }
     }
     
-    init(appDataFolderNames: Binding<[String]>, tweakFolderNames: Binding<[String]>) {
+    init(appDataFolderNames: Binding<[String]>, tweakFolderNames: Binding<[String]>, searchContext: SearchContext) {
         _installOptions = State(initialValue: [])
         _appDataFolderNames = appDataFolderNames
         _tweakFolderNames = tweakFolderNames
+        self.searchContext = searchContext
     }
     
     var body: some View {
@@ -302,7 +302,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                             }
                         }
                     } label: {
-                        Label("lc.appList.sort".loc, systemImage: "line.3.horizontal.decrease.circle")
+                        Label("Sort by", systemImage: "line.3.horizontal.decrease.circle")
                     }
                 }
             }
@@ -401,7 +401,6 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 installUrlInput.close(result: nil)
             }
         )
-        .downloadAlert(helper: downloadHelper)
         .sheet(isPresented: $jitAlert.show, onDismiss: {
             jitAlert.close(result: false)
         }) {
@@ -571,9 +570,8 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 }
             }
             
-            UserDefaults.standard.setValue(urlToOpen.url!.absoluteString, forKey: "launchAppUrlScheme")
             do {
-                try await appToLaunch.runApp(multitask: launchInMultitaskMode)
+                try await appToLaunch.runApp(urlStr: urlToOpen.url!.absoluteString)
             } catch {
                 errorInfo = error.localizedDescription
                 errorShow = true
@@ -767,6 +765,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             finalNewApp.fixLocalNotification = appToReplace.appInfo.fixLocalNotification
             finalNewApp.lastLaunched = appToReplace.appInfo.lastLaunched
             finalNewApp.jitLaunchScriptJs = appToReplace.appInfo.jitLaunchScriptJs
+            finalNewApp.multitaskSpecified = appToReplace.appInfo.multitaskSpecified
             finalNewApp.autoSaveDisabled = false
             finalNewApp.save()
         } else {
@@ -990,6 +989,8 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 if !sharedModel.hiddenApps.contains(app) {
                     sharedModel.hiddenApps.append(app)
                 }
+                UserDefaults.lcShared().mutableArrayValue(forKey: "LCGuestURLSchemes")
+                    .removeObjects(in: app.appInfo.urlSchemes() as! [Any])
             } else {
                 sharedModel.hiddenApps.removeAll { now in
                     return app == now
@@ -997,6 +998,8 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 if !sharedModel.apps.contains(app) {
                     sharedModel.apps.append(app)
                 }
+                UserDefaults.lcShared().mutableArrayValue(forKey: "LCGuestURLSchemes")
+                    .addObjects(from: app.appInfo.urlSchemes() as! [Any])
             }
             
         }
@@ -1045,12 +1048,8 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             return
         }
 
-        do {            
-            if #available(iOS 16.0, *), launchInMultitaskMode {
-                try await appFound.runApp(multitask: true, containerFolderName: container, forceJIT: forceJIT)
-            } else {
-                try await appFound.runApp(multitask: false, containerFolderName: container, forceJIT: forceJIT)
-            }
+        do {
+            try await appFound.runApp(multitask: nil, containerFolderName: container, forceJIT: forceJIT)
         } catch {
             errorInfo = error.localizedDescription
             errorShow = true
@@ -1070,16 +1069,17 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
         }
     }
     
-    func jitLaunch() async {
-        await jitLaunch(withScript: "")
+    func jitLaunch(appName: String) async {
+        await jitLaunch(withScript: "", appName: appName)
     }
 
-    func jitLaunch(withScript script: String) async {
+    func jitLaunch(withScript script: String, appName: String) async {
         await MainActor.run {
             jitLog = ""
         }
         let enableJITTask = Task {
-            let _ = await LCUtils.askForJIT(withScript: script) { newMsg in
+            
+            let _ = await LCUtils.askForJIT(withScript: script, appName: appName) { newMsg in
                 Task { await MainActor.run {
                     self.jitLog += "\(newMsg)\n"
                 }}
@@ -1097,24 +1097,51 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
 
     }
     
-    func jitLaunch(withPID pid: Int, withScript script: String? = nil) async {
+    func jitLaunch(withPID pid: Int, withScript script: String? = nil, appName: String) async {
         await MainActor.run {
-            let encoded = script?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-                .map { "&script-data=\($0)" } ?? ""
-            if let url = URL(string: "stikjit://enable-jit?bundle-id=\(Bundle.main.bundleIdentifier!)&pid=\(pid)\(encoded)") {
-                if let jitEnabler = JITEnablerType(rawValue: LCUtils.appGroupUserDefault.integer(forKey: "LCJITEnablerType")), jitEnabler == .StikJITLC {
-                    if let app = sharedModel.apps.first(where: { app in
-                        return app.appInfo.urlSchemes().contains("stikjit") &&
-                        (sharedModel.multiLCStatus != 2 || app.appInfo.isShared)
-                    }) {
-                        Task { await openWebView(urlString: url.absoluteString) }
+            let encodedData = script?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+                
+            
+            if let jitEnabler = JITEnablerType(rawValue: LCUtils.appGroupUserDefault.integer(forKey: "LCJITEnablerType")) {
+                if jitEnabler == .StosDebug || jitEnabler == .StosDebugLC {
+                    let encoded = encodedData.map { "&script=\($0)" } ?? ""
+                    if jitEnabler == .StosDebugLC {
+                        if let app = sharedModel.apps.first(where: { app in
+                            return app.appInfo.urlSchemes().contains("stosdebug") &&
+                            (sharedModel.multiLCStatus != 2 || app.appInfo.isShared)
+                        }) {
+                            if var url = URL(string: "stosdebug://enableJIT?bundleId=\(Bundle.main.bundleIdentifier!)&appName=\(appName)&pid=\(pid)&relaunchApp=false& forcePID=true\(encoded)") {
+                                Task { await openWebView(urlString: url.absoluteString) }
+                            }
+                        } else {
+                            errorInfo = "StosDebug is not found. Please install it first and switch it to shared app."
+                            errorShow = true
+                            return
+                        }
                     } else {
-                        errorInfo = "StikDebug is not found. Please install it first and switch it to shared app."
-                        errorShow = true
-                        return
+                        if var url = URL(string: "stosdebug://enableJIT?bundleId=\(Bundle.main.bundleIdentifier!)&appName=\(appName)&pid=\(pid)&forcePID=true\(encoded)") {
+                            UIApplication.shared.open(url)
+                        }
                     }
-                } else {
-                    UIApplication.shared.open(url)
+                    return
+                }
+                
+                let encoded = encodedData.map { "&script-data=\($0)" } ?? ""
+                if let url = URL(string: "stikjit://enable-jit?bundle-id=\(Bundle.main.bundleIdentifier!)&pid=\(pid)\(encoded)") {
+                    if jitEnabler == .StikJITLC {
+                        if let app = sharedModel.apps.first(where: { app in
+                            return app.appInfo.urlSchemes().contains("stikjit") &&
+                            (sharedModel.multiLCStatus != 2 || app.appInfo.isShared)
+                        }) {
+                            Task { await openWebView(urlString: url.absoluteString) }
+                        } else {
+                            errorInfo = "StikDebug is not found. Please install it first and switch it to shared app."
+                            errorShow = true
+                            return
+                        }
+                    } else {
+                        UIApplication.shared.open(url)
+                    }
                 }
             }
         }

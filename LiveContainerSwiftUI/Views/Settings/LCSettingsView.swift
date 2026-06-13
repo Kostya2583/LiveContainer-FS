@@ -7,13 +7,29 @@
 
 import Foundation
 import SwiftUI
+import UserNotifications
 
-enum JITEnablerType : Int {
+enum JITEnablerType : Int, CaseIterable, Identifiable {
+    var id: Int { rawValue }
     case SideJITServer = 0
-    case StkiJIT = 1
+    case StikJIT = 1
     case JITStreamerEBLegacy = 2
     case StikJITLC = 3
     case SideStore = 4
+    case StosDebug = 5
+    case StosDebugLC = 6
+    
+    var displayName: String {
+        switch self {
+        case .StikJIT: "StikDebug"
+        case .StikJITLC: "StikDebug (Another LiveContainer)"
+        case .StosDebug: "StosDebug"
+        case .StosDebugLC: "StosDebug (Another LiveContainer)"
+        case .SideStore: "SideStore"
+        case .JITStreamerEBLegacy: "JitStreamer-EB (Relaunch)"
+        case .SideJITServer: "SideJITServer/JITStreamer 2.0"
+        }
+    }
 }
 
 struct LCSettingsView: View {
@@ -52,17 +68,6 @@ struct LCSettingsView: View {
     @AppStorage("LCDeviceUDID", store: LCUtils.appGroupUserDefault) var deviceUDID: String = ""
     @AppStorage("FSDeviceUDID") private var fsDeviceUDID: String = ""
     @AppStorage("LCJITEnablerType", store: LCUtils.appGroupUserDefault) var JITEnabler: JITEnablerType = .SideJITServer
-    
-    @AppStorage("LCMultitaskMode", store: LCUtils.appGroupUserDefault) var multitaskMode: MultitaskMode = .virtualWindow
-    @AppStorage("LCLaunchInMultitaskMode") var launchInMultitaskMode = false
-    @AppStorage("LCLaunchMultitaskMaximized") var launchMultitaskMaximized = false
-    @AppStorage("LCMultitaskBottomWindowBar", store: LCUtils.appGroupUserDefault) var bottomWindowBar = false
-    @AppStorage("LCAutoEndPiP", store: LCUtils.appGroupUserDefault) var autoEndPiP = false
-    @AppStorage("LCSkipTerminatedScreen", store: LCUtils.appGroupUserDefault) var skipTerminatedScreen = false
-    @AppStorage("LCRestartTerminatedApp", store: LCUtils.appGroupUserDefault) var restartTerminatedApp = false
-    @AppStorage("LCMaxOneAppOnStage", store: LCUtils.appGroupUserDefault) var onlyOneAppOnStage = false
-    @AppStorage("LCDockWidth", store: LCUtils.appGroupUserDefault) var dockWidth: Double = 80
-    @AppStorage("LCRedirectURLToHost", store: LCUtils.appGroupUserDefault) var redirectURLToHost = false
     
     @State var store : Store = .Unknown
     
@@ -293,7 +298,7 @@ struct LCSettingsView: View {
                             LCMultiLCManagementView()
                         } label: {
                             if sharedModel.multiLCStatus == 0 {
-                                Text("lc.settings.multiLCInstall".loc)
+                                Text("lc.settings.multiLC".loc)
                             } else if sharedModel.multiLCStatus == 2 {
                                 Text("lc.settings.multiLCIsSecond".loc)
                             }
@@ -308,12 +313,23 @@ struct LCSettingsView: View {
                                 Text("lc.settings.jitlessDiagnose".loc)
                             }
                         }
-                    } header: {
-                        Text("lc.settings.multiLC".loc)
                     } footer: {
                         Text("lc.settings.multiLCDesc".loc)
                     }
                 }
+                
+                if #available(iOS 16.1, *) {
+                    Section {
+                        NavigationLink {
+                            LCMultitaskSettingView()
+                        } label: {
+                            Text("lc.appBanner.multitask".loc)
+                        }
+                    } footer: {
+                        Text("lc.settings.multitaskDesc".loc)
+                    }
+                }
+                
                 Section {
                     if JITEnabler == .SideJITServer || JITEnabler == .JITStreamerEBLegacy {
                         HStack {
@@ -332,11 +348,9 @@ struct LCSettingsView: View {
                         }
                     }
                     Picker(selection: $JITEnabler) {
-                        Text("SideJITServer/JITStreamer 2.0").tag(JITEnablerType.SideJITServer)
-                        Text("StikDebug").tag(JITEnablerType.StkiJIT)
-                        Text("StikDebug (Another LiveContainer)").tag(JITEnablerType.StikJITLC)
-                        Text("SideStore").tag(JITEnablerType.SideStore)
-                        Text("JitStreamer-EB (Relaunch)").tag(JITEnablerType.JITStreamerEBLegacy)
+                        ForEach(JITEnablerType.allCases) { enablerType in
+                            Text(enablerType.displayName).tag(enablerType)
+                        }
                     } label: {
                         Text("lc.settings.jitEnabler".loc)
                     }
@@ -417,67 +431,6 @@ struct LCSettingsView: View {
                     }
                 }
                 
-                if #available(iOS 16.1, *) {
-                    Section {
-                        if(UIApplication.shared.supportsMultipleScenes) {
-                            Picker(selection: $multitaskMode) {
-                                Text("lc.settings.multitaskMode.virtualWindow".loc).tag(MultitaskMode.virtualWindow)
-                                Text("lc.settings.multitaskMode.nativeWindow".loc).tag(MultitaskMode.nativeWindow)
-                            } label: {
-                                Text("lc.settings.multitaskMode".loc)
-                            }
-                        }
-                        Toggle(isOn: $launchInMultitaskMode) {
-                            Text("lc.settings.autoLaunchInMultitaskMode".loc)
-                        }
-                        
-                        if multitaskMode == .virtualWindow {
-                            Toggle(isOn: $launchMultitaskMaximized) {
-                                Text("lc.settings.launchMultitaskMaximized".loc)
-                            }
-                            if launchMultitaskMaximized {
-                                Toggle(isOn: $onlyOneAppOnStage) {
-                                    Text("lc.settings.onlyOneAppOnStage".loc)
-                                }
-                            }
-                            Toggle(isOn: $autoEndPiP) {
-                                Text("lc.settings.autoEndPiP".loc)
-                            }
-                            Toggle(isOn: $skipTerminatedScreen) {
-                                Text("lc.settings.skipTerminatedScreen".loc)
-                            }
-                            if skipTerminatedScreen {
-                                Toggle(isOn: $restartTerminatedApp) {
-                                    Text("lc.settings.restartTerminatedApp".loc)
-                                }
-                            }
-                            Toggle(isOn: $bottomWindowBar) {
-                                Text("lc.settings.bottomWindowBar".loc)
-                            }
-                            Toggle(isOn: $redirectURLToHost) {
-                                Text("lc.settings.redirectURLToHost".loc)
-                            }
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack {
-                                    Text("lc.settings.dockWidth".loc)
-                                        .foregroundColor(.primary)
-                                    Spacer()
-                                    Text("\(Int(dockWidth))px")
-                                        .foregroundColor(.secondary)
-                                        .font(.caption)
-                                }
-                                Slider(value: $dockWidth, in: 60...110) {
-                                    Text("lc.settings.dockWidth".loc)
-                                }
-                                .tint(.accentColor)
-                            }
-                            .padding(.vertical, 4)
-                        }
-                    } footer: {
-                        Text("lc.settings.multitaskDesc".loc)
-                    }
-                }
-                
                 Section {
                     Toggle(isOn: $dontSignApp) {
                         Text("lc.settings.dontSign".loc)
@@ -485,8 +438,24 @@ struct LCSettingsView: View {
                 } footer: {
                     Text("lc.settings.dontSignDesc".loc)
                 }
-                
+
+
                 Section {
+                    Button {
+                        clearNotifications()
+                    } label: {
+                        Text("lc.settings.clearNotifications".loc)
+                    }
+                }
+
+                Section {
+                    if sharedModel.multiLCStatus != 2 {
+                        NavigationLink {
+                            LCStorageManagementView()
+                        } label: {
+                            Text("lc.settings.storageManagement".loc)
+                        }
+                    }
                     NavigationLink {
                         LCDataManagementView(appDataFolderNames: $appDataFolderNames)
                     } label: {
@@ -720,7 +689,18 @@ struct LCSettingsView: View {
     func openTwitter() {
         UIApplication.shared.open(URL(string: "https://twitter.com/khanhduytran0")!)
     }
-    
+
+    func clearNotifications() {
+        let notificationCenter = UNUserNotificationCenter.current()
+        notificationCenter.removeAllDeliveredNotifications()
+        notificationCenter.removeAllPendingNotificationRequests()
+        if #available(iOS 16.0, *) {
+            notificationCenter.setBadgeCount(0)
+        } else {
+            UIApplication.shared.applicationIconBadgeNumber = 0
+        }
+    }
+
     func export() {
         let fileManager = FileManager.default
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
