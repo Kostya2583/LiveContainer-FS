@@ -32,8 +32,7 @@ public final class DownloadHelper : ObservableObject {
         await withUnsafeContinuation { c in
             continuation = c
             
-            let bgConfig = URLSessionConfiguration.background(withIdentifier: "com.livecontainer.download.\(UUID().uuidString)")
-            let session = URLSession(configuration: bgConfig, delegate: DownloadDelegate(progressCallback: { progress, downloaded, total in
+            let session = URLSession(configuration: .default, delegate: DownloadDelegate(progressCallback: { progress, downloaded, total in
                 Task{ await MainActor.run {
                     self.downloadProgress = progress
                     self.downloadedSize = downloaded
@@ -50,7 +49,6 @@ public final class DownloadHelper : ObservableObject {
                 if let tempFileURL {
                     do {
                         let fm = FileManager.default
-                        print(to)
                         try fm.moveItem(at: tempFileURL, to: to)
                     } catch {
                         ansError = error
@@ -169,24 +167,19 @@ class DownloadDelegate: NSObject, URLSessionDownloadDelegate {
         if let httpResponse = downloadTask.response as? HTTPURLResponse {
             let statusCode = httpResponse.statusCode
 
-            // Check if the status code is in the 2xx range
             if (200...299).contains(statusCode) {
                 completeCallback(location, nil)
             } else {
-                completeCallback(location, NSError(domain: "", code: statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP Error: \(statusCode)"]))
+                completeCallback(nil, NSError(domain: "", code: statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP Error: \(statusCode)"]))
             }
         } else {
-            completeCallback(location, NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"]))
+            completeCallback(nil, NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"]))
         }
-        
-
     }
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error {
             completeCallback(nil, error)
-        } else {
-
         }
     }
 }
