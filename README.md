@@ -99,4 +99,4 @@ FlekDeck is developed and maintained by [FlekStore](https://flekstore.com).
 
 FlekDeck is based on the open-source [LiveContainer project](https://github.com/LiveContainer/LiveContainer). We are grateful to the LiveContainer maintainers and contributors whose work made FlekDeck possible.
 
-LiveContainer is licensed under the [GNU Affero General Public License v3.0](https://github.com/LiveContainer/LiveContainer/blob/main/LICENSE).
+FlekDeck is distributed under the same license as the original LiveContainer: the [GNU Affero General Public License v3.0](https://github.com/LiveContainer/LiveContainer/blob/main/LICENSE).
