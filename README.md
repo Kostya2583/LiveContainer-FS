@@ -5,6 +5,7 @@
 <div align="center">
   <h1>FlekDeck</h1>
   <p><strong>Your apps. Your space. A whole new way to use iOS.</strong></p>
+  <p>Developed by <a href="https://flekstore.com">FlekStore</a></p>
 </div>
 
 FlekDeck is a powerful app environment designed to feel like a second operating system inside iOS.
@@ -94,7 +95,8 @@ Apps running inside a container may not be isolated from one another in the same
 
 ## Credits
 
+FlekDeck is developed and maintained by [FlekStore](https://flekstore.com).
+
 FlekDeck is based on the open-source [LiveContainer project](https://github.com/LiveContainer/LiveContainer). We are grateful to the LiveContainer maintainers and contributors whose work made FlekDeck possible.
 
 LiveContainer is licensed under the [GNU Affero General Public License v3.0](https://github.com/LiveContainer/LiveContainer/blob/main/LICENSE).
-
