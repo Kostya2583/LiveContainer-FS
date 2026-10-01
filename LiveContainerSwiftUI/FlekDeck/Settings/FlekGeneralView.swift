@@ -16,6 +16,12 @@
 //  with a stronger warning while it still works. On a build whose Info.plist
 //  carries a FlekSt0re device ID, it only shows whether it works.
 //
+//  A build without a FlekSt0re device ID also gets a Premium Access card, since
+//  Premium is linked to the device's UDID, which such a build cannot know by
+//  itself. The card opens the page that downloads a profile reporting it,
+//  FlekUDIDProfile, and walks through installing that in FlekUDIDProfileView.
+//  It goes once the UDID is in.
+//
 
 import SwiftUI
 
@@ -33,12 +39,26 @@ struct FlekGeneralView<JITPage: View>: View {
     /// The imported certificate as the card shows it; nil while none is.
     @State private var certificate: FlekImportedCertificate?
     @State private var removalConfirmationShown = false
+    @State private var premiumAlert: FlekPremiumAlert?
+    @State private var udidProfileGuideShown = false
+    /// The UDID the profile has just reported, while the page says so.
+    @State private var importedUDID: String?
+
+    /// This device's UDID, once FlekDeck knows it: from FlekSt0re, typed in for
+    /// JIT, or reported by the UDID profile.
+    @AppStorage("LCDeviceUDID", store: LCUtils.appGroupUserDefault) private var deviceUDID: String = ""
 
     /// Whether the Info.plist carries a FlekSt0re device ID, as the builds
     /// FlekSt0re signs do. Their certificate is one bought through FlekSt0re:
     /// the card says only whether it works, naming no holder, and it stays.
     private var isFlekStoreBuild: Bool {
         Bundle.main.flekStoreDeviceID != nil
+    }
+
+    /// Whether to show the Premium card: on a build FlekSt0re did not sign,
+    /// until the device's UDID is known.
+    private var needsDeviceUDID: Bool {
+        !isFlekStoreBuild && !deviceUDID.trimmingCharacters(in: .whitespacesAndNewlines).isDeviceUDID
     }
 
     /// Whether the card offers to remove the certificate.
@@ -61,6 +81,9 @@ struct FlekGeneralView<JITPage: View>: View {
                     setupCard
                 }
                 certificateCard
+                if needsDeviceUDID {
+                    premiumCard
+                }
                 NavigationLink {
                     jitPage()
                 } label: {
@@ -83,6 +106,27 @@ struct FlekGeneralView<JITPage: View>: View {
             .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 32)
+            // On the page rather than the Premium card, which goes as the UDID
+            // comes in.
+            .alert(
+                "lc.flek.udidProfile.importedTitle".loc,
+                isPresented: Binding(get: { importedUDID != nil }, set: { if !$0 { importedUDID = nil } }),
+                presenting: importedUDID
+            ) { udid in
+                Button("lc.common.copy".loc) {
+                    UIPasteboard.general.string = udid
+                }
+                Button("lc.common.ok".loc, role: .cancel) {}
+            } message: { udid in
+                Text(String(format: "lc.flek.udidProfile.importedMessage".loc, udid))
+            }
+        }
+        .onReceive(FlekUDIDProfile.udidReceived) { udid in
+            udidProfileGuideShown = false
+            // Once the sheet has gone, which the alert would otherwise race.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                importedUDID = udid
+            }
         }
         .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
         .sheet(isPresented: $unavailableExplanationShown) {
@@ -301,6 +345,64 @@ struct FlekGeneralView<JITPage: View>: View {
         return message
     }
 
+    /// Premium is linked to the device's UDID, which a build FlekSt0re did not
+    /// sign cannot know by itself. The card asks first, then opens the page that
+    /// downloads the UDID profile in Safari inside FlekDeck and shows the steps;
+    /// the card goes once the UDID comes back, taking the sheet with it. Its alerts
+    /// and sheet hang from the card rather than the page, which already has
+    /// one of each.
+    private var premiumCard: some View {
+        Button {
+            premiumAlert = .prompt
+        } label: {
+            FlekSetupOption(
+                icon: .asset("premiumLogo"),
+                title: "lc.flek.premium.title".loc,
+                subtitle: "lc.flek.premium.desc".loc,
+                showsChevron: true
+            ) {
+                FlekSetupPoints(points: ["lc.flek.premium.point1".loc])
+            }
+        }
+        .buttonStyle(FlekCardPressStyle())
+        .alert(
+            premiumAlert?.title ?? "",
+            isPresented: Binding(get: { premiumAlert != nil }, set: { if !$0 { premiumAlert = nil } }),
+            presenting: premiumAlert
+        ) { alert in
+            switch alert {
+            case .prompt:
+                Button("lc.flek.premium.installProfile".loc) {
+                    installProfile()
+                }
+                .keyboardShortcut(.defaultAction)
+                Button("lc.common.cancel".loc, role: .cancel) {}
+            case .failed:
+                Button("lc.common.ok".loc, role: .cancel) {}
+            }
+        } message: { alert in
+            Text(alert.message)
+        }
+        .sheet(isPresented: $udidProfileGuideShown) {
+            FlekUDIDProfileView()
+        }
+    }
+
+    /// Opens the page that downloads the UDID profile in Safari inside FlekDeck,
+    /// and once that is closed shows the steps that are left, in Settings.
+    private func installProfile() {
+        guard let page = FlekUDIDProfile.pageURL else {
+            // After the prompt this follows has gone.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                premiumAlert = .failed
+            }
+            return
+        }
+        FlekInAppSafari.open(page) {
+            udidProfileGuideShown = true
+        }
+    }
+
     /// Takes the place of the certificate's points when this FlekDeck cannot
     /// use a certificate: what is wrong, and a way to find out why.
     private var unavailableTray: some View {
@@ -436,6 +538,28 @@ private struct FlekImportedCertificate {
     private static func holderName(_ commonName: String) -> String {
         guard let separator = commonName.range(of: ": ") else { return commonName }
         return String(commonName[separator.upperBound...])
+    }
+}
+
+/// What the Premium card asks, or reports.
+private enum FlekPremiumAlert {
+    /// Whether to install the UDID profile.
+    case prompt
+    /// That there is no page to open.
+    case failed
+
+    var title: String {
+        switch self {
+        case .prompt: return "lc.flek.premium.promptTitle".loc
+        case .failed: return "lc.flek.udidProfile.failedTitle".loc
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .prompt: return "lc.flek.premium.promptMessage".loc
+        case .failed: return "lc.flek.udidProfile.failedMessage".loc
+        }
     }
 }
 

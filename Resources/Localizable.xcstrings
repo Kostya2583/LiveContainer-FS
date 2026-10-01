@@ -16989,6 +16989,72 @@
         }
       }
     },
+    "lc.flek.premium.desc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get more from FlekDeck with advanced features and services."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.installProfile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install Profile"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.point1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock all Trainer features available in FlekSt0re-modified apps"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.promptMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium Access is linked to your device’s UDID.\nTo import your UDID into FlekDeck, you need to install a special configuration profile."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.promptTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get Premium Access"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium Access"
+          }
+        }
+      }
+    },
     "lc.flek.retry" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17216,6 +17282,204 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Multitask Haptics"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.failedMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The UDID profile isn’t available right now. Please try again later."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.failedTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile unavailable"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.importedMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your device’s UDID is now in FlekDeck:\n\n%@\n\nYou’ll also find it at the top of Settings."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.importedTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UDID imported"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.intro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To automatically get your device UDID, install a temporary configuration profile. It’s safe and only used to retrieve your UDID."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.securityDelay.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If **Stolen Device Protection** is on and your iPhone is away from a familiar location such as home or work, iOS may ask you to wait up to an hour before installing the profile. When the delay ends, open **Premium Access** in FlekDeck again to download a new profile, and install it within the hour."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.securityDelay.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Security Delay"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step1.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When iOS asks for permission to download a configuration profile, tap **Allow**."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step1.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap “Allow”"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step2.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the **Settings** app and tap **Profile Downloaded** near the top of the screen.\n\nIf you don’t see it, go to:\n**Settings → General → VPN & Device Management**"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step2.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step3.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the **FlekDeck UDID Profile** and tap Install in the top-right corner."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step3.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install the profile"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step4.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter your device passcode if requested, then tap **Install** again to confirm."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step4.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm installation"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step5.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After installation, your UDID will be detected and imported into FlekDeck automatically."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step5.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Return to FlekDeck"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install Profile to Get UDID"
           }
         }
       }

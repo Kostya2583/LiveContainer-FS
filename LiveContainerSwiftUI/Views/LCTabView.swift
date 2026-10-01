@@ -167,6 +167,11 @@ struct LCTabView: View {
                 sharedModel.selectedTab = .apps
             case "certificate":
                 sharedModel.selectedTab = .settings
+            case "udid":
+                // The UDID profile's way back: the server that took the device's
+                // answer redirects here with the UDID.
+                FlekUDIDProfile.importUDID(from: url)
+                return
             case "source":
                 sharedModel.selectedTab = .sources
             default:
@@ -367,7 +372,7 @@ struct LCTabView: View {
 
         // Without a FlekSt0re device ID there is nothing to ask the server about:
         // the build was not signed by FlekSt0re for this device. It opens as it
-        // is, and Settings leaves out the UDID and Premium rows, which need one.
+        // is, and Settings leaves out the Premium row, which needs one.
         guard let resolvedEncryptedUDID = resolveEncryptedUDID() else {
             await MainActor.run {
                 applyAccessGranted()

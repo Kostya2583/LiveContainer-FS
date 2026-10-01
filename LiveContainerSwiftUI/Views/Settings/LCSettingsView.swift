@@ -79,6 +79,7 @@ struct LCSettingsView: View {
     
     @AppStorage("LCSideJITServerAddress", store: LCUtils.appGroupUserDefault) var sideJITServerAddress : String = ""
     @AppStorage("LCDeviceUDID", store: LCUtils.appGroupUserDefault) var deviceUDID: String = ""
+    @AppStorage(FlekUDIDProfile.pageAddressKey) private var udidProfilePageAddress = ""
     @AppStorage("FSDeviceUDID") private var fsDeviceUDID: String = ""
     @AppStorage("LCJITEnablerType", store: LCUtils.appGroupUserDefault) var JITEnabler: JITEnablerType = .SideJITServer
     
@@ -112,6 +113,12 @@ struct LCSettingsView: View {
     /// rows have nothing to show there.
     private var hasFlekStoreDeviceID: Bool {
         !encryptedUDID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Whether the UDID row has a UDID to show. A build FlekSt0re did not sign
+    /// learns it from the UDID profile on General, or from the JIT settings.
+    private var showsUDIDRow: Bool {
+        hasFlekStoreDeviceID || deviceUDID.trimmingCharacters(in: .whitespacesAndNewlines).isDeviceUDID
     }
 
     // Written from inside LiveProcess by LCHostIdentityInit. The extension has no
@@ -408,7 +415,7 @@ struct LCSettingsView: View {
                         }
                     }
                     .padding(.vertical, 6)
-                    .shown(if: hasFlekStoreDeviceID)
+                    .shown(if: showsUDIDRow)
 
                     // Developer-only. This is a diagnostic — it exists to compare what the
                     // guest's identity check actually saw against what the app holds — and it
@@ -578,7 +585,7 @@ struct LCSettingsView: View {
                     .padding(.vertical, 6)
                     .shown(if: hasFlekStoreDeviceID)
                 }
-                .shown(if: hasFlekStoreDeviceID || sharedModel.developerMode)
+                .shown(if: showsUDIDRow || sharedModel.developerMode)
                 // MARK: - Categories
                 Section {
                     // Where the certificate is imported. It carries the red mark
@@ -740,6 +747,17 @@ struct LCSettingsView: View {
                         }
                         Toggle(isOn: $disableLiveProcessWatchdog) {
                             Text("Disable LiveProcess watchdog termination")
+                        }
+                        // The page Premium Access opens to get the UDID, for
+                        // trying a server out. HTTPS only; empty means FlekSt0re's.
+                        HStack {
+                            Text("UDID Profile Page")
+                            Spacer()
+                            TextField("https://", text: $udidProfilePageAddress)
+                                .multilineTextAlignment(.trailing)
+                                .keyboardType(.URL)
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.never)
                         }
                         Button {
                             exportDyld()

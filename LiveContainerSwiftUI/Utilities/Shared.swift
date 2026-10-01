@@ -226,6 +226,15 @@ extension Bundle {
     }
 }
 
+extension String {
+    /// Whether this is shaped like an iOS device's UDID: eight hex digits, a
+    /// hyphen and sixteen more on devices since the iPhone XS, forty hex
+    /// digits on older ones. What is left in a half-cleared field is not.
+    var isDeviceUDID: Bool {
+        range(of: "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{16}|[0-9A-Fa-f]{40})$", options: .regularExpression) != nil
+    }
+}
+
 class DataManager {
     static let shared = DataManager()
     let model = SharedModel()
