@@ -124,6 +124,23 @@ class SharedModel: ObservableObject {
     // 2 = current liveContainer is not the primary one
     @Published var multiLCStatus = 0
     @Published var isJITModalOpen = false
+
+    /// Whether a signing certificate is stored, whichever way it came: taken
+    /// from the app bundle at launch, picked in Files, or handed back by
+    /// SideStore or a flekdeck://certificate link. It follows the stored
+    /// password itself rather than each of those reporting in, so a new way
+    /// of importing one cannot forget to.
+    @Published private(set) var isCertificateImported = LCSharedUtils.certificatePassword() != nil
+
+    /// Whether this copy of FlekDeck should be asking for a certificate. One
+    /// that is not the primary signs with the primary's and has no way to
+    /// import its own, so it has nothing to ask for.
+    var needsCertificate: Bool {
+        multiLCStatus != 2 && !isCertificateImported
+    }
+
+    private var certificateObservation: NSKeyValueObservation?
+    private var foregroundObserver: NSObjectProtocol?
     
     @Published var enableMultipleWindow = false
 
@@ -163,8 +180,39 @@ class SharedModel: ObservableObject {
         }
     }
     
+    /// Re-reads whether a certificate is stored, publishing only a change.
+    func refreshCertificateStatus() {
+        let imported = LCSharedUtils.certificatePassword() != nil
+        if imported != isCertificateImported {
+            isCertificateImported = imported
+        }
+    }
+
     init() {
         updateMultiLCStatus()
+        // Every import and removal writes the password through this defaults
+        // object, so watching it catches each one as it happens. Published on
+        // the next turn of the main queue: a write can come from inside a view
+        // update, where publishing is not allowed.
+        certificateObservation = LCUtils.appGroupUserDefault.observe(\.LCCertificatePassword) { [weak self] _, _ in
+            DispatchQueue.main.async { self?.refreshCertificateStatus() }
+        }
+        // Another FlekDeck sharing the app group can import or remove one
+        // while this one is in the background.
+        foregroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.refreshCertificateStatus()
+        }
+    }
+}
+
+extension UserDefaults {
+    /// The stored certificate password, declared only so that it can be
+    /// observed: key-value observing reaches a defaults key through a
+    /// property of exactly the key's name.
+    @objc dynamic var LCCertificatePassword: String? {
+        string(forKey: "LCCertificatePassword")
     }
 }
 

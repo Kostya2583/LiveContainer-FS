@@ -57,6 +57,19 @@ final class LCSpringboardIconCell: UICollectionViewCell {
         return iv
     }()
 
+    /// The red count on the icon's corner, as an iOS home screen badges an app:
+    /// Settings shows 1 while no certificate is imported. A label rather than
+    /// an image, so a count of two digits widens into a capsule.
+    private let notificationBadge: UILabel = {
+        let label = UILabel()
+        label.backgroundColor = .systemRed
+        label.textColor = .white
+        label.textAlignment = .center
+        label.clipsToBounds = true
+        label.isHidden = true
+        return label
+    }()
+
     /// Dimming overlay for `.installing` state (covers icon).
     private let installOverlay: UIView = {
         let v = UIView()
@@ -209,6 +222,11 @@ final class LCSpringboardIconCell: UICollectionViewCell {
         .systemFont(ofSize: (cellWidth * labelFontFraction).rounded(), weight: .medium)
     }
 
+    /// The notification badge's height as a share of the icon's side, so it
+    /// grows with the icon, and its figure's size as a share of that height.
+    private static let badgeHeightFraction: CGFloat = 24.0 / 66.0
+    private static let badgeFontFraction: CGFloat = 16.0 / 24.0
+
     private static let deleteButtonSize: CGFloat = 24
     private static let cardCorner: CGFloat = 24
 
@@ -240,6 +258,7 @@ final class LCSpringboardIconCell: UICollectionViewCell {
         contentView.addSubview(iconImageView)
         contentView.addSubview(nameLabel)
         contentView.addSubview(singleBadge)
+        contentView.addSubview(notificationBadge)
         contentView.addSubview(deleteButton)
 
         // Install overlay on top of icon
@@ -378,6 +397,22 @@ final class LCSpringboardIconCell: UICollectionViewCell {
             height: badgeSize
         )
 
+        // Notification badge: hung off the icon's top-right corner the way iOS
+        // hangs one, mostly over the icon. A count wider than a circle grows
+        // it to the left, so its right edge stays put.
+        let countHeight = (iconS * Self.badgeHeightFraction).rounded()
+        notificationBadge.font = .systemFont(ofSize: (countHeight * Self.badgeFontFraction).rounded())
+        let countWidth = max(countHeight,
+                             ceil(notificationBadge.intrinsicContentSize.width) + countHeight / 2)
+        let overhang = (countHeight * 0.4).rounded()
+        notificationBadge.frame = CGRect(
+            x: iconX + iconS + overhang - countWidth,
+            y: contentY - overhang,
+            width: countWidth,
+            height: countHeight
+        )
+        notificationBadge.layer.cornerRadius = countHeight / 2
+
         let dbSize = Self.deleteButtonSize
         deleteButton.frame = CGRect(
             x: -(dbSize / 3),
@@ -459,6 +494,7 @@ final class LCSpringboardIconCell: UICollectionViewCell {
         deleteButton.isHidden = true
         deleteButton.alpha = 0
         singleBadge.isHidden = true
+        setNotificationCount(0)
         installOverlay.isHidden = true
         spinnerRingView.isHidden = true
         stopSpinnerAnimation()
@@ -494,6 +530,9 @@ final class LCSpringboardIconCell: UICollectionViewCell {
 
     func configure(with item: FlekHomeItem, darkMode: Bool) {
         configuredItem = item
+        // Only a built-in app carries a count. Worked out for every item, as a
+        // cell refreshed in place for another item must not keep the last one's.
+        var notificationCount = 0
         switch item {
         case .defaultApp(let kind):
             iconImageView.image = Self.roundedImage(UIImage(named: kind.iconAssetName),
@@ -501,6 +540,7 @@ final class LCSpringboardIconCell: UICollectionViewCell {
                                                     radius: Self.iconCornerRadius,
                                                     cacheKey: "builtin:\(kind.iconAssetName)")
             setName(kind.title, shared: false)
+            notificationCount = kind.badgeCount(in: DataManager.shared.model)
             isPlaceholderCell = false
 
         case .installed(let app):
@@ -524,6 +564,15 @@ final class LCSpringboardIconCell: UICollectionViewCell {
             isUserInteractionEnabled = false
             isPlaceholderCell = true
         }
+        setNotificationCount(notificationCount)
+    }
+
+    /// Shows `count` in the notification badge, or no badge at all for 0.
+    private func setNotificationCount(_ count: Int) {
+        notificationBadge.text = count > 0 ? "\(count)" : nil
+        notificationBadge.isHidden = count <= 0
+        // The badge's width follows its figure.
+        setNeedsLayout()
     }
 
     /// Sets the title, prefixed with the shared mark when the app's data lives
@@ -793,13 +842,20 @@ final class LCSpringboardIconCell: UICollectionViewCell {
             container.addSubview(snap)
         }
 
-        // 3. Name label
+        // 3. Notification badge, over the icon's corner
+        if !notificationBadge.isHidden,
+           let snap = notificationBadge.snapshotView(afterScreenUpdates: true) {
+            snap.frame = notificationBadge.frame
+            container.addSubview(snap)
+        }
+
+        // 4. Name label
         if let snap = nameLabel.snapshotView(afterScreenUpdates: true) {
             snap.frame = nameLabel.frame
             container.addSubview(snap)
         }
 
-        // 4. Delete button — capture with identity transform, then restore
+        // 5. Delete button — capture with identity transform, then restore
         let originalTransform = deleteButton.transform
         deleteButton.transform = .identity
         if let snap = deleteButton.snapshotView(afterScreenUpdates: true) {
