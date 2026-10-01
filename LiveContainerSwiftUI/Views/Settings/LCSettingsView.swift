@@ -106,6 +106,14 @@ struct LCSettingsView: View {
     @AppStorage("FSSubscriptionInitialized")
     private var subscriptionInitialized: Bool = false
 
+    /// Whether this copy has a FlekSt0re device ID, which FlekSt0re's signer
+    /// writes into the builds it signs. The UDID and Premium rows are looked up
+    /// by it, and a build without one opens without the access check, so those
+    /// rows have nothing to show there.
+    private var hasFlekStoreDeviceID: Bool {
+        !encryptedUDID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     // Written from inside LiveProcess by LCHostIdentityInit. The extension has no
     // UI of its own and cannot be attached to on someone else's device, so the app
     // group is the only way to see whether the identifier reached a parallel guest.
@@ -351,6 +359,9 @@ struct LCSettingsView: View {
     var body: some View {
         NavigationView {
             Form {
+                // FlekSt0re's rows, the UDID and the Premium subscription, with
+                // the developer diagnostics between them. Without FlekSt0re's
+                // rows the section stays only while those diagnostics show.
                 Section {
                     HStack(spacing: 12) {
                         Image(systemName: "wallet.pass.fill")
@@ -397,6 +408,7 @@ struct LCSettingsView: View {
                         }
                     }
                     .padding(.vertical, 6)
+                    .shown(if: hasFlekStoreDeviceID)
 
                     // Developer-only. This is a diagnostic — it exists to compare what the
                     // guest's identity check actually saw against what the app holds — and it
@@ -564,7 +576,9 @@ struct LCSettingsView: View {
                         .disabled(isSubscriptionLoading)
                     }
                     .padding(.vertical, 6)
+                    .shown(if: hasFlekStoreDeviceID)
                 }
+                .shown(if: hasFlekStoreDeviceID || sharedModel.developerMode)
                 // MARK: - Categories
                 Section {
                     // Where the certificate is imported. It carries the red mark

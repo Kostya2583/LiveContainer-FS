@@ -365,11 +365,12 @@ struct LCTabView: View {
         return
         #endif
 
+        // Without a FlekSt0re device ID there is nothing to ask the server about:
+        // the build was not signed by FlekSt0re for this device. It opens as it
+        // is, and Settings leaves out the UDID and Premium rows, which need one.
         guard let resolvedEncryptedUDID = resolveEncryptedUDID() else {
             await MainActor.run {
-                accessVerificationFailureMessage = "User UDID is empty. Please contact FlekSt0re tech support."
-                didFailBlockedStatusCheck = true
-                hasCheckedBlockedStatus = true
+                applyAccessGranted()
             }
             return
         }
