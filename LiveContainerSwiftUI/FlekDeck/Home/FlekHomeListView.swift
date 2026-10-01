@@ -118,6 +118,7 @@ struct FlekHomeListView<Menu: View>: View {
             isNew: newDot(for: item),
             isShared: sharedMark(for: item),
             showsSingleBadge: singleBadge(for: item),
+            showsJITBadge: jitBadge(for: item),
             notificationCount: notificationCount(for: item),
             isEditing: isEditing,
             editBadge: item.editBadge,
@@ -178,6 +179,7 @@ struct FlekHomeListView<Menu: View>: View {
             isNew: newDot(for: item),
             isShared: sharedMark(for: item),
             showsSingleBadge: singleBadge(for: item),
+            showsJITBadge: jitBadge(for: item),
             notificationCount: notificationCount(for: item),
             isEditing: true,
             editBadge: item.editBadge,
@@ -204,6 +206,11 @@ struct FlekHomeListView<Menu: View>: View {
 
     private func singleBadge(for item: FlekHomeItem) -> Bool {
         if case .installed(let app) = item { return showsSingleBadge(app) }
+        return false
+    }
+
+    private func jitBadge(for item: FlekHomeItem) -> Bool {
+        if case .installed(let app) = item { return app.uiIsJITNeeded }
         return false
     }
 
@@ -259,6 +266,8 @@ struct FlekAppRow<Icon: View>: View {
     var isNew: Bool = false
     var isShared: Bool = false
     var showsSingleBadge: Bool = false
+    /// The app is set to launch with JIT.
+    var showsJITBadge: Bool = false
     /// The red count on the icon's corner; 0 draws none.
     var notificationCount: Int = 0
     var isEditing: Bool = false
@@ -325,13 +334,20 @@ struct FlekAppRow<Icon: View>: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.tertiary)
                     .transition(.opacity)
-            } else if showsSingleBadge {
-                // Same indicator as the grid cell (app launches in single mode),
-                // sitting where the Run pill used to.
-                Image(systemName: "app.dashed")
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundStyle(.secondary)
-                    .transition(.opacity)
+            } else if showsSingleBadge || showsJITBadge {
+                // Same indicators as the grid cell (app launches with JIT, in
+                // single mode), sitting where the Run pill used to.
+                HStack(spacing: 6) {
+                    if showsJITBadge {
+                        Image(systemName: FlekSymbol.jit)
+                    }
+                    if showsSingleBadge {
+                        Image(systemName: "app.dashed")
+                    }
+                }
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(.secondary)
+                .transition(.opacity)
             }
         }
         .padding(.leading, 8)

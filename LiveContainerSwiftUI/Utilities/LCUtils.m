@@ -22,7 +22,6 @@
 
 // Implemented in StikJITHeadless.framework, which is loaded on demand.
 @interface StikJITPreflight : NSObject
-+ (NSNumber *)isTXMPresent;
 + (NSError *)prepareDeviceWithPairingFile:(NSURL *)pairingFile ddiPath:(NSURL *)ddiPath timeout:(NSTimeInterval)timeout progress:(void (^)(NSInteger stage, double fraction))progress;
 + (NSError *)resetCachedDDIAt:(NSURL *)ddiPath;
 @end
@@ -250,10 +249,6 @@
 
 + (BOOL)isBuiltInJITLoadable {
     return self.builtInJITPreflightClass != nil;
-}
-
-+ (NSNumber *)isTXMPresentForBuiltInJIT {
-    return [self.builtInJITPreflightClass isTXMPresent];
 }
 
 + (NSError *)builtInJITUnavailableError {

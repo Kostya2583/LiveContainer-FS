@@ -2,14 +2,15 @@
 //  FlekBuiltInJITSection.swift
 //  LiveContainerSwiftUI
 //
-//  The section the JIT page shows while built-in JIT is the selected enabler:
-//  the pairing file it connects with, and a check of the rest of what it needs.
+//  What the JIT page shows while built-in JIT is the selected enabler: its
+//  setup, as three steps that each tick off once done — the pairing file it
+//  connects with, the VPN it connects through, and a check that the two work.
 //
 //  Built-in JIT is StikJIT run by FlekDeck itself. A guest that needs JIT
 //  starts a second LiveProcess, which reaches the device's own debug service
-//  through LocalDevVPN and attaches to the guest — see enableJITWithStikJIT in
+//  through a VPN and attaches to the guest — see enableJITWithStikJIT in
 //  LCBootstrap. That happens at launch with nothing on screen, so whatever can
-//  be found out ahead of it is found out here.
+//  be set up or found out ahead of it is here.
 //
 
 import SwiftUI
@@ -20,8 +21,7 @@ struct FlekBuiltInJITSection: View {
         case unchecked
         /// With the step under way, as shown.
         case checking(String)
-        /// With whether the device has TXM, nil where that cannot be told.
-        case ready(txm: Bool?)
+        case ready
         case failed(String)
     }
 
@@ -29,67 +29,51 @@ struct FlekBuiltInJITSection: View {
     /// image, and two of those at once would mount it twice.
     private static let checkQueue = DispatchQueue(label: "com.fs.flekdeck.builtInJIT.check")
 
+    private static let localDevVPNURL = URL(string: "https://apps.apple.com/app/localdevvpn/id6755608044")!
+
+    @ObservedObject private var vpn = FlekLoopbackVPN.shared
+
     @State private var pairingFileFound = (try? LCPath.pairingFilePath.checkResourceIsReachable()) ?? false
     @State private var isChoosingPairingFile = false
     @State private var readiness = Readiness.unchecked
+    /// Setting the VPN up or turning it on, which takes a moment.
+    @State private var isVPNBusy = false
     @State private var notice = ""
     @State private var noticeShow = false
 
-    /// Why built-in JIT cannot work in this copy of FlekDeck whatever the user
-    /// sets up, or nil. Read once: none of it changes while the app runs.
-    private static let blocker = findBlocker()
-
     var body: some View {
         Section {
-            if let blocker = Self.blocker {
+            if let blocker = FlekBuiltInJIT.blocker {
                 Text(blocker)
                     .foregroundStyle(.red)
             }
-            HStack {
-                Text("lc.flek.jit.pairingFile".loc)
-                Spacer()
-                Text((pairingFileFound ? "lc.flek.jit.pairingFile.imported" : "lc.flek.jit.pairingFile.missing").loc)
-                    .foregroundStyle(.secondary)
-            }
-            // On the one row that is always here: a modifier on the section
-            // would be applied to every row, and so present once per row.
-            .alert("lc.flek.jit.header".loc, isPresented: $noticeShow) {
-                Button("lc.common.ok".loc) {}
-            } message: {
-                Text(notice)
-            }
-            Button((pairingFileFound ? "lc.flek.jit.pairingFile.replace" : "lc.flek.jit.pairingFile.import").loc) {
-                isChoosingPairingFile = true
-            }
-            .betterFileImporter(isPresented: $isChoosingPairingFile, types: Self.pairingFileTypes, multiple: false) { urls in
-                importPairingFile(from: urls[0])
-            } onDismiss: {
-                isChoosingPairingFile = false
-            }
-            if pairingFileFound {
-                Button("lc.flek.jit.pairingFile.remove".loc, role: .destructive) {
-                    try? FileManager.default.removeItem(at: LCPath.pairingFilePath)
-                    pairingFileFound = false
-                    readiness = .unchecked
+            pairingStep
+            vpnStep
+            readinessStep
+            if readiness == .ready {
+                // Being ready enables JIT for no app yet, which is the one
+                // thing the steps above do not say.
+                Label {
+                    Text("lc.flek.jit.perApp".loc)
+                        .font(.footnote)
+                } icon: {
+                    Image(systemName: FlekSymbol.jit)
+                        .foregroundStyle(.secondary)
                 }
             }
-            if Self.blocker == nil {
-                Button {
-                    checkReadiness()
-                } label: {
-                    HStack {
-                        Text("lc.flek.jit.check".loc)
-                        Spacer()
-                        if isChecking {
-                            ProgressView()
-                        }
+            DisclosureGroup("lc.flek.jit.more".loc) {
+                if pairingFileFound {
+                    Button("lc.flek.jit.pairingFile.remove".loc, role: .destructive) {
+                        try? FileManager.default.removeItem(at: LCPath.pairingFilePath)
+                        pairingFileFound = false
+                        readiness = .unchecked
                     }
                 }
-                .disabled(isChecking)
-                if let readinessText {
-                    Text(readinessText)
-                        .font(.footnote)
-                        .foregroundStyle(readinessColor)
+                if vpn.isConfigured {
+                    Button("lc.flek.jit.vpn.remove".loc, role: .destructive) {
+                        runVPN { try await vpn.remove() }
+                    }
+                    .disabled(isVPNBusy)
                 }
                 Button("lc.flek.jit.resetImage".loc) {
                     resetDiskImage()
@@ -103,7 +87,64 @@ struct FlekBuiltInJITSection: View {
         }
     }
 
-    // MARK: Pairing file
+    /// One step of the setup: its number, which becomes a tick once the step is
+    /// done, what the step is, a line about it, and the control that does it.
+    private func step<Control: View>(_ number: Int, isDone: Bool, title: String, caption: String,
+                                     captionColor: Color = .secondary,
+                                     @ViewBuilder control: () -> Control) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: isDone ? "checkmark.circle.fill" : "\(number).circle")
+                .font(.title2)
+                .foregroundStyle(isDone ? Color.green : Color.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                Text(caption)
+                    .font(.footnote)
+                    .foregroundStyle(captionColor)
+            }
+            Spacer(minLength: 8)
+            control()
+        }
+        .padding(.vertical, 2)
+    }
+
+    /// A step's control. Bordered, so that it is the button that is tapped
+    /// rather than the whole row.
+    private func stepButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(title, action: action)
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
+            .controlSize(.small)
+    }
+
+    // MARK: 1. Pairing file
+
+    private var pairingStep: some View {
+        step(1, isDone: pairingFileFound,
+             title: "lc.flek.jit.step1.title".loc,
+             caption: (pairingFileFound ? "lc.flek.jit.step1.done" : "lc.flek.jit.step1.caption").loc) {
+            stepButton((pairingFileFound ? "lc.flek.jit.replace" : "lc.flek.jit.import").loc) {
+                isChoosingPairingFile = true
+            }
+        }
+        // On the one row that is always here: a modifier on the section would
+        // be applied to every row, and so present, or run, once per row.
+        .alert("lc.flek.jit.header".loc, isPresented: $noticeShow) {
+            Button("lc.common.ok".loc) {}
+        } message: {
+            Text(notice)
+        }
+        .task {
+            if FlekLoopbackVPN.isAvailable {
+                await vpn.refresh()
+            }
+        }
+        .betterFileImporter(isPresented: $isChoosingPairingFile, types: Self.pairingFileTypes, multiple: false) { urls in
+            importPairingFile(from: urls[0])
+        } onDismiss: {
+            isChoosingPairingFile = false
+        }
+    }
 
     /// A pairing file is a property list whatever it is called; iloader and
     /// SideStore name theirs .mobiledevicepairing.
@@ -136,21 +177,98 @@ struct FlekBuiltInJITSection: View {
         }
     }
 
-    // MARK: Readiness
+    // MARK: 2. VPN
+
+    /// The VPN the helper connects through: FlekDeck's own where this copy can
+    /// provide one, and LocalDevVPN, which FlekDeck has no way to see or to
+    /// start, where it cannot.
+    @ViewBuilder
+    private var vpnStep: some View {
+        if FlekLoopbackVPN.isAvailable {
+            step(2, isDone: vpn.isConfigured,
+                 title: "lc.flek.jit.step2.title".loc,
+                 caption: "lc.flek.jit.step2.caption".loc) {
+                if vpn.isConfigured {
+                    Toggle("lc.flek.jit.step2.title".loc, isOn: vpnSwitch)
+                        .labelsHidden()
+                        .disabled(isVPNBusy)
+                } else if isVPNBusy {
+                    ProgressView()
+                } else {
+                    stepButton("lc.flek.jit.setUp".loc) {
+                        runVPN {
+                            try await vpn.setUp()
+                            try await vpn.connect()
+                        }
+                    }
+                }
+            }
+        } else {
+            step(2, isDone: false,
+                 title: "lc.flek.jit.step2.external.title".loc,
+                 caption: "lc.flek.jit.step2.external.caption".loc) {
+                stepButton("lc.flek.jit.get".loc) {
+                    UIApplication.shared.open(Self.localDevVPNURL)
+                }
+            }
+        }
+    }
+
+    private var vpnSwitch: Binding<Bool> {
+        Binding {
+            vpn.isOn
+        } set: { isOn in
+            if isOn {
+                runVPN { try await vpn.connect() }
+            } else {
+                vpn.disconnect()
+            }
+        }
+    }
+
+    private func runVPN(_ work: @escaping () async throws -> Void) {
+        isVPNBusy = true
+        Task {
+            do {
+                try await work()
+            } catch {
+                show(error.localizedDescription)
+            }
+            isVPNBusy = false
+        }
+    }
+
+    // MARK: 3. Readiness
+
+    private var readinessStep: some View {
+        step(3, isDone: readiness == .ready,
+             title: "lc.flek.jit.step3.title".loc,
+             caption: readinessCaption,
+             captionColor: readinessColor) {
+            if isChecking {
+                ProgressView()
+            } else {
+                stepButton("lc.flek.jit.check".loc) {
+                    checkReadiness()
+                }
+                .disabled(!pairingFileFound || FlekBuiltInJIT.blocker != nil)
+            }
+        }
+    }
 
     private var isChecking: Bool {
         if case .checking = readiness { return true }
         return false
     }
 
-    private var readinessText: String? {
+    private var readinessCaption: String {
         switch readiness {
         case .unchecked:
-            return nil
+            return "lc.flek.jit.step3.caption".loc
         case .checking(let step):
             return step
-        case .ready(let txm):
-            return (txm == true ? "lc.flek.jit.ready.txm" : "lc.flek.jit.ready").loc
+        case .ready:
+            return "lc.flek.jit.ready".loc
         case .failed(let reason):
             return reason
         }
@@ -168,27 +286,29 @@ struct FlekBuiltInJITSection: View {
     /// mount its developer disk image — but here, where it can be watched, and
     /// with the image left mounted for the launches that follow.
     private func checkReadiness() {
-        guard pairingFileFound else {
-            readiness = .failed("lc.flek.jit.needsPairingFile".loc)
-            return
-        }
         readiness = .checking(Self.stepText(0, -1))
-        Self.checkQueue.async {
-            let error = LCUtils.prepareBuiltInJIT { stage, fraction in
-                let step = Self.stepText(stage, fraction)
-                DispatchQueue.main.async {
-                    readiness = .checking(step)
-                }
+        Task {
+            // FlekDeck's own VPN is turned on for the check as it is for a
+            // launch. If it does not come up, the check says so in its own way.
+            if vpn.isConfigured {
+                try? await vpn.connect()
             }
-            let txm = LCUtils.isTXMPresentForBuiltInJIT()?.boolValue
-            DispatchQueue.main.async {
-                if let error = error as NSError? {
-                    // Code 1 is StikJITPreflight's "nothing answered", which is
-                    // nearly always the VPN that leads back to the device.
-                    let hint = error.code == 1 ? "\n" + "lc.flek.jit.unreachableHint".loc : ""
-                    readiness = .failed(error.localizedDescription + hint)
-                } else {
-                    readiness = .ready(txm: txm)
+            Self.checkQueue.async {
+                let error = LCUtils.prepareBuiltInJIT { stage, fraction in
+                    let step = Self.stepText(stage, fraction)
+                    DispatchQueue.main.async {
+                        readiness = .checking(step)
+                    }
+                }
+                DispatchQueue.main.async {
+                    if let error = error as NSError? {
+                        // Code 1 is StikJITPreflight's "nothing answered", which is
+                        // nearly always the VPN that leads back to the device.
+                        let hint = error.code == 1 ? "\n" + "lc.flek.jit.unreachableHint".loc : ""
+                        readiness = .failed(error.localizedDescription + hint)
+                    } else {
+                        readiness = .ready
+                    }
                 }
             }
         }
@@ -218,41 +338,5 @@ struct FlekBuiltInJITSection: View {
     private func show(_ text: String) {
         notice = text
         noticeShow = true
-    }
-
-    // MARK: What rules built-in JIT out
-
-    private static func findBlocker() -> String? {
-#if targetEnvironment(simulator)
-        return "lc.flek.jit.blocker.simulator".loc
-#else
-        guard #available(iOS 17.4, *) else {
-            return "lc.flek.jit.blocker.os".loc
-        }
-        guard LCUtils.isBuiltInJITLoadable() else {
-            return "lc.flek.jit.blocker.unavailable".loc
-        }
-        // A debugger only attaches to a process signed with get-task-allow, and
-        // the signature is whatever this copy was last signed with. A guest
-        // runs in LiveProcess when in a window, in the app itself otherwise.
-        let liveProcess = Bundle.main.builtInPlugInsURL?.appendingPathComponent("LiveProcess.appex/LiveProcess").path
-        for executable in [Bundle.main.executablePath, liveProcess] {
-            if let executable, isSigned(executable, withoutEntitlement: "get-task-allow") {
-                return "lc.flek.jit.blocker.entitlement".loc
-            }
-        }
-        return nil
-#endif
-    }
-
-    /// True only where the entitlements could be read and `entitlement` is not
-    /// set in them. A signature that cannot be read rules nothing out.
-    private static func isSigned(_ executable: String, withoutEntitlement entitlement: String) -> Bool {
-        guard let xml = getExecutableEntitlementXML(executable),
-              let entitlements = try? PropertyListSerialization.propertyList(
-                from: Data(xml.utf8), format: nil) as? [String: Any] else {
-            return false
-        }
-        return entitlements[entitlement] as? Bool != true
     }
 }

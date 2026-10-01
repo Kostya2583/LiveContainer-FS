@@ -45,7 +45,6 @@ uint32_t dyld_get_sdk_version(const struct mach_header* mh);
 + (NSURL *)builtInJITFolder;
 + (BOOL)issueBuiltInJITSandboxExtension;
 + (BOOL)isBuiltInJITLoadable;
-+ (NSNumber *)isTXMPresentForBuiltInJIT;
 + (NSError *)prepareBuiltInJITWithProgress:(void (^)(NSInteger stage, double fraction))progress;
 + (NSError *)resetBuiltInJITDiskImage;
 

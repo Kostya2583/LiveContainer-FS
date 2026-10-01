@@ -139,6 +139,24 @@ static NSString *enableJITWithStikJIT(NSString *docPath) {
         }
     }
     
+    // The helper reaches this device through a VPN. Where that is FlekDeck's own
+    // it is turned on as the guest launches: by the app for a window, and here
+    // for a single-process launch, where this is the app.
+    if (!isLiveProcess) {
+        __block BOOL answered = NO;
+        [LCSharedUtils startBuiltInVPNWithCompletionHandler:^(BOOL requested) {
+            answered = YES;
+        }];
+        // The answer comes on the main queue, which only a running loop serves.
+        for (int i = 0; i < 60 && !answered; i++) {
+            CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true);
+        }
+    }
+    // Either way the tunnel takes a moment to come up, so the helper is told
+    // when one was just asked for and that an unanswered first try is no failure.
+    NSDate *vpnRequested = [NSUserDefaults.lcSharedDefaults objectForKey:@"LCBuiltInVPNStartRequested"];
+    BOOL waitForVPN = [vpnRequested isKindOfClass:NSDate.class] && fabs(vpnRequested.timeIntervalSinceNow) < 20;
+
     NSExtensionItem *item = [NSExtensionItem new];
     item.userInfo = @{
         @"customPayloadDylib": @"@rpath/StikJITHeadless.framework/StikJITHeadless",
@@ -146,6 +164,7 @@ static NSString *enableJITWithStikJIT(NSString *docPath) {
         //@"callbackScheme": lcAppUrlScheme,
         @"sandboxExtension": sandboxExtension,
         @"script": guestAppInfo[@"jitLaunchScriptJs"] ?: @"",
+        @"waitForVPN": @(waitForVPN),
         @"pid": @(getpid())
     };
     ext.requestCancellationBlock = ^(NSUUID *uuid, NSError *jitError) {
@@ -160,6 +179,11 @@ static NSString *enableJITWithStikJIT(NSString *docPath) {
     CFRunLoopRun();
     while (!error && !checkJITEnabled()) {
         usleep(1000*100);
+    }
+    // Where TXM is absent the helper attaches, detaches and exits within one
+    // turn of the loop above, and its exit is reported as an error too.
+    if (checkJITEnabled()) {
+        return nil;
     }
     return error ? [@"Built-in StikJIT failed: " stringByAppendingString:error.localizedDescription] : nil;
 }

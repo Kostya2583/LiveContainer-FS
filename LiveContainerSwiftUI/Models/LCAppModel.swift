@@ -433,6 +433,21 @@ class LCAppModel: ObservableObject, Hashable {
         }
         try await signApp(force: false)
         
+        var jitNeeded = appInfo.isJITNeeded || appInfo.is32bit
+        if let forceJIT {
+            jitNeeded = forceJIT
+        }
+#if targetEnvironment(simulator)
+        jitNeeded = false
+#else
+        if jitNeeded {
+            // Asked before the app is recorded below as the one to start: a
+            // guest started without a working JIT setup fails as it launches,
+            // which the user only learns the next time FlekDeck opens.
+            try await FlekJITSetup.ensureReady()
+        }
+#endif
+        
         if let bundleIdOverride {
             UserDefaults.standard.set(bundleIdOverride, forKey: "selected")
         } else {
@@ -443,13 +458,6 @@ class LCAppModel: ObservableObject, Hashable {
         }
         UserDefaults.standard.set(uiSelectedContainer?.folderName, forKey: "selectedContainer")
         
-        var jitNeeded = appInfo.isJITNeeded || appInfo.is32bit
-        if let forceJIT {
-            jitNeeded = forceJIT
-        }
-#if targetEnvironment(simulator)
-        jitNeeded = false
-#endif
         if jitNeeded {
             if multitask, #available(iOS 17.4, *) {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in

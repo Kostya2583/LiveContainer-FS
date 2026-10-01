@@ -50,9 +50,14 @@ int StikJITHeadlessMain(void) {
     pid_t pid = [appInfo[@"pid"] unsignedIntValue];
     NSString *scriptJs = appInfo[@"script"];
     NSString *error = [StikJITWrapper enableJITWith:pid timeout:0.2 pairingFile:pairingFile ddiPath:ddiPath scriptJs:scriptJs];
+    // FlekDeck's own VPN is turned on as the guest launches and takes a moment
+    // to come up, during which the device does not answer.
+    for (int attempt = 0; attempt < 12 && [appInfo[@"waitForVPN"] boolValue] && [error containsString:@"Timed out connecting to"]; attempt++) {
+        error = [StikJITWrapper enableJITWith:pid timeout:0.5 pairingFile:pairingFile ddiPath:ddiPath scriptJs:scriptJs];
+    }
     if (error.length < 1) return 0;
     if ([error containsString:@"Timed out connecting to"]) {
-        error = [error stringByAppendingString:@"\n\nIs LocalDevVPN connected?"];
+        error = [error stringByAppendingString:@"\n\nIs the VPN connected? Turn it on in Settings, under JIT, or connect LocalDevVPN."];
         // FIXME: auto open URL does not work
         // NSString *callbackScheme = appInfo[@"callbackScheme"];
         // LSApplicationWorkspace* workspace = [PrivClass(LSApplicationWorkspace) defaultWorkspace];

@@ -57,6 +57,19 @@ final class LCSpringboardIconCell: UICollectionViewCell {
         return iv
     }()
 
+    /// Badge for apps set to launch with JIT (top-left corner of glass card).
+    /// The delete button takes that corner in edit mode, and the badge makes
+    /// way for it.
+    private let jitBadge: UIImageView = {
+        let iv = UIImageView()
+        let config = UIImage.SymbolConfiguration(pointSize: 10, weight: .semibold)
+        iv.image = UIImage(systemName: FlekSymbol.jit, withConfiguration: config)
+        iv.tintColor = .secondaryLabel
+        iv.contentMode = .center
+        iv.isHidden = true
+        return iv
+    }()
+
     /// The red count on the icon's corner, as an iOS home screen badges an app:
     /// Settings shows 1 while no certificate is imported. A label rather than
     /// an image, so a count of two digits widens into a capsule.
@@ -258,6 +271,7 @@ final class LCSpringboardIconCell: UICollectionViewCell {
         contentView.addSubview(iconImageView)
         contentView.addSubview(nameLabel)
         contentView.addSubview(singleBadge)
+        contentView.addSubview(jitBadge)
         contentView.addSubview(notificationBadge)
         contentView.addSubview(deleteButton)
 
@@ -396,6 +410,8 @@ final class LCSpringboardIconCell: UICollectionViewCell {
             width: badgeSize,
             height: badgeSize
         )
+        // JIT badge (top-left corner of glass card)
+        jitBadge.frame = CGRect(x: 8, y: 8, width: badgeSize, height: badgeSize)
 
         // Notification badge: hung off the icon's top-right corner the way iOS
         // hangs one, mostly over the icon. A count wider than a circle grows
@@ -494,6 +510,8 @@ final class LCSpringboardIconCell: UICollectionViewCell {
         deleteButton.isHidden = true
         deleteButton.alpha = 0
         singleBadge.isHidden = true
+        jitBadge.isHidden = true
+        jitBadge.alpha = 1
         setNotificationCount(0)
         installOverlay.isHidden = true
         spinnerRingView.isHidden = true
@@ -549,7 +567,7 @@ final class LCSpringboardIconCell: UICollectionViewCell {
                                                     radius: Self.iconCornerRadius,
                                                     cacheKey: (app.appInfo.relativeBundlePath).map { "app:\($0):\(app.uiIsShared):\(darkMode)" })
             setName(app.appInfo.displayName(), shared: app.uiIsShared)
-            singleBadge.isHidden = !FlekLaunchModeStore.shared.showsSingleBadge(for: app)
+            showBadges(for: app)
             isPlaceholderCell = false
 
         case .installing(let inst):
@@ -612,10 +630,15 @@ final class LCSpringboardIconCell: UICollectionViewCell {
         nameLabel.attributedText = line
     }
 
-    /// Update just the single-mode badge visibility without full reconfigure.
+    /// Update just the corner badges' visibility without full reconfigure.
     func updateBadge() {
         guard case .installed(let app) = configuredItem else { return }
+        showBadges(for: app)
+    }
+
+    private func showBadges(for app: LCAppModel) {
         singleBadge.isHidden = !FlekLaunchModeStore.shared.showsSingleBadge(for: app)
+        jitBadge.isHidden = !app.uiIsJITNeeded
     }
 
     /// Update just the install state (progress/icon) without full reconfigure.
@@ -745,20 +768,24 @@ final class LCSpringboardIconCell: UICollectionViewCell {
             if animated {
                 UIView.animate(withDuration: 0.25) {
                     self.deleteButton.alpha = 1
+                    self.jitBadge.alpha = 0
                 }
             } else {
                 deleteButton.alpha = 1
+                jitBadge.alpha = 0
             }
         } else {
             if animated {
                 UIView.animate(withDuration: 0.25, animations: {
                     self.deleteButton.alpha = 0
+                    self.jitBadge.alpha = 1
                 }, completion: { _ in
                     self.deleteButton.isHidden = true
                 })
             } else {
                 deleteButton.alpha = 0
                 deleteButton.isHidden = true
+                jitBadge.alpha = 1
             }
         }
     }

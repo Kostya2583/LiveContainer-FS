@@ -17,12 +17,6 @@ import StikJIT
     /// The device answered but is not ready.
     private static let preparationFailedCode = 2
 
-    /// Nil where the device tree could not be read.
-    @objc(isTXMPresent)
-    public static func isTXMPresent() -> NSNumber? {
-        StikJIT.isTXMPresent.map { NSNumber(value: $0) }
-    }
-
     /// Nil once the device is reachable and its developer disk image is
     /// mounted. `progress` gets a stage (0 reachability, 1 checking the image,
     /// 2 downloading, 3 mounting, 4 verifying, 5 ready) and, where the stage

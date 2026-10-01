@@ -72,6 +72,9 @@ enum FlekSymbol {
     /// arrow the app list's banner badge uses, in its circled form so it reads
     /// as a mark beside a name rather than as a stray glyph.
     static let shared = "arrowshape.turn.up.left.circle.fill"
+
+    /// Marks an app set to launch with JIT, on its icon and where JIT is set up.
+    static let jit = "bolt.fill"
 }
 
 enum FlekTheme {

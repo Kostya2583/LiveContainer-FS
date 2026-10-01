@@ -2,11 +2,28 @@
 #import "FoundationPrivate.h"
 #import "UIKitPrivate.h"
 #import "utils.h"
+#import <dlfcn.h>
 @import MachO;
 
 extern NSUserDefaults *lcUserDefaults;
 extern NSString *lcAppUrlScheme;
 extern NSBundle *lcMainBundle;
+
+// What startBuiltInVPN uses of NetworkExtension. The framework is reached by
+// name rather than linked: this code is loaded into every guest, and only the
+// launch of one that needs JIT has any use for it.
+@interface LCVPNConnection : NSObject
+// An NEVPNStatus: 2 is connecting, 3 connected, 4 reasserting.
+@property(readonly) NSInteger status;
+- (BOOL)startVPNTunnelAndReturnError:(NSError **)error;
+@end
+@interface LCVPNManager : NSObject
+@property(getter=isEnabled) BOOL enabled;
+@property(readonly) LCVPNConnection *connection;
++ (void)loadAllFromPreferencesWithCompletionHandler:(void (^)(NSArray *managers, NSError *error))completionHandler;
+- (void)saveToPreferencesWithCompletionHandler:(void (^)(NSError *error))completionHandler;
+- (void)loadFromPreferencesWithCompletionHandler:(void (^)(NSError *error))completionHandler;
+@end
 
 NSString* FBSOpenApplicationOptionKeyActivateAsClassic = @"__ActivateAsClassic";
 NSString* FBSOpenApplicationOptionKeyPayloadURL = @"__PayloadURL";
@@ -473,6 +490,56 @@ NSString* FBSOpenApplicationOptionKeyPayloadURL = @"__PayloadURL";
     }
     
     return nil;
+}
+
++ (void)startBuiltInVPNWithCompletionHandler:(void (^)(BOOL requested))completionHandler {
+    void (^finish)(BOOL) = ^(BOOL requested) {
+        if(completionHandler) completionHandler(requested);
+    };
+    // Set by Settings once the user has allowed the VPN configuration. Without
+    // it there is nothing to start, and no reason to load the framework.
+    if(![NSUserDefaults.lcSharedDefaults boolForKey:@"LCBuiltInVPNConfigured"]) {
+        finish(NO);
+        return;
+    }
+    // Written before anything else, as the guest reads it to tell its helper
+    // that the VPN is on its way up and worth waiting a moment for.
+    [NSUserDefaults.lcSharedDefaults setObject:NSDate.date forKey:@"LCBuiltInVPNStartRequested"];
+    
+    dlopen("/System/Library/Frameworks/NetworkExtension.framework/NetworkExtension", RTLD_LAZY);
+    Class managerClass = NSClassFromString(@"NETunnelProviderManager");
+    if(!managerClass) {
+        finish(NO);
+        return;
+    }
+    [managerClass loadAllFromPreferencesWithCompletionHandler:^(NSArray *managers, NSError *error) {
+        // An app is only ever given its own configurations, and FlekDeck has one.
+        LCVPNManager *manager = managers.firstObject;
+        if(!manager) {
+            finish(NO);
+            return;
+        }
+        void (^start)(void) = ^{
+            NSInteger status = manager.connection.status;
+            if(status >= 2 && status <= 4) {
+                finish(YES);
+                return;
+            }
+            finish([manager.connection startVPNTunnelAndReturnError:nil]);
+        };
+        if(manager.isEnabled) {
+            start();
+            return;
+        }
+        // Another VPN has been chosen in Settings since, and iOS only starts
+        // the chosen one.
+        manager.enabled = YES;
+        [manager saveToPreferencesWithCompletionHandler:^(NSError *saveError) {
+            [manager loadFromPreferencesWithCompletionHandler:^(NSError *loadError) {
+                start();
+            }];
+        }];
+    }];
 }
 
 @end

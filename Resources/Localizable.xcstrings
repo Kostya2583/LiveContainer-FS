@@ -16885,7 +16885,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This installation of FlekDeck is signed without the get-task-allow entitlement, so iOS won’t let JIT be enabled for it. Reinstall FlekDeck signed with a Development certificate."
+            "value" : "This installation of FlekDeck is signed without get-task-allow, so iOS won’t let JIT be enabled for it. Reinstall it signed with a Development certificate."
           }
         }
       }
@@ -16929,7 +16929,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Check Readiness"
+            "value" : "Check"
           }
         }
       }
@@ -16940,7 +16940,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "FlekDeck enables JIT on its own when an app set to launch with JIT opens. This needs a pairing file made for this device, Developer Mode turned on, and LocalDevVPN connected. The first launch after a restart also downloads and mounts the developer disk image, so it takes longer."
+            "value" : "Developer Mode has to be on in the Settings app."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.get" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get"
           }
         }
       }
@@ -16956,57 +16967,57 @@
         }
       }
     },
-    "lc.flek.jit.needsPairingFile" : {
+    "lc.flek.jit.import" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Import a pairing file first."
+            "value" : "Import"
           }
         }
       }
     },
-    "lc.flek.jit.pairingFile" : {
+    "lc.flek.jit.more" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pairing File"
+            "value" : "More"
           }
         }
       }
     },
-    "lc.flek.jit.pairingFile.import" : {
+    "lc.flek.jit.notReady.setUp" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Import Pairing File"
+            "value" : "This app is set to launch with JIT, but JIT isn’t set up. Set it up in Settings › JIT & JIT-Less."
           }
         }
       }
     },
-    "lc.flek.jit.pairingFile.imported" : {
+    "lc.flek.jit.notReady.title" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Imported"
+            "value" : "No JIT"
           }
         }
       }
     },
-    "lc.flek.jit.pairingFile.missing" : {
+    "lc.flek.jit.notReady.vpn" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not Imported"
+            "value" : "This app is set to launch with JIT, but the VPN isn’t connected. Turn it on in Settings › JIT & JIT-Less, or connect LocalDevVPN."
           }
         }
       }
@@ -17022,24 +17033,24 @@
         }
       }
     },
-    "lc.flek.jit.pairingFile.replace" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Replace Pairing File"
-          }
-        }
-      }
-    },
     "lc.flek.jit.pairingFile.wrongKind" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This file can’t be used for built-in JIT: it has no RemotePairing record. Make a pairing file with iloader on a computer, or with an on-device pairing app on iOS 27."
+            "value" : "This file has no RemotePairing record, which built-in JIT needs. Make one with iloader, or with on-device pairing on iOS 27."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.perApp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT is set per app: turn on Launch with JIT in an app’s settings. Apps with JIT show this mark on their icon."
           }
         }
       }
@@ -17050,18 +17061,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ready. JIT can be enabled for apps."
+            "value" : "Ready"
           }
         }
       }
     },
-    "lc.flek.jit.ready.txm" : {
+    "lc.flek.jit.replace" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ready. This device has TXM, so an app only gets JIT if it supports the JIT script chosen in its settings."
+            "value" : "Replace"
           }
         }
       }
@@ -17083,7 +17094,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The downloaded developer disk image was removed. It will be downloaded again the next time it’s needed."
+            "value" : "The developer disk image was removed. It is downloaded again when it’s next needed."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.setUp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Up"
           }
         }
       }
@@ -17143,13 +17165,145 @@
         }
       }
     },
+    "lc.flek.jit.step1.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Made for this device, with iloader for example."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step1.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imported"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step1.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step2.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT reaches this device through it. It turns on by itself when an app with JIT starts."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step2.external.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This copy of FlekDeck can’t provide the VPN. Connect LocalDevVPN before starting an app with JIT."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step2.external.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect LocalDevVPN"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step2.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Up VPN"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step3.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirms that JIT can be enabled."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step3.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check Readiness"
+          }
+        }
+      }
+    },
     "lc.flek.jit.unreachableHint" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Is LocalDevVPN connected?"
+            "value" : "Is the VPN connected?"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.vpn.didNotStart" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The VPN didn’t connect. Check VPN in the Settings app, then try again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.vpn.remove" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove VPN"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.vpn.server" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This device"
           }
         }
       }

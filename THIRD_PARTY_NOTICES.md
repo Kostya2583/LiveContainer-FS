@@ -85,3 +85,15 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
 OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
+
+## LocalDevVPN
+
+Project: https://github.com/jkcoxson/LocalDevVPN (formerly
+[StosVPN](https://github.com/SideStore/StosVPN))  
+Authors: SideStore Team
+
+The VPN FlekDeck provides for built-in JIT is based on the approach of
+LocalDevVPN: a packet tunnel that hands every packet straight back with
+its source and destination addresses exchanged. FlekDeck's tunnel was
+written for FlekDeck and includes no LocalDevVPN code; it keeps
+LocalDevVPN's addresses so that either VPN works with the same tools.
