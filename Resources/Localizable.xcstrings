@@ -15944,6 +15944,17 @@
         }
       }
     },
+    "lc.flek.cat.general" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "General"
+          }
+        }
+      }
+    },
     "lc.flek.cat.jit" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -15984,6 +15995,479 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Signing & Installation"
+          }
+        }
+      }
+    },
+    "lc.flek.certificate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate"
+          }
+        }
+      }
+    },
+    "lc.flek.certificate.imported" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imported"
+          }
+        }
+      }
+    },
+    "lc.flek.certificate.notImported" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Imported"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.chooseP12" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose .p12 file"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.chooseProfile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose .mobileprovision file"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.clear" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.appMismatch.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate doesn’t match the FlekDeck installed on this device. Please select the certificate FlekDeck was signed with."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.appMismatch.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate mismatch"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.certExpired.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate has expired. Please select a valid certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.certExpired.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate expired"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.certNotDevelopment.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate isn’t a Development certificate. Please select a Development certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.certNotDevelopment.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wrong certificate type"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.certUnreadable.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The password is incorrect, or this file isn’t a valid .p12 certificate. Please check the password or select a valid certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.certUnreadable.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t open certificate"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.fileUnreadable.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This file couldn’t be opened. Please select it again."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.fileUnreadable.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t open file"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileExpired.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This provisioning profile has expired. Please select a valid profile."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileExpired.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Provisioning profile expired"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileInvalid.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This file isn’t a valid provisioning profile. Please select a valid profile."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileInvalid.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid provisioning profile"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileMismatch.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate doesn’t match the selected provisioning profile."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileMismatch.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate mismatch"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileNotDevelopment.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This provisioning profile isn’t a Development profile. Please select a Development profile."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileNotDevelopment.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wrong profile type"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.flekstore.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go to flekstore.com"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.flekstore.desc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a ready-to-use FlekDeck installation with a compatible **Development certificate already configured.**"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.flekstore.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Up with FlekSt0re"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.import" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.password" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter .p12 password"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.warning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your .p12 certificate and .mobileprovision profile **must be Development type** and belong to the same Apple Developer team as the FlekDeck app installed on this device."
+          }
+        }
+      }
+    },
+    "lc.flek.certRemove.flekStoreNote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is the certificate FlekSt0re set up for FlekDeck. It will be set up again the next time FlekDeck opens, unless you import another certificate first."
+          }
+        }
+      }
+    },
+    "lc.flek.certRemove.validTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Valid Certificate?"
+          }
+        }
+      }
+    },
+    "lc.flek.certRemove.validWarning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate is still valid until %@. Without it, you won’t be able to install or launch apps until you import another certificate or set up JIT."
+          }
+        }
+      }
+    },
+    "lc.flek.certStatus.expired" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expired %@"
+          }
+        }
+      }
+    },
+    "lc.flek.certStatus.expires" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expires %@"
+          }
+        }
+      }
+    },
+    "lc.flek.certStatus.invalid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate is no longer valid and can’t be used to launch apps. Remove it and import a new Development certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.certStatus.invalidFlekStore" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate is no longer valid and can’t be used to launch apps. Reinstall FlekDeck from FlekSt0re to get a new one."
+          }
+        }
+      }
+    },
+    "lc.flek.certStatus.ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added and ready to use. Apps can be launched without a JIT connection."
+          }
+        }
+      }
+    },
+    "lc.flek.certStatus.revoked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revoked"
+          }
+        }
+      }
+    },
+    "lc.flek.certUnavailable.lead" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This installation of FlekDeck is signed with a certificate that isn’t Development type."
+          }
+        }
+      }
+    },
+    "lc.flek.certUnavailable.options" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To launch apps with your current installation, you can **set up JIT instead**. Alternatively, you can reinstall FlekDeck using a compatible Development certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.certUnavailable.reason" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due to how certificate mode works on iOS, FlekDeck can only import and use a certificate for launching apps when FlekDeck itself is signed with a compatible Development certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.certUnavailable.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate Import Unavailable"
           }
         }
       }
@@ -16534,6 +17018,160 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Search apps"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.certificate.desc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Launch apps anytime without a JIT connection."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.certificate.point1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Works offline"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.certificate.point2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No JIT required to launch apps"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.certificate.point3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT can still be used when needed"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.certificate.unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unavailable for this FlekDeck installation"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.certificate.why" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why is this unavailable?"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.desc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To install and launch apps, you need to add a signing certificate or set up JIT. Choose the option that works for you."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can change this later in Settings."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.desc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Launch apps through a JIT connection without importing a certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.point1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No certificate required"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.point2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supports apps that require JIT"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.point3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requires JIT when launching apps"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Up JIT"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setup FlekDeck"
           }
         }
       }

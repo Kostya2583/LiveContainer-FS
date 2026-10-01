@@ -53,6 +53,21 @@ enum FlekSymbol {
         return "xmark.circle"
     }
 
+    /// A signing certificate: a page under a seal. `checkmark.seal.text.page.fill`
+    /// is iOS 18+; before it, the page alone.
+    static var certificate: String {
+        if #available(iOS 18.0, *) { return "checkmark.seal.text.page.fill" }
+        return "doc.text.fill"
+    }
+
+    /// A JIT connection: two ends joined by a path. The squared ends of
+    /// `point.topleft.down.to.point.bottomright.curvepath.fill` are iOS 17+;
+    /// the older symbol joins two dots.
+    static var jitConnection: String {
+        if #available(iOS 17.0, *) { return "point.topleft.down.to.point.bottomright.curvepath.fill" }
+        return "point.topleft.down.curvedto.point.bottomright.up.fill"
+    }
+
     /// Marks an app kept in the shared folder rather than privately. The same
     /// arrow the app list's banner badge uses, in its circled form so it reads
     /// as a mark beside a name rather than as a stray glyph.

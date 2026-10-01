@@ -305,6 +305,7 @@ extension UTType {
     static let deb = UTType(filenameExtension: "deb")!
     static let lcFramework = UTType(filenameExtension: "framework", conformingTo: .package)!
     static let p12 = UTType(filenameExtension: "p12")!
+    static let mobileProvision = UTType(filenameExtension: "mobileprovision")!
 }
 
 extension Color {

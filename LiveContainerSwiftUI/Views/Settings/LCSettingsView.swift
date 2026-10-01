@@ -37,8 +37,6 @@ struct LCSettingsView: View {
     @State private var showBackgroundInstallReport = false
     @State var errorShow = false
     @State var errorInfo = ""
-    @State var successShow = false
-    @State var successInfo = ""
     @State private var udid: String = ""
     
     @State private var subscriptionEndDate: String?
@@ -48,13 +46,9 @@ struct LCSettingsView: View {
     
     
     @StateObject private var installLC2Alert = AlertHelper<Int>()
-    @State private var certificateDataFound = false
     
-    @StateObject private var certificateImportAlert = YesNoHelper()
     @StateObject private var certificateImportFromBuiltInSideStoreAlert = YesNoHelper()
     @StateObject private var certificateRemoveAlert = YesNoHelper()
-    @StateObject private var certificateImportFileAlert = AlertHelper<URL>()
-    @StateObject private var certificateImportPasswordAlert = InputHelper()
     
     @AppStorage("LCFrameShortcutIcons") var frameShortIcon = false
     @AppStorage("LCSwitchAppWithoutAsking") var silentSwitchApp = false
@@ -160,24 +154,19 @@ struct LCSettingsView: View {
 
     @EnvironmentObject private var sharedModel : SharedModel
     
+    /// Read from the shared model, which follows the stored password, so a
+    /// certificate imported anywhere else — at launch, or through a
+    /// flekdeck://certificate link — shows here as well.
+    private var certificateDataFound: Bool { sharedModel.isCertificateImported }
+    
     @State private var isViewAppeared = false
     
     let storeName = LCUtils.getStoreName()
     
     init() {
-        _certificateDataFound = State(initialValue: LCSharedUtils.certificatePassword() != nil)
         _store = State(initialValue: LCUtils.store())
     }
     
-    let fsPassword: String = {
-        if let dict = Bundle.main.infoDictionary,
-           let value = dict["fsPassword"] as? String,
-           !value.isEmpty {
-            return value
-        }
-        return "12345"
-    }()
-
     private static let subscriptionDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -576,24 +565,20 @@ struct LCSettingsView: View {
                     }
                     .padding(.vertical, 6)
                 }
-                // MARK: - Certificate (shown only when no certificate is detected)
-                if sharedModel.multiLCStatus != 2 && !certificateDataFound {
-                    Section {
-                        Button("Import Flekstore certificate") {
-                            Task { await importEmbeddedCertificate() }
-                        }
-                        
-                        Button("lc.settings.importCertificate".loc) {
-                            Task { await importCertificate() }
-                        }
-                    } header: {
-                        Text("lc.settings.jitLess".loc)
-                    } footer: {
-                        Text("lc.settings.jitLessDesc".loc)
-                    }
-                }
                 // MARK: - Categories
                 Section {
+                    // Where the certificate is imported. It carries the red mark
+                    // while none is — the same thing the Settings icon on the
+                    // home screen counts.
+                    NavigationLink { generalPage } label: {
+                        HStack(spacing: 0) {
+                            categoryRow("lc.flek.cat.general".loc, "gear", .gray, iconSize: 20)
+                            if sharedModel.needsCertificate {
+                                Spacer(minLength: 8)
+                                attentionMark
+                            }
+                        }
+                    }
                     NavigationLink { FlekPersonalizationView() } label: {
                         categoryRow("lc.flek.personalization".loc, "paintbrush.fill", .purple)
                     }
@@ -817,23 +802,6 @@ struct LCSettingsView: View {
             } message: {
                 Text(errorInfo)
             }
-            .alert("lc.common.success".loc, isPresented: $successShow){
-            } message: {
-                Text(successInfo)
-            }
-            .alert("lc.settings.importCertificate".loc, isPresented: $certificateImportAlert.show) {
-                Button {
-                    certificateImportAlert.close(result: true)
-                } label: {
-                    Text("lc.common.ok".loc)
-                }
-                
-                Button("lc.common.cancel".loc, role: .cancel) {
-                    certificateImportAlert.close(result: false)
-                }
-            } message: {
-                Text("lc.settings.importCertificateDesc".loc)
-            }
             .alert("lc.settings.removeCertificate".loc, isPresented: $certificateRemoveAlert.show) {
                 Button(role: .destructive) {
                     certificateRemoveAlert.close(result: true)
@@ -859,29 +827,8 @@ struct LCSettingsView: View {
             } message: {
                 Text("lc.settings.importCertFromBuiltinSideStoreDesc".loc)
             }
-            .betterFileImporter(isPresented: $certificateImportFileAlert.show, types: [.p12], multiple: false, callback: { fileUrls in
-                certificateImportFileAlert.close(result: fileUrls[0])
-            }, onDismiss: {
-                certificateImportFileAlert.close(result: nil)
-            })
-            .textFieldAlert(
-                isPresented: $certificateImportPasswordAlert.show,
-                title: "lc.settings.importCertificateInputPassword".loc,
-                text: $certificateImportPasswordAlert.initVal,
-                placeholder: "",
-                action: { newText in
-                    certificateImportPasswordAlert.close(result: newText)
-                },
-                actionCancel: {_ in
-                    certificateImportPasswordAlert.close(result: nil)
-                    certificateImportPasswordAlert.show = false
-                }
-            )
         }
         .onAppear {
-            if !certificateDataFound {
-                Task { await importEmbeddedCertificate() }
-            }
             if !isViewAppeared {
                 guard sharedModel.selectedTab == .settings, let link = sharedModel.deepLink else { return }
                 sharedModel.deepLink = nil
@@ -960,6 +907,26 @@ struct LCSettingsView: View {
                 )
             Text(title)
         }
+    }
+
+    /// The red mark iOS puts on a Settings row that needs the user, as it
+    /// badges General while an update waits.
+    private var attentionMark: some View {
+        Image(systemName: "exclamationmark.circle.fill")
+            .font(.system(size: 20))
+            .symbolRenderingMode(.palette)
+            .foregroundStyle(.white, .red)
+            .accessibilityLabel("lc.flek.certificate.notImported".loc)
+    }
+
+    @ViewBuilder private var generalPage: some View {
+        FlekGeneralView(
+            managesCertificate: sharedModel.multiLCStatus != 2,
+            onRemoveCertificate: { clearCertificate() },
+            jitPage: { jitPage }
+        )
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { ToolbarItem(placement: .principal) { Text("lc.flek.cat.general".loc).font(.headline) } }
     }
 
     @ViewBuilder private var launchBehaviorPage: some View {
@@ -1091,11 +1058,8 @@ struct LCSettingsView: View {
         Form {
                 if sharedModel.multiLCStatus != 2 {
                     Section {
-                        if !certificateDataFound {
-                            Button("lc.settings.importCertificate".loc) {
-                                Task { await importCertificate() }
-                            }
-                        } else {
+                        // Importing is General's job now, through its own page.
+                        if certificateDataFound {
                             Button("lc.settings.removeCertificate".loc) {
                                 Task { await removeCertificate() }
                             }
@@ -1287,77 +1251,6 @@ struct LCSettingsView: View {
         LCUtils.appGroupUserDefault.removeObject(forKey: "symbolOffsetCache")
     }
     
-    func importCertificate() async {
-        guard let doImport = await certificateImportAlert.open(), doImport else {
-            return
-        }
-        guard let certificateURL = await certificateImportFileAlert.open() else {
-            return
-        }
-        guard let certificatePassword = await certificateImportPasswordAlert.open() else {
-            return
-        }
-        let certificateData : Data
-        do {
-            certificateData = try Data(contentsOf: certificateURL)
-        } catch {
-            errorInfo = error.localizedDescription
-            errorShow = true
-            return
-        }
-        
-        guard let _ = LCUtils.getCertTeamId(withKeyData: certificateData, password: certificatePassword) else {
-            errorInfo = "lc.settings.invalidCertError".loc
-            errorShow = true
-            return
-        }
-        
-        LCUtils.appGroupUserDefault.set(certificateData, forKey: "LCCertificateData")
-        LCUtils.appGroupUserDefault.set(certificatePassword, forKey: "LCCertificatePassword")
-        LCUtils.appGroupUserDefault.set(NSDate.now, forKey: "LCCertificateUpdateDate")
-        certificateDataFound = true
-
-        UserDefaults.standard.set(LCSharedUtils.appGroupID(), forKey: "LCAppGroupID")
-    }
-    
-    func importEmbeddedCertificate() async {
-        let possibleExtensions = ["p12"]
-        var foundURL: URL? = nil
-        for ext in possibleExtensions {
-            if let url = Bundle.main.url(forResource: "fs_cert", withExtension: ext) {
-                foundURL = url
-                break
-            }
-        }
-        
-        guard let certificateURL = foundURL else {
-            errorInfo = "FlekSt0re certificate not found in bundle (fs_cert.*). Make sure it's added to Copy Bundle Resources."
-            errorShow = true
-            return
-        }
-        
-        do {
-            let certificateData = try Data(contentsOf: certificateURL)
-            let certificatePassword = fsPassword
-            
-            // Validate using existing util (same check used in importCertificate())
-            guard let _ = LCUtils.getCertTeamId(withKeyData: certificateData, password: certificatePassword) else {
-                errorInfo = "lc.settings.invalidCertError".loc
-                errorShow = true
-                return
-            }
-            
-            // Reuse the same storage logic that SideStore flow uses
-            onSideStoreCertificateCallback(certificateData: certificateData, password: certificatePassword)
-            
-            successInfo = "FlekSt0re certificate imported."
-            successShow = true
-        } catch {
-            errorInfo = "Failed to read FlekSt0re certificate: \(error.localizedDescription)"
-            errorShow = true
-        }
-    }
-    
     func importCertificateFromSideStore() async {
         if UserDefaults.sideStoreExist() {
             if let ans = await certificateImportFromBuiltInSideStoreAlert.open(), ans {
@@ -1432,18 +1325,22 @@ struct LCSettingsView: View {
         LCUtils.appGroupUserDefault.set(certificateData, forKey: "LCCertificateData")
         LCUtils.appGroupUserDefault.set(password, forKey: "LCCertificatePassword")
         LCUtils.appGroupUserDefault.set(NSDate.now, forKey: "LCCertificateUpdateDate")
-        certificateDataFound = true
     }
     
     func removeCertificate() async {
         guard let doRemove = await certificateRemoveAlert.open(), doRemove else {
             return
         }
-        
+        clearCertificate()
+    }
+
+    /// Forgets the stored certificate. General asks first in words of its own,
+    /// which depend on the certificate; removeCertificate() asks with the
+    /// generic warning.
+    func clearCertificate() {
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificateData")
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificatePassword")
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificateUpdateDate")
-        certificateDataFound = false
         
         UserDefaults.standard.set(nil, forKey: "LCAppGroupID")
     }
