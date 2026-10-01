@@ -177,6 +177,12 @@ struct LCJITLessDiagnoseView : View {
     
     @State private var debugTapCount = 0
     @State private var showDebugSections = UserDefaults.standard.bool(forKey: "LCShowDebugSections")
+    /// The diagnostics a build FlekSt0re signed keeps behind ten taps on the
+    /// title. One it did not sign, whose certificate is the user's own, shows
+    /// them outright.
+    private var showsDiagnostics: Bool {
+        showDebugSections || Bundle.main.flekStoreDeviceID == nil
+    }
     
     @State var errorShow = false
     @State var errorInfo = ""
@@ -190,7 +196,7 @@ struct LCJITLessDiagnoseView : View {
     var body: some View {
         if loaded {
             Form {
-                if showDebugSections {
+                if showsDiagnostics {
                     Section {
                         HStack {
                             Text("lc.jitlessDiag.bundleId".loc)
@@ -260,7 +266,7 @@ struct LCJITLessDiagnoseView : View {
                             .foregroundStyle(certificatePasswordFound ? .green : .red)
                     }
                     
-                    if showDebugSections {
+                    if showsDiagnostics {
                         HStack {
                             Text("lc.jitlessDiag.certLastUpdate".loc)
                             Spacer()
@@ -283,7 +289,7 @@ struct LCJITLessDiagnoseView : View {
                         }
                     }
                     if certificateDataFound {
-                        if showDebugSections {
+                        if showsDiagnostics {
                             HStack {
                                 Text("lc.jitlessDiag.certTeamId".loc)
                                 Spacer()
@@ -297,7 +303,7 @@ struct LCJITLessDiagnoseView : View {
                             Text(certificateStatus == -1 ? "lc.jitlessDiag.checking".loc : getStatusText(status: certificateStatus))
                                 .foregroundStyle(certificateStatus == 0 ? .green : .red)
                         }
-                        if showDebugSections {
+                        if showsDiagnostics {
                             HStack {
                                 Text("lc.jitlessDiag.certificateValidateUntil".loc)
                                 Spacer()
@@ -316,16 +322,7 @@ struct LCJITLessDiagnoseView : View {
                         Text("lc.settings.testJitLess".loc)
                     }
                     .disabled(isJITLessTestInProgress)
-                    
-                    if showDebugSections {
-                        Button {
-                            getHelp()
-                        } label: {
-                            Text("lc.jitlessDiag.getHelp".loc)
-                                .bold()
-                                .rainbow()
-                        }
-                    }
+                    // No "Get Help": it led to LiveContainer's FAQ, not FlekDeck's.
                 }
 
             }
@@ -434,10 +431,6 @@ struct LCJITLessDiagnoseView : View {
             isJITLessTestInProgress = false
         }
     
-    }
-    
-    func getHelp() {
-        UIApplication.shared.open(URL(string: "https://livecontainer.github.io/docs/faq/jit-less-mode-setup")!)
     }
     
     func validateCertificate() {
