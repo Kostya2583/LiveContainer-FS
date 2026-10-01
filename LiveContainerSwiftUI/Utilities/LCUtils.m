@@ -172,6 +172,15 @@
     return ans;
 }
 
++ (NSDictionary<NSString*, id>*)getCertInfoWithKeyData:(NSData*)keyData password:(NSString*)password {
+    NSError *error;
+    [self loadStoreFrameworksWithError2:&error];
+    if (error) {
+        return nil;
+    }
+    return [NSClassFromString(@"ZSigner") getCertInfoWithCert:keyData pass:password];
+}
+
 + (int)validateCertificateWithCompletionHandler:(void(^)(int status, NSDate *expirationDate, NSString *organizationalUnitName, NSString *error))completionHandler {
     NSError *error;
     NSData *certData = [LCUtils certificateData];
