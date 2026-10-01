@@ -13,7 +13,8 @@
 //  at all, so there the card says so instead, and explains why in
 //  FlekCertificateUnavailableView. Once a certificate is imported the card
 //  shows whose it is and whether it still works, and offers its removal —
-//  with a stronger warning while it still works.
+//  with a stronger warning while it still works. On a build whose Info.plist
+//  carries a FlekSt0re device ID, it only shows whether it works.
 //
 
 import SwiftUI
@@ -32,6 +33,18 @@ struct FlekGeneralView<JITPage: View>: View {
     /// The imported certificate as the card shows it; nil while none is.
     @State private var certificate: FlekImportedCertificate?
     @State private var removalConfirmationShown = false
+
+    /// Whether the Info.plist carries a FlekSt0re device ID, as the builds
+    /// FlekSt0re signs do. Their certificate is one bought through FlekSt0re:
+    /// the card says only whether it works, naming no holder, and it stays.
+    private var isFlekStoreBuild: Bool {
+        Bundle.main.flekStoreDeviceID != nil
+    }
+
+    /// Whether the card offers to remove the certificate.
+    private var offersRemoval: Bool {
+        managesCertificate && !isFlekStoreBuild
+    }
 
     private static var certificatePoints: [String] {
         [
@@ -158,7 +171,8 @@ struct FlekGeneralView<JITPage: View>: View {
     }
 
     /// The imported certificate: whose it is and whether it still works. Its
-    /// details are on the JIT-less diagnosis page.
+    /// details are on the JIT-less diagnosis page. On a FlekSt0re build the
+    /// card leaves out whose it is.
     private var importedCertificateCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             NavigationLink {
@@ -169,7 +183,7 @@ struct FlekGeneralView<JITPage: View>: View {
                     title: "lc.flek.certificate".loc,
                     showsChevron: true
                 ) {
-                    if let holder = certificate?.holder {
+                    if !isFlekStoreBuild, let holder = certificate?.holder {
                         Text(holder)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -195,9 +209,7 @@ struct FlekGeneralView<JITPage: View>: View {
             }
 
             if let certificate, certificate.isInvalid {
-                Text(certificate.isFromFlekStore
-                     ? "lc.flek.certStatus.invalidFlekStore".loc
-                     : "lc.flek.certStatus.invalid".loc)
+                Text(invalidText(for: certificate))
                     .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -210,7 +222,7 @@ struct FlekGeneralView<JITPage: View>: View {
                     )
             }
 
-            if managesCertificate, certificate != nil {
+            if offersRemoval, certificate != nil {
                 Button {
                     removalConfirmationShown = true
                 } label: {
@@ -254,6 +266,17 @@ struct FlekGeneralView<JITPage: View>: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    /// What the card says of a certificate that no longer works. It points to
+    /// Remove only where the card offers it.
+    private func invalidText(for certificate: FlekImportedCertificate) -> String {
+        if certificate.isFromFlekStore {
+            return "lc.flek.certStatus.invalidFlekStore".loc
+        }
+        return offersRemoval
+            ? "lc.flek.certStatus.invalid".loc
+            : "lc.flek.certStatus.invalidNoRemoval".loc
     }
 
     /// Removing a certificate that still works is most likely a mistake, so it

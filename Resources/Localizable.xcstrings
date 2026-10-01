@@ -16406,6 +16406,17 @@
         }
       }
     },
+    "lc.flek.certStatus.invalidNoRemoval" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate is no longer valid and can’t be used to launch apps."
+          }
+        }
+      }
+    },
     "lc.flek.certStatus.ready" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -1073,7 +1073,9 @@ struct LCSettingsView: View {
                 if sharedModel.multiLCStatus != 2 {
                     Section {
                         // Importing is General's job now, through its own page.
-                        if certificateDataFound {
+                        // Removing is offered where General offers it: not on a
+                        // build whose Info.plist carries a FlekSt0re device ID.
+                        if certificateDataFound && Bundle.main.flekStoreDeviceID == nil {
                             Button("lc.settings.removeCertificate".loc) {
                                 Task { await removeCertificate() }
                             }

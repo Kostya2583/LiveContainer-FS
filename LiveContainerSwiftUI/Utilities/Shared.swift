@@ -216,6 +216,16 @@ extension UserDefaults {
     }
 }
 
+extension Bundle {
+    /// The per-device ID FlekSt0re's signer writes into the Info.plist of each
+    /// build it signs. A build it did not sign carries the key empty: nil.
+    var flekStoreDeviceID: String? {
+        let value = (infoDictionary?["encryptedUdid"] as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return value?.isEmpty == false ? value : nil
+    }
+}
+
 class DataManager {
     static let shared = DataManager()
     let model = SharedModel()
