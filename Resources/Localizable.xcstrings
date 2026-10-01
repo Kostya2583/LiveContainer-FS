@@ -16879,6 +16879,281 @@
         }
       }
     },
+    "lc.flek.jit.blocker.entitlement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This installation of FlekDeck is signed without the get-task-allow entitlement, so iOS won’t let JIT be enabled for it. Reinstall FlekDeck signed with a Development certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.blocker.os" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Built-in JIT needs iOS 17.4 or later."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.blocker.simulator" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Built-in JIT isn’t available in the Simulator."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.blocker.unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This build of FlekDeck doesn’t include built-in JIT."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.check" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check Readiness"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekDeck enables JIT on its own when an app set to launch with JIT opens. This needs a pairing file made for this device, Developer Mode turned on, and LocalDevVPN connected. The first launch after a restart also downloads and mounts the developer disk image, so it takes longer."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.header" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Built-in JIT"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.needsPairingFile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import a pairing file first."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pairingFile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pairingFile.import" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pairingFile.imported" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imported"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pairingFile.missing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Imported"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pairingFile.remove" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pairingFile.replace" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replace Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pairingFile.wrongKind" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This file can’t be used for built-in JIT: it has no RemotePairing record. Make a pairing file with iloader on a computer, or with an on-device pairing app on iOS 27."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready. JIT can be enabled for apps."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.ready.txm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready. This device has TXM, so an app only gets JIT if it supports the JIT script chosen in its settings."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.resetImage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Developer Disk Image"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.resetImage.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The downloaded developer disk image was removed. It will be downloaded again the next time it’s needed."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step.checkingImage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking the developer disk image…"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step.downloading %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloading the developer disk image… %lld%%"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step.mounting %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mounting the developer disk image… %lld%%"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step.reaching" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reaching the device…"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step.verifying" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifying…"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.unreachableHint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Is LocalDevVPN connected?"
+          }
+        }
+      }
+    },
     "lc.flek.layoutGrid" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -650,12 +650,19 @@ static UIDeviceOrientation LCDeviceOrientationForInterface(UIInterfaceOrientatio
     
     // init extension
     NSError* error = nil;
-    _extension = [NSExtension extensionWithIdentifier:LCUtils.liveProcessBundleIdentifier error:&error];
+    _extension = [NSExtension extensionWithIdentifier:LCSharedUtils.liveProcessBundleIdentifier error:&error];
     if(error) {
         [delegate appSceneVC:self didInitializeWithError:error];
         return nil;
     }
     _extension.preferredLanguages = @[];
+    
+    // With built-in JIT a guest enables JIT for itself, and it cannot read this
+    // app's container: hand over the folder the pairing file is in before it
+    // starts.
+    if([NSUserDefaults.lcSharedDefaults integerForKey:@"LCJITEnablerType"] == 7) { // JITEnablerType.StikJITHeadless
+        [LCUtils issueBuiltInJITSandboxExtension];
+    }
     
     NSExtensionItem *item = [NSExtensionItem new];
     NSMutableArray* bookmarks = [NSMutableArray array];

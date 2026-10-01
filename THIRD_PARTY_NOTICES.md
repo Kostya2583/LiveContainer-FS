@@ -40,3 +40,48 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
 OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
+
+## StikJIT
+
+Project: https://github.com/StikDebug/StikJIT  
+License: [Mozilla Public License 2.0](https://github.com/StikDebug/StikJIT/blob/main/LICENSE)
+
+FlekDeck includes StikJIT as a compiled framework, unmodified, to enable
+JIT for the apps it runs. Its source code is available at the project
+address above. StikJIT is brought in through the LiveContainer project,
+together with the code that runs it.
+
+The JIT scripts inside the framework, `universal.js` and `legacy.js`,
+come from [StikDebug](https://github.com/StikDebug/StikDebug) and are
+licensed under the
+[GNU Affero General Public License v3.0](https://github.com/StikDebug/StikDebug/blob/main/LICENSE).
+
+## idevice
+
+Project: https://github.com/jkcoxson/idevice  
+Author: Jackson Coxson  
+License: MIT License
+
+idevice is compiled into StikJIT.
+
+### MIT License
+
+Copyright 2026 Jackson Coxson
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the “Software”),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.

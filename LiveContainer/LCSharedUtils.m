@@ -450,4 +450,29 @@ NSString* FBSOpenApplicationOptionKeyPayloadURL = @"__PayloadURL";
 
     return result;
 }
+
++ (NSString *)liveProcessBundleIdentifier {
+    // LiveProcess asks this itself when a window enables JIT through a second
+    // instance of the extension. Its bundle ID is whatever this copy was
+    // re-signed as, so it is read rather than guessed.
+    NSBundle *mainBundle = lcMainBundle ?: NSBundle.mainBundle;
+    if([mainBundle.bundlePath hasSuffix:@"PlugIns/LiveProcess.appex"]) {
+        return mainBundle.bundleIdentifier;
+    }
+    
+    // first check if we have LiveProcess extension in our own bundle
+    NSBundle *liveProcessBundle = [NSBundle bundleWithPath:[NSBundle.mainBundle.builtInPlugInsPath stringByAppendingPathComponent:@"LiveProcess.appex"]];
+    if(liveProcessBundle) {
+        return liveProcessBundle.bundleIdentifier;
+    }
+    
+    // in LC2, attempt to guess LC1's LiveProcess extension
+    NSString *bundleID = [NSString stringWithFormat:@"com.kdt.livecontainer.%@.LiveProcess", LCSharedUtils.teamIdentifier];
+    if([NSExtension extensionWithIdentifier:bundleID error:nil]) {
+        return bundleID;
+    }
+    
+    return nil;
+}
+
 @end

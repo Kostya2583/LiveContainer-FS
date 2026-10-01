@@ -18,6 +18,7 @@ enum JITEnablerType : Int, CaseIterable, Identifiable {
     case SideStore = 4
     case StosDebug = 5
     case StosDebugLC = 6
+    case StikJITHeadless = 7
     
     var displayName: String {
         switch self {
@@ -28,6 +29,7 @@ enum JITEnablerType : Int, CaseIterable, Identifiable {
         case .SideStore: "SideStore"
         case .JITStreamerEBLegacy: "JitStreamer-EB (Relaunch)"
         case .SideJITServer: "SideJITServer/JITStreamer 2.0"
+        case .StikJITHeadless: "Built-in (StikJIT)"
         }
     }
 }
@@ -1128,6 +1130,10 @@ struct LCSettingsView: View {
                         }
                     }
                     Picker(selection: $JITEnabler) {
+                        // StikJIT does not load before iOS 17.4.
+                        if #available(iOS 17.4, *) {
+                            Text(JITEnablerType.StikJITHeadless.displayName).tag(JITEnablerType.StikJITHeadless)
+                        }
                         Text("SideJITServer/JITStreamer 2.0").tag(JITEnablerType.SideJITServer)
                         Text("StikDebug").tag(JITEnablerType.StikJIT)
                         Text("StikDebug (Another FlekDeck)").tag(JITEnablerType.StikJITLC)
@@ -1142,7 +1148,10 @@ struct LCSettingsView: View {
                 } footer: {
                     Text("lc.settings.JitDesc".loc)
                 }
-                
+                // The pairing file is the primary FlekDeck's, as it is upstream.
+                if JITEnabler == .StikJITHeadless, sharedModel.multiLCStatus == 0 {
+                    FlekBuiltInJITSection()
+                }
                 
         }
         .navigationBarTitleDisplayMode(.inline)

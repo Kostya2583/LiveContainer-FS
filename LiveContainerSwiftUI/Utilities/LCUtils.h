@@ -38,7 +38,16 @@ uint32_t dyld_get_sdk_version(const struct mach_header* mh);
 + (int)validateCertificateWithCompletionHandler:(void(^)(int status, NSDate *expirationDate, NSString *organizationalUnitName, NSString *error))completionHandler;
 
 + (BOOL)isTXMScriptRequired;
-+ (NSString *)base64EncodedUniversalJITScript;
+
+// Built-in JIT. The folder holds the pairing file and the developer disk image
+// cache; the rest loads StikJITHeadless.framework on demand and so only works
+// on iOS 17.4 and later, on a device.
++ (NSURL *)builtInJITFolder;
++ (BOOL)issueBuiltInJITSandboxExtension;
++ (BOOL)isBuiltInJITLoadable;
++ (NSNumber *)isTXMPresentForBuiltInJIT;
++ (NSError *)prepareBuiltInJITWithProgress:(void (^)(NSInteger stage, double fraction))progress;
++ (NSError *)resetBuiltInJITDiskImage;
 
 + (BOOL)isAppGroupAltStoreLike;
 + (Store)store;
@@ -47,7 +56,6 @@ uint32_t dyld_get_sdk_version(const struct mach_header* mh);
 + (NSString *)getVersionInfo;
 // The upstream LiveContainer release this build carries, or nil if unrecorded.
 + (NSString *)getUpstreamVersion;
-+ (NSString *)liveProcessBundleIdentifier;
 + (NSData*)bookmarkForURL:(NSURL*) url;
 @end
 
