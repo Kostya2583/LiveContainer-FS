@@ -29,6 +29,28 @@ enum LCInstallBackgroundTask {
         #endif
     }
 
+    /// What the identifier of a continued-processing task has to start with in
+    /// this install, for other work kept running the same way. Nil where there
+    /// is no such scheduler, or nothing can be permitted.
+    ///
+    /// It is the installs' own prefix, and has to be: the scheduler reads the
+    /// permitted identifiers once, so a second wildcard added later for some
+    /// other kind of task would never be seen.
+    @MainActor
+    static func taskIdentifierPrefix() -> String? {
+        #if targetEnvironment(macCatalyst) || targetEnvironment(simulator)
+        return nil
+        #else
+        guard #available(iOS 26.0, *) else {
+            return nil
+        }
+        var failure: String?
+        return LCInstallBackgroundTaskManager.shared
+            .permittedWildcard(for: Bundle.main.bundleIdentifier ?? "", failure: &failure)?
+            .replacingOccurrences(of: ".*", with: ".")
+        #endif
+    }
+
     /// Records the last outcome for the Settings row. Logging alone isn't enough:
     /// this only ever fails on someone else's phone, with no Mac attached to read
     /// the console from — the same reason `LCHostIdentity` reports this way.
@@ -119,7 +141,7 @@ private final class LCInstallBackgroundTaskManager {
     /// in-memory Info.plist, which is where the scheduler reads the list from (see
     /// LCPermittedTaskIdentifier.m). This runs before any registration, and has to:
     /// the scheduler reads the list once, on the first one, and keeps it.
-    private func permittedWildcard(for bundleID: String, failure: inout String?) -> String? {
+    fileprivate func permittedWildcard(for bundleID: String, failure: inout String?) -> String? {
         if let signed = Self.permittedIdentifiers.first(where: { $0.hasSuffix(".*") && $0.hasPrefix(bundleID) }) {
             return signed
         }

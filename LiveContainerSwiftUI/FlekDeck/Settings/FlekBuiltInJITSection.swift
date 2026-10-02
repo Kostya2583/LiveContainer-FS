@@ -33,8 +33,11 @@ struct FlekBuiltInJITSection: View {
 
     @ObservedObject private var vpn = FlekLoopbackVPN.shared
 
+    @StateObject private var devicePairing = FlekDevicePairing()
+
     @State private var pairingFileFound = (try? LCPath.pairingFilePath.checkResourceIsReachable()) ?? false
     @State private var isChoosingPairingFile = false
+    @State private var isCreatingPairingFile = false
     @State private var readiness = Readiness.unchecked
     /// Setting the VPN up or turning it on, which takes a moment.
     @State private var isVPNBusy = false
@@ -121,10 +124,32 @@ struct FlekBuiltInJITSection: View {
 
     private var pairingStep: some View {
         step(1, isDone: pairingFileFound,
-             title: "lc.flek.jit.step1.title".loc,
-             caption: (pairingFileFound ? "lc.flek.jit.step1.done" : "lc.flek.jit.step1.caption").loc) {
-            stepButton((pairingFileFound ? "lc.flek.jit.replace" : "lc.flek.jit.import").loc) {
-                isChoosingPairingFile = true
+             title: (canCreatePairingFile ? "lc.flek.jit.step1.title.add" : "lc.flek.jit.step1.title").loc,
+             caption: pairingCaption) {
+            if canCreatePairingFile {
+                // The file can be made on this device, which needs no computer,
+                // or brought in as before.
+                Menu((pairingFileFound ? "lc.flek.jit.replace" : "lc.flek.jit.add").loc) {
+                    Button("lc.flek.jit.pair.create".loc) {
+                        isCreatingPairingFile = true
+                    }
+                    Button("lc.flek.jit.pair.importFile".loc) {
+                        isChoosingPairingFile = true
+                    }
+                }
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+                .controlSize(.small)
+            } else {
+                stepButton((pairingFileFound ? "lc.flek.jit.replace" : "lc.flek.jit.import").loc) {
+                    isChoosingPairingFile = true
+                }
+            }
+        }
+        .sheet(isPresented: $isCreatingPairingFile) {
+            FlekDevicePairingView(pairing: devicePairing) {
+                pairingFileFound = true
+                readiness = .unchecked
             }
         }
         // On the one row that is always here: a modifier on the section would
@@ -144,6 +169,17 @@ struct FlekBuiltInJITSection: View {
         } onDismiss: {
             isChoosingPairingFile = false
         }
+    }
+
+    private var canCreatePairingFile: Bool {
+        FlekDevicePairing.isSupported
+    }
+
+    private var pairingCaption: String {
+        if pairingFileFound {
+            return "lc.flek.jit.step1.done".loc
+        }
+        return (canCreatePairingFile ? "lc.flek.jit.step1.caption.add" : "lc.flek.jit.step1.caption").loc
     }
 
     /// A pairing file is a property list whatever it is called; iloader and

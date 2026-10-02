@@ -94,6 +94,7 @@ struct LCSettingsView: View {
     @AppStorage("LCWaitForDebugger") var waitForDebugger = false
     @AppStorage("LCSharePrivateDataWithLiveProcess") var sharePrivateDataWithLiveProcess = false
     @AppStorage("LCOpenPrivateAppsWithoutCopying") var openPrivateAppsWithoutCopying = false
+    @AppStorage("FlekPairWithoutCode") var pairWithoutCode = false
     @AppStorage("BKNoWatchdogs") var disableLiveProcessWatchdog = false
     
     ///Flekstore user defaults
@@ -749,6 +750,12 @@ struct LCSettingsView: View {
                         }
                         Toggle(isOn: $disableLiveProcessWatchdog) {
                             Text("Disable LiveProcess watchdog termination")
+                        }
+                        // Has "Create on This Device" advertise a pairing that
+                        // asks for no code, to find out whether iOS goes along
+                        // with it. If it asks anyway, the code is 000000.
+                        Toggle(isOn: $pairWithoutCode) {
+                            Text("Create Pairing File Without a Code")
                         }
                         // The page Premium Access opens to get the UDID, for
                         // trying a server out. HTTPS only; empty means FlekSt0re's.

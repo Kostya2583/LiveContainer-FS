@@ -37,6 +37,7 @@
 		E16D95752E1CD2B90068EB63 /* LiveContainerShared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1292BD62DCA3B660065E12D /* LiveContainerShared.framework */; };
 		E1946AD83041BFF8005CBEDD /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1946AD63041BFDD005CBEDD /* IOKit.framework */; };
 		E1F04CE730527A2200EABBF1 /* StikJIT.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = E1F04CE630527A2200EABBF1 /* StikJIT.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		F1EC0DE2305700000B000002 /* IdevicePairing.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = F1EC0DE2305700000B000001 /* IdevicePairing.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		F1EC0DE1305600000A00000D /* LoopbackVPN.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F1EC0DE1305600000A000002 /* LoopbackVPN.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -136,6 +137,7 @@
 				174140942D9C0E8200F3F928 /* ZSign.dylib in Embed Frameworks */,
 				E15C6F2F30440EAD00FEC6BD /* StikJITHeadless.framework in Embed Frameworks */,
 				E1F04CE730527A2200EABBF1 /* StikJIT.framework in Embed Frameworks */,
+				F1EC0DE2305700000B000002 /* IdevicePairing.dylib in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 1;
@@ -210,6 +212,7 @@
 		E16D9BA02E1D48DE0068EB63 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		E1946AD63041BFDD005CBEDD /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk/System/Library/Frameworks/IOKit.framework; sourceTree = DEVELOPER_DIR; };
 		E1F04CE630527A2200EABBF1 /* StikJIT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StikJIT.framework; path = "StikJITHeadless/StikJIT.xcframework/ios-arm64/StikJIT.framework"; sourceTree = "<group>"; };
+		F1EC0DE2305700000B000001 /* IdevicePairing.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = IdevicePairing.dylib; path = IdevicePairing/IdevicePairing.dylib; sourceTree = "<group>"; };
 		F1EC0DE1305600000A000002 /* LoopbackVPN.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LoopbackVPN.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -521,6 +524,7 @@
 				E1946AD63041BFDD005CBEDD /* IOKit.framework */,
 				17554B712DA16988004C6D90 /* OpenSSL.xcframework */,
 				E1F04CE630527A2200EABBF1 /* StikJIT.framework */,
+				F1EC0DE2305700000B000001 /* IdevicePairing.dylib */,
 				174140D52D9C176700F3F928 /* libarchive.tbd */,
 				E12928C92DCA38380065E12D /* UniformTypeIdentifiers.framework */,
 			);

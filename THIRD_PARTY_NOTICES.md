@@ -62,7 +62,10 @@ Project: https://github.com/jkcoxson/idevice
 Author: Jackson Coxson  
 License: MIT License
 
-idevice is compiled into StikJIT.
+idevice is compiled into StikJIT, and its pairing functions into
+`IdevicePairing.dylib`, with which FlekDeck creates a pairing file on the
+device. `IdevicePairing/build.sh` builds that library from the copy of
+idevice in the StikJIT repository.
 
 ### MIT License
 

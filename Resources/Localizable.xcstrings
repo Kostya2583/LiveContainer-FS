@@ -16879,6 +16879,17 @@
         }
       }
     },
+    "lc.flek.jit.add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        }
+      }
+    },
     "lc.flek.jit.blocker.entitlement" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17018,6 +17029,171 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This app is set to launch with JIT, but the VPN isn’t connected. Turn it on in Settings › JIT & JIT-Less, or connect LocalDevVPN."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.activity.code %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Code %@"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.activity.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.activity.waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings › Privacy & Security › Developer Mode"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.create" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create on This Device"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi has to be on. The code also shows in FlekDeck’s Live Activity while you’re in Settings."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.importFile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.localNetwork" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekDeck needs Local Network access for this. Turn it on in Settings › Privacy & Security › Local Network."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.openSettings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.retry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That didn’t work. Try again in Settings."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.step1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings › Privacy & Security › Developer Mode."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.step2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scroll down and tap Pair with FlekDeck."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.step3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the code shown here."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.stopped" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing was stopped before it finished."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for Settings…"
           }
         }
       }
@@ -17176,6 +17352,17 @@
         }
       }
     },
+    "lc.flek.jit.step1.caption.add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create it on this device, or import one."
+          }
+        }
+      }
+    },
     "lc.flek.jit.step1.done" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17194,6 +17381,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step1.title.add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Pairing File"
           }
         }
       }
