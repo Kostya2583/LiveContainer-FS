@@ -412,6 +412,7 @@ struct LCTabView: View {
         switch await AccessVerificationService.fetchStatus(encryptedUDID: resolvedEncryptedUDID) {
         case .answered(let response):
             AccessVerdictStore.save(response, for: resolvedEncryptedUDID)
+            FlekPremium.keep(response)
             await MainActor.run {
                 if response.isBanned {
                     applyBan(reason: response.banReason, message: response.message)
@@ -441,6 +442,7 @@ struct LCTabView: View {
                 return
             }
             AccessVerdictStore.save(response, for: encryptedUDID)
+            FlekPremium.keep(response)
 
             await MainActor.run {
                 if response.isBanned {

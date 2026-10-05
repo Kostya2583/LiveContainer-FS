@@ -139,6 +139,24 @@ static NSString *enableJITWithStikJIT(NSString *docPath) {
         }
     }
     
+    // A pairing file made on this device is a Premium feature, and so is using
+    // one: the file says where it was made, and the app says how long Premium
+    // lasts, or that it has just confirmed it for this launch. The app asks
+    // the same before a launch from the home screen, but not every launch
+    // starts there — a link opened in another guest leads straight here.
+    NSString *pairingFolder = [sandboxExtension componentsSeparatedByString:@";"].lastObject;
+    NSDictionary *pairingRecord = [NSDictionary dictionaryWithContentsOfFile:[pairingFolder stringByAppendingPathComponent:@"ALTPairingFile.mobiledevicepairing"]];
+    if ([pairingRecord[@"created_on_device"] boolValue]) {
+        NSUserDefaults *shared = NSUserDefaults.lcSharedDefaults;
+        NSTimeInterval clock = NSDate.date.timeIntervalSince1970;
+        // The latest the clock has been seen at stands in for one wound back.
+        NSTimeInterval now = MAX(clock, [shared doubleForKey:@"FSAccessClockHighWaterMark"]);
+        BOOL justConfirmed = fabs(clock - [shared doubleForKey:@"FlekPremiumConfirmedAt"]) < 60;
+        if (!justConfirmed && [shared doubleForKey:@"FlekPremiumUntil"] <= now) {
+            return @"The pairing file was made on this device, which needs Premium. Open FlekDeck to renew Premium, or import a pairing file made on a computer in Settings › JIT & JIT-Less.";
+        }
+    }
+
     // The helper reaches this device through a VPN. Where that is FlekDeck's own
     // it is turned on as the guest launches: by the app for a window, and here
     // for a single-process launch, where this is the app.

@@ -3,8 +3,13 @@
 //  LiveContainerSwiftUI
 //
 //  What the JIT page shows while built-in JIT is the selected enabler: its
-//  setup, as three steps that each tick off once done — the pairing file it
-//  connects with, the VPN it connects through, and a check that the two work.
+//  setup, as steps that each tick off once done — the pairing file it connects
+//  with, the VPN it connects through, a check that the two work, and the apps
+//  to use it for.
+//
+//  It is meant to be gone through without having read anything: one button on
+//  the page is filled at a time, the one to tap next, and the check runs by
+//  itself once the two steps before it are done.
 //
 //  Built-in JIT is StikJIT run by FlekDeck itself. A guest that needs JIT
 //  starts a second LiveProcess, which reaches the device's own debug service
@@ -35,10 +40,26 @@ struct FlekBuiltInJITSection: View {
 
     @StateObject private var devicePairing = FlekDevicePairing()
 
-    @State private var pairingFileFound = (try? LCPath.pairingFilePath.checkResourceIsReachable()) ?? false
+    @Environment(\.scenePhase) private var scenePhase
+
+    @State private var pairingFileFound = FlekBuiltInJIT.hasPairingFile
+    /// Made on this device rather than imported, which takes Premium to use.
+    /// This and the next are read as the page comes up, not here: the view is
+    /// made anew each time the page is redrawn, and one of them reads a file.
+    @State private var pairingMadeOnDevice = false
+    @State private var isPremium = false
+    /// While the server is asked about Premium, before the file is made.
+    @State private var isCheckingPremium = false
     @State private var isChoosingPairingFile = false
-    @State private var isCreatingPairingFile = false
+    @State private var pairingSheet: PairingSheet?
+    /// Set from the Premium sheet, which has to be gone before the file
+    /// importer can come up.
+    @State private var importsAfterSheet = false
     @State private var readiness = Readiness.unchecked
+    /// When the check last passed, or zero. Kept, so that the step stays
+    /// ticked between visits, until something it checked has changed.
+    @AppStorage("FlekJITReadyAt") private var readyAt = 0.0
+    @State private var jitAppCount = 0
     /// Setting the VPN up or turning it on, which takes a moment.
     @State private var isVPNBusy = false
     @State private var notice = ""
@@ -47,34 +68,28 @@ struct FlekBuiltInJITSection: View {
     var body: some View {
         Section {
             if let blocker = FlekBuiltInJIT.blocker {
+                // In place of the steps, which could only lead to a check that
+                // cannot pass.
                 Text(blocker)
                     .foregroundStyle(.red)
-            }
-            pairingStep
-            vpnStep
-            readinessStep
-            if readiness == .ready {
-                // Being ready enables JIT for no app yet, which is the one
-                // thing the steps above do not say.
-                Label {
-                    Text("lc.flek.jit.perApp".loc)
-                        .font(.footnote)
-                } icon: {
-                    Image(systemName: FlekSymbol.jit)
-                        .foregroundStyle(.secondary)
-                }
+            } else {
+                pairingStep
+                vpnStep
+                readinessStep
+                appsStep
             }
             DisclosureGroup("lc.flek.jit.more".loc) {
                 if pairingFileFound {
                     Button("lc.flek.jit.pairingFile.remove".loc, role: .destructive) {
                         try? FileManager.default.removeItem(at: LCPath.pairingFilePath)
                         pairingFileFound = false
-                        readiness = .unchecked
+                        pairingMadeOnDevice = false
+                        setupChanged()
                     }
                 }
                 if vpn.isConfigured {
                     Button("lc.flek.jit.vpn.remove".loc, role: .destructive) {
-                        runVPN { try await vpn.remove() }
+                        runVPN(then: setupChanged) { try await vpn.remove() }
                     }
                     .disabled(isVPNBusy)
                 }
@@ -82,6 +97,14 @@ struct FlekBuiltInJITSection: View {
                     resetDiskImage()
                 }
                 .disabled(isChecking)
+            }
+            // On the one row that is always here, the steps giving way to a
+            // blocker, and for the same reason as the modifiers on the first
+            // step: on the section it would be presented once per row.
+            .alert("lc.flek.jit.header".loc, isPresented: $noticeShow) {
+                Button("lc.common.ok".loc) {}
+            } message: {
+                Text(notice)
             }
         } header: {
             Text("lc.flek.jit.header".loc)
@@ -112,27 +135,95 @@ struct FlekBuiltInJITSection: View {
     }
 
     /// A step's control. Bordered, so that it is the button that is tapped
-    /// rather than the whole row.
-    private func stepButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(title, action: action)
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.capsule)
-            .controlSize(.small)
+    /// rather than the whole row; filled where it is the one to go for.
+    @ViewBuilder
+    private func stepButton(_ title: String, isProminent: Bool = false, action: @escaping () -> Void) -> some View {
+        if isProminent {
+            Button(title, action: action)
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .controlSize(.small)
+        } else {
+            Button(title, action: action)
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+                .controlSize(.small)
+        }
+    }
+
+    /// The step to do next. Its button is the filled one, so that one thing on
+    /// the page always stands out as what to tap.
+    private var nextStep: Int {
+        if !isPairingFileUsable {
+            return 1
+        }
+        if FlekLoopbackVPN.isAvailable, !vpn.isConfigured {
+            return 2
+        }
+        return isReady ? 4 : 3
+    }
+
+    /// The check that passed says nothing about a setup changed since.
+    private func setupChanged() {
+        readiness = .unchecked
+        readyAt = 0
     }
 
     // MARK: 1. Pairing file
 
+    private enum PairingSheet: Identifiable {
+        case create
+        case premium
+        /// How a pairing file is made on a computer.
+        case importHelp
+
+        var id: Self { self }
+    }
+
+    /// Whether the pairing file can be made on this device, or why not.
+    private enum OnDevicePairing {
+        case available
+        /// The device can, and it is a Premium feature.
+        case needsPremium
+        case needsNewerSystem
+        /// The pairing library is not in this build.
+        case missing
+    }
+
+    private var onDevicePairing: OnDevicePairing {
+        guard #available(iOS 27.0, *) else {
+            return .needsNewerSystem
+        }
+        guard LCDevicePairing.isAvailable else {
+            return .missing
+        }
+        return isPremium ? .available : .needsPremium
+    }
+
+    /// A file made on this device is of no use once Premium has ended.
+    private var isPairingFileLocked: Bool {
+        pairingFileFound && pairingMadeOnDevice && !isPremium
+    }
+
+    private var isPairingFileUsable: Bool {
+        pairingFileFound && !isPairingFileLocked
+    }
+
+    @ViewBuilder
     private var pairingStep: some View {
-        step(1, isDone: pairingFileFound,
-             title: (canCreatePairingFile ? "lc.flek.jit.step1.title.add" : "lc.flek.jit.step1.title").loc,
-             caption: pairingCaption) {
-            if canCreatePairingFile {
-                // The file can be made on this device, which needs no computer,
-                // or brought in as before.
-                Menu((pairingFileFound ? "lc.flek.jit.replace" : "lc.flek.jit.add").loc) {
-                    Button("lc.flek.jit.pair.create".loc) {
-                        isCreatingPairingFile = true
+        step(1, isDone: isPairingFileUsable,
+             title: "lc.flek.jit.step1.title".loc,
+             caption: pairingCaption,
+             captionColor: isPairingFileLocked ? .red : .secondary) {
+            if isPairingFileUsable {
+                Menu("lc.flek.jit.replace".loc) {
+                    Button {
+                        createPairingFile()
+                    } label: {
+                        Text("lc.flek.jit.pair.create".loc)
+                        Text(onDeviceCaption)
                     }
+                    .disabled(!isOnDevicePairingOffered)
                     Button("lc.flek.jit.pair.importFile".loc) {
                         isChoosingPairingFile = true
                     }
@@ -140,28 +231,52 @@ struct FlekBuiltInJITSection: View {
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.capsule)
                 .controlSize(.small)
-            } else {
-                stepButton((pairingFileFound ? "lc.flek.jit.replace" : "lc.flek.jit.import").loc) {
-                    isChoosingPairingFile = true
+            }
+        }
+        .sheet(item: $pairingSheet, onDismiss: pairingSheetClosed) { sheet in
+            switch sheet {
+            case .create:
+                FlekDevicePairingView(pairing: devicePairing) {
+                    pairingFileFound = true
+                    pairingMadeOnDevice = true
+                    setupChanged()
+                    checkOnceSetUp()
                 }
+            case .importHelp:
+                FlekPairingImportHelpView {
+                    importsAfterSheet = true
+                }
+            case .premium:
+                PremiumRequiredView(
+                    message: "lc.flek.jit.premium.message".loc,
+                    alternative: .init(text: "lc.flek.jit.premium.alternative".loc,
+                                       buttonTitle: "lc.flek.jit.pair.importFile".loc) {
+                        importsAfterSheet = true
+                    }
+                )
             }
         }
-        .sheet(isPresented: $isCreatingPairingFile) {
-            FlekDevicePairingView(pairing: devicePairing) {
-                pairingFileFound = true
-                readiness = .unchecked
+        // On one row: a modifier on the section would be applied to every row,
+        // and so present, or run, once per row.
+        .onAppear {
+            let madeOnDevice = FlekBuiltInJIT.isPairingFileMadeOnDevice
+            let premium = FlekPremium.isActive
+            pairingMadeOnDevice = madeOnDevice
+            isPremium = premium
+            if readiness == .unchecked, readyAt > 0, pairingFileFound, premium || !madeOnDevice {
+                readiness = .ready
             }
-        }
-        // On the one row that is always here: a modifier on the section would
-        // be applied to every row, and so present, or run, once per row.
-        .alert("lc.flek.jit.header".loc, isPresented: $noticeShow) {
-            Button("lc.common.ok".loc) {}
-        } message: {
-            Text(notice)
         }
         .task {
             if FlekLoopbackVPN.isAvailable {
                 await vpn.refresh()
+            }
+            await refreshPremium()
+        }
+        .onChange(of: scenePhase) { phase in
+            // Back from buying Premium, as likely as not.
+            if phase == .active {
+                Task { await refreshPremium() }
             }
         }
         .betterFileImporter(isPresented: $isChoosingPairingFile, types: Self.pairingFileTypes, multiple: false) { urls in
@@ -169,17 +284,136 @@ struct FlekBuiltInJITSection: View {
         } onDismiss: {
             isChoosingPairingFile = false
         }
+
+        // The two ways to a pairing file, for as long as there is none to use.
+        // Making it here comes first wherever the device can do that, and is
+        // shown where it cannot, with the reason.
+        if !isPairingFileUsable {
+            pairingOption(title: "lc.flek.jit.pair.create".loc, caption: onDeviceCaption,
+                          button: (onDevicePairing == .needsPremium ? "lc.flek.jit.getPremium" : "lc.flek.jit.create").loc,
+                          isProminent: isOnDevicePairingOffered,
+                          isEnabled: isOnDevicePairingOffered,
+                          isBusy: isCheckingPremium) {
+                createPairingFile()
+            }
+            pairingOption(title: "lc.flek.jit.pair.importFile".loc,
+                          caption: (onDevicePairing == .needsPremium ? "lc.flek.jit.pair.import.caption.free"
+                                                                     : "lc.flek.jit.pair.import.caption").loc,
+                          button: "lc.flek.jit.import".loc,
+                          isProminent: !isOnDevicePairingOffered,
+                          help: { pairingSheet = .importHelp }) {
+                isChoosingPairingFile = true
+            }
+        }
     }
 
-    private var canCreatePairingFile: Bool {
-        FlekDevicePairing.isSupported
+    /// One of the ways to a pairing file, set in under the step it belongs to.
+    /// `help` puts a "How?" after the line about it.
+    private func pairingOption(title: String, caption: String, button: String, isProminent: Bool,
+                               isEnabled: Bool = true, isBusy: Bool = false,
+                               help: (() -> Void)? = nil,
+                               action: @escaping () -> Void) -> some View {
+        HStack(spacing: 12) {
+            // As wide as a step's number, so the text lines up with the step's.
+            Image(systemName: "1.circle")
+                .font(.title2)
+                .hidden()
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .foregroundStyle(isEnabled ? Color.primary : Color.secondary)
+                Text(caption)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                if let help {
+                    // Borderless, so that it is tapped by itself in the row.
+                    Button("lc.flek.jit.how".loc, action: help)
+                        .buttonStyle(.borderless)
+                        .font(.footnote)
+                }
+            }
+            Spacer(minLength: 8)
+            if isBusy {
+                ProgressView()
+            } else {
+                stepButton(button, isProminent: isProminent, action: action)
+                    .disabled(!isEnabled)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    /// Whether making the file here can be asked for at all, Premium or not.
+    private var isOnDevicePairingOffered: Bool {
+        onDevicePairing == .available || onDevicePairing == .needsPremium
+    }
+
+    private var onDeviceCaption: String {
+        switch onDevicePairing {
+        case .available: return "lc.flek.jit.pair.create.caption".loc
+        case .needsPremium: return "lc.flek.jit.pair.create.caption.premium".loc
+        case .needsNewerSystem: return "lc.flek.jit.pair.create.caption.os".loc
+        case .missing: return "lc.flek.jit.pair.create.caption.missing".loc
+        }
     }
 
     private var pairingCaption: String {
-        if pairingFileFound {
-            return "lc.flek.jit.step1.done".loc
+        if isPairingFileLocked {
+            return "lc.flek.jit.step1.locked".loc
         }
-        return (canCreatePairingFile ? "lc.flek.jit.step1.caption.add" : "lc.flek.jit.step1.caption").loc
+        guard pairingFileFound else {
+            // What the file is for, over the two ways to get one.
+            return "lc.flek.jit.step1.caption".loc
+        }
+        return (pairingMadeOnDevice ? "lc.flek.jit.step1.done.created" : "lc.flek.jit.step1.done").loc
+    }
+
+    /// Making the file here is a Premium feature, so that is settled first, and
+    /// with the server where nothing kept says yes: Premium may have been
+    /// bought a moment ago.
+    private func createPairingFile() {
+        guard !isCheckingPremium else {
+            return
+        }
+        isCheckingPremium = true
+        Task {
+            let answer = await FlekPremium.confirm()
+            isCheckingPremium = false
+            switch answer {
+            case .active:
+                isPremium = true
+                devicePairing.begin()
+                pairingSheet = .create
+            case .inactive:
+                isPremium = false
+                pairingSheet = .premium
+            case .unconfirmed:
+                show("lc.flek.jit.premium.unconfirmed".loc)
+            }
+        }
+    }
+
+    private func pairingSheetClosed() {
+        // How Cancel and a swipe down end a pairing under way. Once paired
+        // there is nothing left to end.
+        if devicePairing.state != .paired {
+            devicePairing.cancel()
+        }
+        if importsAfterSheet {
+            importsAfterSheet = false
+            isChoosingPairingFile = true
+        }
+    }
+
+    /// What is kept about Premium, and the server's word where that says no
+    /// and something here hangs on it.
+    private func refreshPremium() async {
+        isPremium = FlekPremium.isActive
+        guard !isPremium, FlekDevicePairing.isSupported || pairingMadeOnDevice else {
+            return
+        }
+        if await FlekPremium.refresh() == true {
+            isPremium = true
+        }
     }
 
     /// A pairing file is a property list whatever it is called; iloader and
@@ -207,7 +441,10 @@ struct FlekBuiltInJITSection: View {
                                                     withIntermediateDirectories: true)
             try data.write(to: destination, options: .atomic)
             pairingFileFound = true
-            readiness = .unchecked
+            // Still one made on this device, if that is what was brought back.
+            pairingMadeOnDevice = FlekBuiltInJIT.isPairingFileMadeOnDevice
+            setupChanged()
+            checkOnceSetUp()
         } catch {
             show(error.localizedDescription)
         }
@@ -231,8 +468,8 @@ struct FlekBuiltInJITSection: View {
                 } else if isVPNBusy {
                     ProgressView()
                 } else {
-                    stepButton("lc.flek.jit.setUp".loc) {
-                        runVPN {
+                    stepButton("lc.flek.jit.setUp".loc, isProminent: nextStep == 2) {
+                        runVPN(then: checkOnceSetUp) {
                             try await vpn.setUp()
                             try await vpn.connect()
                         }
@@ -262,33 +499,56 @@ struct FlekBuiltInJITSection: View {
         }
     }
 
-    private func runVPN(_ work: @escaping () async throws -> Void) {
+    /// `then` follows only where the work went through.
+    private func runVPN(then: (() -> Void)? = nil, _ work: @escaping () async throws -> Void) {
         isVPNBusy = true
         Task {
             do {
                 try await work()
+                isVPNBusy = false
+                then?()
             } catch {
+                isVPNBusy = false
                 show(error.localizedDescription)
             }
-            isVPNBusy = false
         }
     }
 
     // MARK: 3. Readiness
 
     private var readinessStep: some View {
-        step(3, isDone: readiness == .ready,
+        step(3, isDone: isReady,
              title: "lc.flek.jit.step3.title".loc,
              caption: readinessCaption,
              captionColor: readinessColor) {
             if isChecking {
                 ProgressView()
             } else {
-                stepButton("lc.flek.jit.check".loc) {
+                stepButton("lc.flek.jit.check".loc, isProminent: nextStep == 3) {
                     checkReadiness()
                 }
-                .disabled(!pairingFileFound || FlekBuiltInJIT.blocker != nil)
+                .disabled(!isPairingFileUsable || FlekBuiltInJIT.blocker != nil)
             }
+        }
+    }
+
+    /// Ready, and with a pairing file that can still be used.
+    private var isReady: Bool {
+        readiness == .ready && isPairingFileUsable
+    }
+
+    /// Runs the check without being asked once the two steps before it are
+    /// done, so that finishing the second of them is all it takes. Not where
+    /// the VPN is another app's: whether that is connected cannot be told, and
+    /// a check that fails for it would only alarm.
+    private func checkOnceSetUp() {
+        // After whatever called this has had its changes take.
+        DispatchQueue.main.async {
+            guard isPairingFileUsable, FlekBuiltInJIT.blocker == nil, !isChecking, !isReady,
+                  FlekLoopbackVPN.isAvailable, vpn.isConfigured else {
+                return
+            }
+            checkReadiness()
         }
     }
 
@@ -342,8 +602,10 @@ struct FlekBuiltInJITSection: View {
                         // nearly always the VPN that leads back to the device.
                         let hint = error.code == 1 ? "\n" + "lc.flek.jit.unreachableHint".loc : ""
                         readiness = .failed(error.localizedDescription + hint)
+                        readyAt = 0
                     } else {
                         readiness = .ready
+                        readyAt = Date().timeIntervalSince1970
                     }
                 }
             }
@@ -366,13 +628,134 @@ struct FlekBuiltInJITSection: View {
         Self.checkQueue.async {
             let error = LCUtils.resetBuiltInJITDiskImage()
             DispatchQueue.main.async {
+                setupChanged()
                 show(error?.localizedDescription ?? "lc.flek.jit.resetImage.done".loc)
             }
+        }
+    }
+
+    // MARK: 4. Apps
+
+    /// The setup enables JIT for no app by itself, so the apps to use it for
+    /// are chosen here as its last step rather than one by one in their own
+    /// settings, which have the same switch.
+    private var appsStep: some View {
+        NavigationLink {
+            FlekJITAppsView()
+        } label: {
+            step(4, isDone: jitAppCount > 0,
+                 title: "lc.flek.jit.step4.title".loc,
+                 caption: jitAppCount > 0 ? String(format: "lc.flek.jit.step4.caption.count %lld".loc, jitAppCount)
+                                          : "lc.flek.jit.step4.caption".loc) {
+                EmptyView()
+            }
+        }
+        // Also on the way back from the list, where the count changes.
+        .onAppear {
+            jitAppCount = FlekJITAppsView.countUsingJIT
         }
     }
 
     private func show(_ text: String) {
         notice = text
         noticeShow = true
+    }
+}
+
+/// The installed apps, each with the switch that has it launch with JIT: the
+/// one in an app's own settings, gathered where JIT is set up.
+struct FlekJITAppsView: View {
+    /// Hidden apps only while they are unlocked, as everywhere else.
+    static var apps: [LCAppModel] {
+        let model = DataManager.shared.model
+        return model.apps + (model.isHiddenAppUnlocked ? model.hiddenApps : [])
+    }
+
+    /// How many of them launch with JIT: those switched on here, and the
+    /// 32-bit ones, which always do.
+    static var countUsingJIT: Int {
+        apps.filter { $0.uiIsJITNeeded || $0.uiIs32bit }.count
+    }
+
+    @ObservedObject private var model = DataManager.shared.model
+
+    var body: some View {
+        Form {
+            Section {
+                if Self.apps.isEmpty {
+                    Text("lc.flek.jit.apps.empty".loc)
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(Self.apps, id: \.self) { app in
+                    Row(app: app)
+                }
+            } footer: {
+                Text("lc.flek.jit.apps.footer".loc)
+            }
+        }
+        .navigationTitle("lc.flek.jit.apps.title".loc)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private struct Row: View {
+        @ObservedObject var app: LCAppModel
+        @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) private var darkModeIcon = false
+
+        var body: some View {
+            // A 32-bit app runs with JIT whatever is chosen, which is how its
+            // own settings show it too.
+            Toggle(isOn: app.uiIs32bit ? .constant(true) : $app.uiIsJITNeeded) {
+                HStack(spacing: 12) {
+                    IconImageView(icon: app.appInfo.iconIsDarkIcon(darkModeIcon))
+                        .frame(width: 32, height: 32)
+                    Text(app.appInfo.displayName() ?? "")
+                }
+            }
+            .disabled(app.uiIs32bit)
+        }
+    }
+}
+
+/// How a pairing file is made on a computer, for whoever is about to import
+/// one and has never made one.
+struct FlekPairingImportHelpView: View {
+    private static let iloaderURL = URL(string: "https://github.com/nab138/iloader/releases/latest")!
+    private static let idevicePairURL = URL(string: "https://github.com/jkcoxson/idevice_pair/releases/latest")!
+
+    /// Called when the file is at hand and is to be imported. The sheet is
+    /// still up at that point, so the importer has to wait for it to go.
+    var onImport: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section {
+                    Label("lc.flek.jit.importHelp.step1".loc, systemImage: "1.circle")
+                    Label("lc.flek.jit.importHelp.step2".loc, systemImage: "2.circle")
+                    Label("lc.flek.jit.importHelp.step3".loc, systemImage: "3.circle")
+                }
+                Section {
+                    Link("iloader", destination: Self.iloaderURL)
+                    Link("idevice_pair", destination: Self.idevicePairURL)
+                }
+                Section {
+                    Button("lc.flek.jit.pair.importFile".loc) {
+                        onImport()
+                        dismiss()
+                    }
+                }
+            }
+            .navigationTitle("lc.flek.jit.importHelp.title".loc)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("lc.common.cancel".loc) {
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }

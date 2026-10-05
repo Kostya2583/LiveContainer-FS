@@ -247,6 +247,45 @@
     return preflightClass;
 }
 
+// Asked of the system the way the app is relaunched into a guest: by bundle
+// identifier, which brings Settings forward wherever it was left. The link
+// goes with the request, since Settings' own links to its pages are private
+// and are refused when an app tries to open one as a URL. Whether a link sent
+// this way is followed is up to the system; where the request is refused for
+// it, Settings is opened without.
++ (void)openSettingsAppWithLink:(NSURL *)link completionHandler:(void (^)(NSInteger route))completionHandler {
+    // Off the main thread: the request waits on another process.
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSString *settings = @"com.apple.Preferences";
+        LSApplicationWorkspace *workspace = [NSClassFromString(@"LSApplicationWorkspace") defaultWorkspace];
+        void (^finish)(NSInteger) = ^(NSInteger route) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completionHandler(route);
+            });
+        };
+        void (^openWithoutLink)(void) = ^{
+            BOOL opened = [workspace respondsToSelector:@selector(openApplicationWithBundleID:)] &&
+                [workspace openApplicationWithBundleID:settings];
+            finish(opened ? 2 : 0);
+        };
+        Class configurationClass = NSClassFromString(@"_LSOpenConfiguration");
+        if (!link || !configurationClass ||
+            ![workspace respondsToSelector:@selector(openApplicationWithBundleIdentifier:configuration:completionHandler:)]) {
+            openWithoutLink();
+            return;
+        }
+        _LSOpenConfiguration *configuration = [configurationClass new];
+        configuration.frontBoardOptions = @{@"__PayloadURL": link};
+        [workspace openApplicationWithBundleIdentifier:settings configuration:configuration completionHandler:^(BOOL success, NSError *error) {
+            if (success) {
+                finish(1);
+            } else {
+                openWithoutLink();
+            }
+        }];
+    });
+}
+
 + (BOOL)isBuiltInJITLoadable {
     return self.builtInJITPreflightClass != nil;
 }

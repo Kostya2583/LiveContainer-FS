@@ -16,6 +16,11 @@
 //  with a stronger warning while it still works. On a build whose Info.plist
 //  carries a FlekSt0re device ID, it only shows whether it works.
 //
+//  The JIT card is the way to set JIT up until that has been started, and from
+//  then on says how it stands: how far the setup has got, that it is ready and
+//  for how many apps, or what is in its way. Either way it leads to the JIT
+//  page.
+//
 //  A build without a FlekSt0re device ID also gets a Premium Access card, since
 //  Premium is linked to the device's UDID, which such a build cannot know by
 //  itself. The card opens the page that downloads a profile reporting it,
@@ -43,6 +48,11 @@ struct FlekGeneralView<JITPage: View>: View {
     @State private var udidProfileGuideShown = false
     /// The UDID the profile has just reported, while the page says so.
     @State private var importedUDID: String?
+    /// Where the JIT setup stands, and how many apps use it. Read as the page
+    /// comes up, which it also does on the way back from the JIT page.
+    @State private var jitStanding = FlekJITSetup.Standing.notStarted
+    @State private var jitAppCount = 0
+    @ObservedObject private var vpn = FlekLoopbackVPN.shared
 
     /// This device's UDID, once FlekDeck knows it: from FlekSt0re, typed in for
     /// JIT, or reported by the UDID profile.
@@ -87,18 +97,7 @@ struct FlekGeneralView<JITPage: View>: View {
                 NavigationLink {
                     jitPage()
                 } label: {
-                    FlekSetupOption(
-                        icon: .symbol(FlekSymbol.jitConnection, .black),
-                        title: "lc.flek.setup.jit.title".loc,
-                        subtitle: "lc.flek.setup.jit.desc".loc,
-                        showsChevron: true
-                    ) {
-                        FlekSetupPoints(points: [
-                            "lc.flek.setup.jit.point1".loc,
-                            "lc.flek.setup.jit.point2".loc,
-                            "lc.flek.setup.jit.point3".loc,
-                        ])
-                    }
+                    jitCard
                 }
                 .buttonStyle(FlekCardPressStyle())
                 footnote
@@ -132,8 +131,19 @@ struct FlekGeneralView<JITPage: View>: View {
         .sheet(isPresented: $unavailableExplanationShown) {
             FlekCertificateUnavailableView()
         }
-        .onAppear { loadCertificate() }
+        .onAppear {
+            loadCertificate()
+            loadJITStanding()
+        }
         .onChange(of: sharedModel.isCertificateImported) { _ in loadCertificate() }
+        .task {
+            // What the VPN's model last noted may be from before the VPN was
+            // removed in the Settings app.
+            if FlekLoopbackVPN.isAvailable {
+                await vpn.refresh()
+                loadJITStanding()
+            }
+        }
         .alert(removalTitle, isPresented: $removalConfirmationShown) {
             Button("lc.common.cancel".loc, role: .cancel) {}
             Button("lc.common.remove".loc, role: .destructive) {
@@ -169,6 +179,122 @@ struct FlekGeneralView<JITPage: View>: View {
         .padding(16)
         .background(FlekSetupCardBackground())
         .accessibilityElement(children: .combine)
+    }
+
+    /// JIT's card. Until its setup has been started it is the way to start it,
+    /// like the certificate's; from then on it says how the setup stands.
+    @ViewBuilder
+    private var jitCard: some View {
+        switch jitStanding {
+        case .notStarted:
+            FlekSetupOption(
+                icon: .symbol(FlekSymbol.jitConnection, .black),
+                title: "lc.flek.setup.jit.title".loc,
+                subtitle: "lc.flek.setup.jit.desc".loc,
+                showsChevron: true
+            ) {
+                FlekSetupPoints(points: [
+                    "lc.flek.setup.jit.point1".loc,
+                    "lc.flek.setup.jit.point2".loc,
+                    "lc.flek.setup.jit.point3".loc,
+                ])
+            }
+        case .underWay(let stepsDone):
+            jitStatusCard(title: "lc.flek.setup.jit.title".loc,
+                          status: String(format: "lc.flek.setup.jit.progress %lld".loc, stepsDone), color: .orange,
+                          note: "lc.flek.setup.jit.progress.note".loc)
+        case .ready:
+            // Ready for no app is ready for nothing, so the card says which.
+            if jitAppCount > 0 {
+                jitStatusCard(title: "lc.flek.setup.jit.name".loc,
+                              status: "lc.flek.jit.ready".loc, color: .green,
+                              detail: String(format: "lc.flek.jit.step4.caption.count %lld".loc, jitAppCount),
+                              note: "lc.flek.setup.jit.ready.note".loc, isGood: true)
+            } else {
+                jitStatusCard(title: "lc.flek.setup.jit.name".loc,
+                              status: "lc.flek.jit.ready".loc, color: .green,
+                              detail: "lc.flek.setup.jit.noApps".loc,
+                              note: "lc.flek.setup.jit.noApps.note".loc)
+            }
+        case .needsPremium:
+            jitStatusCard(title: "lc.flek.setup.jit.name".loc,
+                          status: "lc.flek.setup.jit.premium".loc, color: .red,
+                          note: "lc.flek.setup.jit.premium.note".loc)
+        case .unavailable(let reason):
+            // As the certificate's card is where this FlekDeck cannot use
+            // one: the heading faded, and what is wrong in the tray.
+            FlekSetupOption(
+                icon: .symbol(FlekSymbol.jitConnection, .black),
+                title: "lc.flek.setup.jit.title".loc,
+                subtitle: "lc.flek.setup.jit.desc".loc,
+                isDimmed: true,
+                showsChevron: true
+            ) {
+                VStack(spacing: 6) {
+                    Text("lc.flek.setup.jit.unavailable".loc)
+                        .foregroundStyle(.orange)
+                    Text(reason)
+                        .foregroundStyle(.secondary)
+                }
+                .font(.system(size: 15))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(UIColor.tertiarySystemFill))
+                )
+            }
+        case .external(let enabler):
+            jitStatusCard(title: "lc.flek.setup.jit.name".loc,
+                          status: String(format: "lc.flek.setup.jit.external %@".loc, enabler), color: .secondary)
+        }
+    }
+
+    /// The JIT card once there is something to say of the setup: how it
+    /// stands, in the colour that goes with that, a line of detail, and a note
+    /// in plain words beneath. Laid out as the imported certificate's card is.
+    private func jitStatusCard(title: String, status: String, color: Color, detail: String? = nil,
+                               note: String? = nil, isGood: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            FlekSetupHeader(
+                icon: .symbol(FlekSymbol.jitConnection, .black),
+                title: title,
+                showsChevron: true
+            ) {
+                Text(status)
+                    .foregroundStyle(color)
+                if let detail {
+                    Text(detail)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if let note {
+                Text(note)
+                    .font(.system(size: 15))
+                    .foregroundStyle(isGood ? Color.green : Color.secondary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(isGood ? Color.green.opacity(0.12) : Color(UIColor.tertiarySystemFill))
+                    )
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(FlekSetupCardBackground())
+        // The whole card is the link, not just the parts of it that are drawn.
+        .contentShape(RoundedRectangle(cornerRadius: FlekSetupCardBackground.cornerRadius, style: .continuous))
+    }
+
+    private func loadJITStanding() {
+        jitStanding = FlekJITSetup.standing
+        jitAppCount = FlekJITAppsView.countUsingJIT
     }
 
     /// An imported certificate gets a card of its own. Without one the whole

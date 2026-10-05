@@ -33,14 +33,26 @@ typedef NS_ERROR_ENUM(LCDevicePairingErrorDomain, LCDevicePairingError) {
 
 /// Starts advertising under `name`, which is what Settings shows. Each block is
 /// called on the main queue.
+///
+/// The library makes the host's identifier out of the name, the same one for
+/// the same name every time, and the service is advertised under that
+/// identifier: two hosts of one name on one network are not told apart.
+///
+/// The device connects only once its user has picked the host, confirmed, and
+/// typed the device's own passcode, in that order. Until then nothing arrives
+/// here, however long the host has been listed.
 /// - Parameters:
 ///   - withoutCode: Advertises a pairing that asks for no code. Whether a device
 ///     takes a host up on that is not known; the code is then all zeros.
+///   - onEvent: Something happened, in a line of plain English: what a pairing
+///     that does not go through has to be traced by, on a device with no
+///     debugger attached.
 ///   - onPIN: The device has connected and asks its user for this code.
 ///   - onAttemptFailed: A try ended without a pairing; another is awaited.
 ///   - completion: The pairing file's contents, or why there will be none.
 - (void)startWithName:(NSString *)name
           withoutCode:(BOOL)withoutCode
+              onEvent:(void (^)(NSString *event))onEvent
                 onPIN:(void (^)(NSString *pin))onPIN
       onAttemptFailed:(void (^)(NSString *reason))onAttemptFailed
            completion:(void (^)(NSData * _Nullable pairingFile, NSError * _Nullable error))completion;

@@ -16879,13 +16879,35 @@
         }
       }
     },
-    "lc.flek.jit.add" : {
+    "lc.flek.jit.apps.empty" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add"
+            "value" : "No apps installed yet."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.apps.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An app with JIT shows a bolt on its icon."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.apps.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps with JIT"
           }
         }
       }
@@ -16945,13 +16967,24 @@
         }
       }
     },
+    "lc.flek.jit.create" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create"
+          }
+        }
+      }
+    },
     "lc.flek.jit.footer" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Developer Mode has to be on in the Settings app."
+            "value" : "JIT lets emulators and some other apps run at full speed. Developer Mode has to be on in the Settings app."
           }
         }
       }
@@ -16967,6 +17000,17 @@
         }
       }
     },
+    "lc.flek.jit.getPremium" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get Premium"
+          }
+        }
+      }
+    },
     "lc.flek.jit.header" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16978,6 +17022,17 @@
         }
       }
     },
+    "lc.flek.jit.how" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How?"
+          }
+        }
+      }
+    },
     "lc.flek.jit.import" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16985,6 +17040,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.step1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On a Mac or PC, get iloader or idevice_pair."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.step2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect this device with a cable, tap Trust, and save a pairing file. In idevice_pair, choose Remote pairing."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.step3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send the file to this device, with AirDrop for example, then tap Import File."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing File from a Computer"
           }
         }
       }
@@ -17017,7 +17116,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No JIT"
+            "value" : "JIT Isn’t Ready"
           }
         }
       }
@@ -17066,6 +17165,17 @@
         }
       }
     },
+    "lc.flek.jit.pair.copied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copied. You can paste it in Settings."
+          }
+        }
+      }
+    },
     "lc.flek.jit.pair.create" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17077,13 +17187,90 @@
         }
       }
     },
+    "lc.flek.jit.pair.create.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No computer needed. Works while Premium is active."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.create.caption.missing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not included in this build."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.create.caption.os" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs iOS 27 or later."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.create.caption.premium" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No computer needed. Premium only."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.details" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        }
+      }
+    },
     "lc.flek.jit.pair.footer" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wi-Fi has to be on. The code also shows in FlekDeck’s Live Activity while you’re in Settings."
+            "value" : "Wi-Fi has to be on. The code also comes as a notification while you’re in Settings."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.import.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From a computer, for example."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.import.caption.free" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From a computer, for example. No Premium needed."
           }
         }
       }
@@ -17106,6 +17293,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "FlekDeck needs Local Network access for this. Turn it on in Settings › Privacy & Security › Local Network."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.notification" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing Code"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.notification.body %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your FlekDeck pairing code is %@"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.notification.copied %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your FlekDeck pairing code is %@. It’s copied, ready to paste."
           }
         }
       }
@@ -17143,13 +17363,13 @@
         }
       }
     },
-    "lc.flek.jit.pair.step2" : {
+    "lc.flek.jit.pair.step2 %@" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Scroll down and tap Pair with FlekDeck."
+            "value" : "Scroll down and tap Pair with %@."
           }
         }
       }
@@ -17160,18 +17380,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enter the code shown here."
+            "value" : "Enter this device’s passcode when Settings asks for it."
           }
         }
       }
     },
-    "lc.flek.jit.pair.stopped" : {
+    "lc.flek.jit.pair.step4" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pairing was stopped before it finished."
+            "value" : "Then enter the code that appears here, or paste it."
           }
         }
       }
@@ -17193,7 +17413,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Waiting for Settings…"
+            "value" : "The code appears once the passcode is in."
           }
         }
       }
@@ -17215,18 +17435,62 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This file has no RemotePairing record, which built-in JIT needs. Make one with iloader, or with on-device pairing on iOS 27."
+            "value" : "Built-in JIT can’t use this kind of pairing file. Make a new one with iloader, or with idevice_pair set to Remote pairing."
           }
         }
       }
     },
-    "lc.flek.jit.perApp" : {
+    "lc.flek.jit.premium.alternative" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "JIT is set per app: turn on Launch with JIT in an app’s settings. Apps with JIT show this mark on their icon."
+            "value" : "Or import a pairing file made elsewhere, on a computer for example. That needs no Premium."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.premium.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium creates the pairing file on this device, with no computer needed. It works while Premium is active."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.premium.needed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app launches with JIT, and the pairing file was made on this device, which works only while Premium is active. Renew Premium, or import another pairing file in Settings › JIT & JIT-Less."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.premium.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium Needed"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.premium.unconfirmed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium could not be checked. Connect to the internet and try again."
           }
         }
       }
@@ -17292,7 +17556,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Checking the developer disk image…"
+            "value" : "Checking developer files…"
           }
         }
       }
@@ -17303,7 +17567,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Downloading the developer disk image… %lld%%"
+            "value" : "Downloading developer files… %lld%%"
           }
         }
       }
@@ -17314,7 +17578,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mounting the developer disk image… %lld%%"
+            "value" : "Installing developer files… %lld%%"
           }
         }
       }
@@ -17325,7 +17589,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reaching the device…"
+            "value" : "Connecting to this device…"
           }
         }
       }
@@ -17336,7 +17600,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verifying…"
+            "value" : "Finishing…"
           }
         }
       }
@@ -17347,18 +17611,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Made for this device, with iloader for example."
-          }
-        }
-      }
-    },
-    "lc.flek.jit.step1.caption.add" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Create it on this device, or import one."
+            "value" : "Lets FlekDeck turn JIT on for this device."
           }
         }
       }
@@ -17374,18 +17627,29 @@
         }
       }
     },
-    "lc.flek.jit.step1.title" : {
+    "lc.flek.jit.step1.done.created" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Import Pairing File"
+            "value" : "Created on this device"
           }
         }
       }
     },
-    "lc.flek.jit.step1.title.add" : {
+    "lc.flek.jit.step1.locked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Made on this device. Works only while Premium is active."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step1.title" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -17402,7 +17666,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "JIT reaches this device through it. It turns on by itself when an app with JIT starts."
+            "value" : "Stays on this device and sends nothing out. Turns on by itself when needed."
           }
         }
       }
@@ -17446,7 +17710,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Confirms that JIT can be enabled."
+            "value" : "Makes sure JIT can be turned on. Takes a moment the first time."
           }
         }
       }
@@ -17457,7 +17721,40 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Check Readiness"
+            "value" : "Check That It Works"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step4.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn JIT on for the apps that need it."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step4.caption.count %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps with JIT: %lld"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step4.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Apps"
           }
         }
       }
@@ -17825,6 +18122,50 @@
         }
       }
     },
+    "lc.flek.setup.jit.external %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Through %@"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.noApps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No apps chosen yet"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.noApps.note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT is set up. Choose the apps to use it for."
+          }
+        }
+      }
+    },
     "lc.flek.setup.jit.point1" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17858,6 +18199,61 @@
         }
       }
     },
+    "lc.flek.setup.jit.premium" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs Premium"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.premium.note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pairing file was made on this device. It works only while Premium is active."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.progress %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of 3 steps done"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.progress.note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish the steps to launch apps with JIT."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.ready.note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT is set up. It turns on by itself when one of these apps starts."
+          }
+        }
+      }
+    },
     "lc.flek.setup.jit.title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17865,6 +18261,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Set Up JIT"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unavailable for this FlekDeck installation"
           }
         }
       }

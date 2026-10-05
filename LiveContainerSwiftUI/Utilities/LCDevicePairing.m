@@ -115,11 +115,12 @@ static NSError *LCPairingError(LCDevicePairingError code, NSString *description)
     int _connection;
     os_unfair_lock _connectionLock;
     atomic_bool _cancelled;
-    /// Whether the try under way got as far as asking for the code. One that
-    /// did not was no try of the user's, and its end is not worth reporting.
+    /// Whether the try under way got as far as asking for the code, which is
+    /// what its end is put down as.
     atomic_bool _askedForPIN;
     BOOL _finished;
 
+    void (^_onEvent)(NSString *event);
     void (^_onPIN)(NSString *pin);
     void (^_onAttemptFailed)(NSString *reason);
     void (^_completion)(NSData *pairingFile, NSError *error);
@@ -146,9 +147,11 @@ static NSError *LCPairingError(LCDevicePairingError code, NSString *description)
 
 - (void)startWithName:(NSString *)name
           withoutCode:(BOOL)withoutCode
+              onEvent:(void (^)(NSString *))onEvent
                 onPIN:(void (^)(NSString *))onPIN
       onAttemptFailed:(void (^)(NSString *))onAttemptFailed
            completion:(void (^)(NSData *, NSError *))completion {
+    _onEvent = [onEvent copy];
     _onPIN = [onPIN copy];
     _onAttemptFailed = [onAttemptFailed copy];
     _completion = [completion copy];
@@ -177,6 +180,7 @@ static NSError *LCPairingError(LCDevicePairingError code, NSString *description)
         [self finishWithFile:nil error:[self errorForAdvertising:advertised]];
         return;
     }
+    [self note:[NSString stringWithFormat:@"Advertising on port %d", port]];
 
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         [self acceptConnections];
@@ -197,8 +201,18 @@ static NSError *LCPairingError(LCDevicePairingError code, NSString *description)
     [self forgetBlocks];
 }
 
+/// From any thread. Dropped once the pairing is over.
+- (void)note:(NSString *)event {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if(!self->_finished && self->_onEvent) {
+            self->_onEvent(event);
+        }
+    });
+}
+
 /// The blocks hold on to whoever started the pairing, who holds this object.
 - (void)forgetBlocks {
+    _onEvent = nil;
     _onPIN = nil;
     _onAttemptFailed = nil;
     _completion = nil;
@@ -299,13 +313,30 @@ static void LCPairingAsksForPIN(const char *pin, void *context) {
 - (void)acceptConnections {
     while(!atomic_load(&_cancelled)) {
         struct pollfd incoming = { .fd = _listener, .events = POLLIN };
-        if(poll(&incoming, 1, 500) <= 0) {
+        int ready = poll(&incoming, 1, 500);
+        if(ready == 0 || (ready < 0 && errno == EINTR)) {
             continue;
         }
-        int connection = accept(_listener, NULL, NULL);
+        int connection = -1;
+        if(ready > 0 && !(incoming.revents & (POLLERR | POLLHUP | POLLNVAL))) {
+            connection = accept(_listener, NULL, NULL);
+            if(connection < 0 && (errno == EINTR || errno == EAGAIN || errno == ECONNABORTED)) {
+                continue;
+            }
+        }
         if(connection < 0) {
-            continue;
+            // The socket itself is gone, which the system does to one whose
+            // app it has kept suspended for a while. Nothing can reach it
+            // again, and waiting on it would spin, so the pairing ends here
+            // and is started afresh.
+            int code = errno;
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self note:[NSString stringWithFormat:@"Listening socket lost (%d)", code]];
+                [self finishWithFile:nil error:LCPairingError(LCDevicePairingErrorNetwork, @"The connection for pairing was lost. Try again.")];
+            });
+            return;
         }
+        [self note:@"Device connected"];
         // The device may hang up at any point, and a write to a socket it has
         // closed would otherwise end the app with SIGPIPE.
         int on = 1;
@@ -345,19 +376,23 @@ static void LCPairingAsksForPIN(const char *pin, void *context) {
             break;
         }
         if(pairingFile) {
+            [self note:@"Paired"];
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self finishWithFile:pairingFile error:nil];
             });
             return;
         }
-        if(atomic_load(&_askedForPIN)) {
-            NSString *reason = failure.localizedDescription ?: @"";
-            dispatch_async(dispatch_get_main_queue(), ^{
-                if(!self->_finished && self->_onAttemptFailed) {
-                    self->_onAttemptFailed(reason);
-                }
-            });
-        }
+        [self note:[NSString stringWithFormat:@"%@: %@",
+                    atomic_load(&_askedForPIN) ? @"Try failed" : @"Connection ended before the code",
+                    failure.localizedDescription ?: @"no reason given"]];
+        // Told of either way. A try that ended before the code leaves nothing
+        // on this side to show for it, and the user in Settings none the wiser.
+        NSString *reason = failure.localizedDescription ?: @"";
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if(!self->_finished && self->_onAttemptFailed) {
+                self->_onAttemptFailed(reason);
+            }
+        });
     }
 }
 

@@ -32,6 +32,11 @@ enum JITEnablerType : Int, CaseIterable, Identifiable {
         case .StikJITHeadless: "Built-in (StikJIT)"
         }
     }
+
+    /// Left out of the menu, and still honoured for whoever chose it before.
+    var isNoLongerOffered: Bool {
+        self == .SideStore || self == .JITStreamerEBLegacy
+    }
 }
 
 struct LCSettingsView: View {
@@ -95,6 +100,9 @@ struct LCSettingsView: View {
     @AppStorage("LCSharePrivateDataWithLiveProcess") var sharePrivateDataWithLiveProcess = false
     @AppStorage("LCOpenPrivateAppsWithoutCopying") var openPrivateAppsWithoutCopying = false
     @AppStorage("FlekPairWithoutCode") var pairWithoutCode = false
+#if DEBUG
+    @AppStorage("FlekDebugPremium") var debugPremium = false
+#endif
     @AppStorage("BKNoWatchdogs") var disableLiveProcessWatchdog = false
     
     ///Flekstore user defaults
@@ -757,6 +765,15 @@ struct LCSettingsView: View {
                         Toggle(isOn: $pairWithoutCode) {
                             Text("Create Pairing File Without a Code")
                         }
+#if DEBUG
+                        // Stands in for a subscription in a build run from
+                        // Xcode, which has no FlekSt0re device ID to look one
+                        // up by. Release builds have neither this nor what
+                        // reads it.
+                        Toggle(isOn: $debugPremium) {
+                            Text("Premium (Debug Builds Only)")
+                        }
+#endif
                         // The page Premium Access opens to get the UDID, for
                         // trying a server out. HTTPS only; empty means FlekSt0re's.
                         HStack {
@@ -1144,8 +1161,13 @@ struct LCSettingsView: View {
                         Text("SideJITServer/JITStreamer 2.0").tag(JITEnablerType.SideJITServer)
                         Text("StikDebug").tag(JITEnablerType.StikJIT)
                         Text("StikDebug (Another FlekDeck)").tag(JITEnablerType.StikJITLC)
-                        Text("SideStore").tag(JITEnablerType.SideStore)
-                        Text("JitStreamer-EB (Relaunch)").tag(JITEnablerType.JITStreamerEBLegacy)
+                        // Not offered any more: SideStore, whose link does not
+                        // enable JIT on its own, and JitStreamer-EB, which is
+                        // no longer maintained. One chosen earlier stays
+                        // listed, as the menu needs a row for the selection.
+                        if JITEnabler.isNoLongerOffered {
+                            Text(JITEnabler.displayName).tag(JITEnabler)
+                        }
                     } label: {
                         Text("lc.settings.jitEnabler".loc)
                     }

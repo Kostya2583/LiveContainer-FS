@@ -33,6 +33,9 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
             // can give every app it signs with one certificate the same group.
             LCUtils.appGroupUserDefault.removeObject(forKey: "LCHostEncryptedUdid")
         }
+        // The same goes for how long Premium lasts, which guests are told too.
+        FlekPremium.publish()
+        FlekBuiltInJIT.adoptWhereNothingIsChosen()
 
         LCPath.clearStaleShareInbox()
 

@@ -48,6 +48,12 @@ uint32_t dyld_get_sdk_version(const struct mach_header* mh);
 + (NSError *)prepareBuiltInJITWithProgress:(void (^)(NSInteger stage, double fraction))progress;
 + (NSError *)resetBuiltInJITDiskImage;
 
+// Opens the Settings app itself, on the page `link` names where it will take
+// one. The links any app may open all lead to the app's own page in Settings,
+// which is the far end of it from anywhere else. `route` is 1 for opened with
+// the link, 2 for opened without it, 0 for not opened at all.
++ (void)openSettingsAppWithLink:(NSURL *)link completionHandler:(void (^)(NSInteger route))completionHandler;
+
 + (BOOL)isAppGroupAltStoreLike;
 + (Store)store;
 + (NSString *)appUrlScheme;

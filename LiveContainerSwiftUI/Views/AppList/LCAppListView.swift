@@ -66,6 +66,8 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     /// What to tell the user when an app set to launch with JIT was not started
     /// because JIT is not set up; nil while there is nothing to tell.
     @State private var jitNotReadyMessage: String?
+    /// Kept after the warning has gone, so that it does not blank on its way out.
+    @State private var jitNotReadyTitle = "lc.flek.jit.notReady.title".loc
     @State var errorInfo = ""
     /// The failed install the user tapped, driving the failed-install alert.
     @State private var failedInstallItem: InstallItem?
@@ -541,7 +543,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
         } message: {
             Text(errorInfo)
         }
-        .alert("lc.flek.jit.notReady.title".loc, isPresented: Binding(
+        .alert(jitNotReadyTitle, isPresented: Binding(
             get: { jitNotReadyMessage != nil },
             set: { if !$0 { jitNotReadyMessage = nil } }
         )) {
@@ -1254,6 +1256,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 try await app.runApp(multitask: false)
             }
         } catch let notReady as FlekJITSetup.NotReady {
+            jitNotReadyTitle = notReady.title
             jitNotReadyMessage = notReady.message
         } catch {
             errorInfo = error.localizedDescription
