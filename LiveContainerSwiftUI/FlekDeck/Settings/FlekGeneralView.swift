@@ -16,6 +16,11 @@
 //  with a stronger warning while it still works. On a build whose Info.plist
 //  carries a FlekSt0re device ID, it only shows whether it works.
 //
+//  From iOS 26 a certificate is what apps launch with, JIT or no JIT: nothing
+//  starts without one there, see invokeAppMain in LCBootstrap. So on those
+//  systems the page words the certificate as needed and JIT as what comes on
+//  top of it, for the apps that want it, rather than the two as a choice.
+//
 //  The JIT card is the way to set JIT up until that has been started, and from
 //  then on says how it stands: how far the setup has got, that it is ready and
 //  for how many apps, or what is in its way. Either way it leads to the JIT
@@ -74,6 +79,33 @@ struct FlekGeneralView<JITPage: View>: View {
     /// Whether the card offers to remove the certificate.
     private var offersRemoval: Bool {
         managesCertificate && !isFlekStoreBuild
+    }
+
+    /// Whether apps launch with a certificate only, whatever JIT is set up,
+    /// which is so from iOS 26. Before that JIT is another way to launch
+    /// them, and the page offers the two side by side.
+    private var isCertificateRequired: Bool {
+        if #available(iOS 26.0, *) {
+            return true
+        }
+        return false
+    }
+
+    /// What the JIT card adds where its setup is under way or done and there
+    /// is no certificate to launch anything with: ready or not, JIT alone
+    /// starts no app there.
+    private var missingCertificateNote: String? {
+        isCertificateRequired && sharedModel.needsCertificate ? "lc.flek.setup.jit.needsCertificate".loc : nil
+    }
+
+    private var jitDescription: String {
+        (isCertificateRequired ? "lc.flek.setup.jit.desc.extra" : "lc.flek.setup.jit.desc").loc
+    }
+
+    private var jitPoints: [String] {
+        isCertificateRequired
+            ? ["lc.flek.setup.jit.extra.point1".loc, "lc.flek.setup.jit.extra.point2".loc, "lc.flek.setup.jit.extra.point3".loc]
+            : ["lc.flek.setup.jit.point1".loc, "lc.flek.setup.jit.point2".loc, "lc.flek.setup.jit.point3".loc]
     }
 
     private static var certificatePoints: [String] {
@@ -169,7 +201,7 @@ struct FlekGeneralView<JITPage: View>: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("lc.flek.setup.title".loc)
                     .font(.system(size: 17))
-                Text("lc.flek.setup.desc".loc)
+                Text((isCertificateRequired ? "lc.flek.setup.desc.required" : "lc.flek.setup.desc").loc)
                     .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -190,31 +222,28 @@ struct FlekGeneralView<JITPage: View>: View {
             FlekSetupOption(
                 icon: .symbol(FlekSymbol.jitConnection, .black),
                 title: "lc.flek.setup.jit.title".loc,
-                subtitle: "lc.flek.setup.jit.desc".loc,
+                subtitle: jitDescription,
                 showsChevron: true
             ) {
-                FlekSetupPoints(points: [
-                    "lc.flek.setup.jit.point1".loc,
-                    "lc.flek.setup.jit.point2".loc,
-                    "lc.flek.setup.jit.point3".loc,
-                ])
+                FlekSetupPoints(points: jitPoints)
             }
         case .underWay(let stepsDone):
             jitStatusCard(title: "lc.flek.setup.jit.title".loc,
                           status: String(format: "lc.flek.setup.jit.progress %lld".loc, stepsDone), color: .orange,
-                          note: "lc.flek.setup.jit.progress.note".loc)
+                          note: missingCertificateNote ?? "lc.flek.setup.jit.progress.note".loc)
         case .ready:
             // Ready for no app is ready for nothing, so the card says which.
             if jitAppCount > 0 {
                 jitStatusCard(title: "lc.flek.setup.jit.name".loc,
                               status: "lc.flek.jit.ready".loc, color: .green,
                               detail: String(format: "lc.flek.jit.step4.caption.count %lld".loc, jitAppCount),
-                              note: "lc.flek.setup.jit.ready.note".loc, isGood: true)
+                              note: missingCertificateNote ?? "lc.flek.setup.jit.ready.note".loc,
+                              isGood: missingCertificateNote == nil)
             } else {
                 jitStatusCard(title: "lc.flek.setup.jit.name".loc,
                               status: "lc.flek.jit.ready".loc, color: .green,
                               detail: "lc.flek.setup.jit.noApps".loc,
-                              note: "lc.flek.setup.jit.noApps.note".loc)
+                              note: missingCertificateNote ?? "lc.flek.setup.jit.noApps.note".loc)
             }
         case .needsPremium:
             jitStatusCard(title: "lc.flek.setup.jit.name".loc,
@@ -226,7 +255,7 @@ struct FlekGeneralView<JITPage: View>: View {
             FlekSetupOption(
                 icon: .symbol(FlekSymbol.jitConnection, .black),
                 title: "lc.flek.setup.jit.title".loc,
-                subtitle: "lc.flek.setup.jit.desc".loc,
+                subtitle: jitDescription,
                 isDimmed: true,
                 showsChevron: true
             ) {
@@ -248,7 +277,8 @@ struct FlekGeneralView<JITPage: View>: View {
             }
         case .external(let enabler):
             jitStatusCard(title: "lc.flek.setup.jit.name".loc,
-                          status: String(format: "lc.flek.setup.jit.external %@".loc, enabler), color: .secondary)
+                          status: String(format: "lc.flek.setup.jit.external %@".loc, enabler), color: .secondary,
+                          note: missingCertificateNote)
         }
     }
 
@@ -333,7 +363,8 @@ struct FlekGeneralView<JITPage: View>: View {
         FlekSetupOption(
             icon: .symbol(FlekSymbol.certificate, .blue),
             title: "lc.settings.importCertificate".loc,
-            subtitle: "lc.flek.setup.certificate.desc".loc,
+            subtitle: (isCertificateRequired ? "lc.flek.setup.certificate.desc.required"
+                                             : "lc.flek.setup.certificate.desc").loc,
             isDimmed: isDimmed,
             showsChevron: showsChevron,
             tray: tray

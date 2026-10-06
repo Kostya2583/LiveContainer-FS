@@ -718,7 +718,15 @@ struct FlekJITAppsView: View {
 
 /// How a pairing file is made on a computer, for whoever is about to import
 /// one and has never made one.
+///
+/// The tool it sends them to is FlekPair, FlekSt0re's own: iloader with
+/// everything but the export of the file taken out, so that there is one
+/// button to click. iloader itself and idevice_pair make the same file and
+/// are kept under Other Options, for whoever has one of them already, or is
+/// on Linux, which FlekPair is not built for.
 struct FlekPairingImportHelpView: View {
+    /// The newest release, whichever that is by then.
+    private static let flekPairURL = URL(string: "https://github.com/Alex23Grig/flekpair/releases/latest")!
     private static let iloaderURL = URL(string: "https://github.com/nab138/iloader/releases/latest")!
     private static let idevicePairURL = URL(string: "https://github.com/jkcoxson/idevice_pair/releases/latest")!
 
@@ -737,13 +745,25 @@ struct FlekPairingImportHelpView: View {
                     Label("lc.flek.jit.importHelp.step3".loc, systemImage: "3.circle")
                 }
                 Section {
-                    Link("iloader", destination: Self.iloaderURL)
-                    Link("idevice_pair", destination: Self.idevicePairURL)
+                    Link("lc.flek.jit.importHelp.get".loc, destination: Self.flekPairURL)
+                } footer: {
+                    // The page is wanted on the computer, not on this device,
+                    // so its address is there to be typed as well.
+                    Text("lc.flek.jit.importHelp.address".loc)
                 }
                 Section {
                     Button("lc.flek.jit.pair.importFile".loc) {
                         onImport()
                         dismiss()
+                    }
+                }
+                Section {
+                    DisclosureGroup("lc.flek.jit.importHelp.other".loc) {
+                        Link("iloader", destination: Self.iloaderURL)
+                        Link("idevice_pair", destination: Self.idevicePairURL)
+                        Text("lc.flek.jit.importHelp.other.note".loc)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }

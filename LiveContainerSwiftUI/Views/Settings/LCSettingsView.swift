@@ -29,7 +29,7 @@ enum JITEnablerType : Int, CaseIterable, Identifiable {
         case .SideStore: "SideStore"
         case .JITStreamerEBLegacy: "JitStreamer-EB (Relaunch)"
         case .SideJITServer: "SideJITServer/JITStreamer 2.0"
-        case .StikJITHeadless: "Built-in (StikJIT)"
+        case .StikJITHeadless: "Built-in"
         }
     }
 

@@ -17044,13 +17044,57 @@
         }
       }
     },
+    "lc.flek.jit.importHelp.address" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open it on your computer: github.com/Alex23Grig/flekpair"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.get" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get FlekPair"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.other" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other Options"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.other.note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These make the same file. In idevice_pair, choose Remote pairing."
+          }
+        }
+      }
+    },
     "lc.flek.jit.importHelp.step1" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "On a Mac or PC, get iloader or idevice_pair."
+            "value" : "On a Mac or Windows PC, get FlekPair."
           }
         }
       }
@@ -17061,7 +17105,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connect this device with a cable, tap Trust, and save a pairing file. In idevice_pair, choose Remote pairing."
+            "value" : "Connect this device with a cable and click Export Pairing File. Tap Trust here if asked."
           }
         }
       }
@@ -17435,7 +17479,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Built-in JIT can’t use this kind of pairing file. Make a new one with iloader, or with idevice_pair set to Remote pairing."
+            "value" : "Built-in JIT can’t use this kind of pairing file. Make a new one with FlekPair."
           }
         }
       }
@@ -18034,6 +18078,17 @@
         }
       }
     },
+    "lc.flek.setup.certificate.desc.required" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needed to launch apps on this version of iOS."
+          }
+        }
+      }
+    },
     "lc.flek.setup.certificate.point1" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18100,6 +18155,17 @@
         }
       }
     },
+    "lc.flek.setup.desc.required" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To install and launch apps, you need to add a signing certificate. JIT comes on top of it, for the apps that need it."
+          }
+        }
+      }
+    },
     "lc.flek.setup.footer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18122,6 +18188,17 @@
         }
       }
     },
+    "lc.flek.setup.jit.desc.extra" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For apps that need JIT, such as emulators."
+          }
+        }
+      }
+    },
     "lc.flek.setup.jit.external %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18133,6 +18210,39 @@
         }
       }
     },
+    "lc.flek.setup.jit.extra.point1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comes on top of a certificate, not in place of one"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.extra.point2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lets emulators and the like run at full speed"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.extra.point3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turned on app by app"
+          }
+        }
+      }
+    },
     "lc.flek.setup.jit.name" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18140,6 +18250,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "JIT"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.needsCertificate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps launch only with a signing certificate on this version of iOS. JIT comes on top of it."
           }
         }
       }
