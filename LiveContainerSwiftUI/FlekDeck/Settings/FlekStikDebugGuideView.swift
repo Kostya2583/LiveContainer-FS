@@ -16,8 +16,9 @@
 //  wrong is told in notes after the steps it can go wrong at, not as steps.
 //
 //  The pictures are screenshots in the asset catalog, each named StikDebugGuide
-//  and a number: whole screens, of which a step shows the part it is about.
-//  One that is not there takes no room.
+//  and a number, and are shown whole: which app a step takes place in, and
+//  where in it, is half of what its picture is for. One that is not there
+//  takes no room.
 //
 
 import SwiftUI
@@ -27,23 +28,6 @@ struct FlekStikDebugGuideView: View {
         let title: String
         let url: URL
         var id: URL { url }
-    }
-
-    /// The part of a screenshot between two heights, each a fraction of the
-    /// whole from its top. The width is kept, so text is the same size in
-    /// every picture.
-    private struct Shot: Hashable {
-        let number: Int
-        let top: CGFloat
-        let bottom: CGFloat
-
-        init(_ number: Int, _ top: CGFloat = 0, _ bottom: CGFloat = 1) {
-            self.number = number
-            self.top = top
-            self.bottom = bottom
-        }
-
-        var name: String { "StikDebugGuide\(number)" }
     }
 
     /// A card of the article: a step, or a note on the steps before it.
@@ -60,7 +44,8 @@ struct FlekStikDebugGuideView: View {
         /// With **bold** runs for the names of things to tap.
         let body: String
         var links: [Reference] = []
-        var shots: [Shot] = []
+        /// Its screenshots, by their numbers in the asset catalog.
+        var shots: [Int] = []
     }
 
     private struct Chapter: Identifiable {
@@ -80,7 +65,7 @@ struct FlekStikDebugGuideView: View {
     /// Steps are numbered as they come, so one left out leaves no gap.
     private static var chapters: [Chapter] {
         var count = 0
-        func step(_ key: String, links: [Reference] = [], shots: [Shot] = []) -> Entry {
+        func step(_ key: String, links: [Reference] = [], shots: [Int] = []) -> Entry {
             count += 1
             return entry(key, mark: .number(count), links: links, shots: shots)
         }
@@ -89,28 +74,29 @@ struct FlekStikDebugGuideView: View {
         }
 
         let ready = [
-            step("install", shots: [Shot(1, 0.30, 0.52)]),
+            step("install", shots: [1]),
             step("vpn", links: [Reference(title: "lc.flek.jit.stikdebug.getVPN".loc, url: FlekBuiltInJITSection.localDevVPNURL)]),
             step("pairing", links: [Reference(title: "lc.flek.jit.stikdebug.details".loc, url: pairingGuideURL)]),
         ]
         let connect = [
-            step("connect", shots: [Shot(3, 0.08, 0.845)]),
-            step("import", shots: [Shot(2, 0.12, 0.625)]),
-            step("listed", shots: [Shot(4, 0.065, 0.525)]),
+            step("connect", shots: [3]),
+            step("import", shots: [2]),
+            step("listed", shots: [4]),
             entry("importFails", mark: .symbol("exclamationmark")),
         ]
         var use = [
-            step("enabler", shots: [Shot(5, 0.065, 0.62)]),
-            step("appSettings", shots: [Shot(6, 0.115, 0.625)]),
-            step("launchWithJIT", shots: [Shot(7, 0.52, 0.65)]),
+            step("enabler", shots: [5]),
+            step("appSettings", shots: [6]),
+            step("launchWithJIT", shots: [7]),
         ]
         if needsScript {
-            use.append(step("script", shots: [Shot(10, 0.385, 0.60)]))
+            use.append(step("script", shots: [10]))
         }
         use += [
-            step("start", shots: [Shot(8, 0.71, 0.98)]),
-            // What StikDebug says, then what the app does.
-            step("back", shots: [Shot(4, 0.80, 0.875), Shot(11, 0.07, 0.204)]),
+            step("start", shots: [8]),
+            // What StikDebug says, at the foot of its screen, then what the
+            // app does.
+            step("back", shots: [4, 11]),
         ]
         let help = [
             entry("stops", mark: .symbol("exclamationmark")),
@@ -121,7 +107,7 @@ struct FlekStikDebugGuideView: View {
         return [chapter("ready", ready), chapter("connect", connect), chapter("use", use), chapter("help", help)]
     }
 
-    private static func entry(_ key: String, mark: Entry.Mark, links: [Reference] = [], shots: [Shot] = []) -> Entry {
+    private static func entry(_ key: String, mark: Entry.Mark, links: [Reference] = [], shots: [Int] = []) -> Entry {
         Entry(id: key, mark: mark,
               title: "lc.flek.jit.stikdebug.\(key).title".loc,
               body: "lc.flek.jit.stikdebug.\(key).body".loc,
@@ -212,48 +198,30 @@ struct FlekStikDebugGuideView: View {
         }
     }
 
-    /// The most room a picture is given. The width is about a card's on a
-    /// phone, so a picture is no larger on an iPad than the screen it shows.
-    private static let pictureLimit = CGSize(width: 340, height: 460)
+    /// How wide a screenshot is shown. Narrower than a card: at a card's width
+    /// a screen would stand about as tall as the one it is read on, and a step
+    /// would fill it.
+    private static let pictureWidth: CGFloat = 270
 
     @ViewBuilder
-    private func picture(_ shot: Shot) -> some View {
+    private func picture(_ number: Int) -> some View {
+        let name = "StikDebugGuide\(number)"
         let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
-        if let image = Self.image(for: shot) {
-            // A width that keeps it within the height too. A limit on the
-            // height itself would not: here a picture is never offered one.
-            let width = min(Self.pictureLimit.width, Self.pictureLimit.height * image.size.width / max(image.size.height, 1))
+        if let image = UIImage(named: name) {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
-                .frame(maxWidth: width)
+                .frame(maxWidth: Self.pictureWidth)
                 .clipShape(shape)
                 .overlay(shape.strokeBorder(Color.primary.opacity(0.1)))
                 .frame(maxWidth: .infinity)
                 .accessibilityHidden(true)
         } else if Self.marksMissingScreenshots {
-            Text(verbatim: shot.name)
+            Text(verbatim: name)
                 .font(.system(size: 13, design: .monospaced))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, minHeight: 72)
                 .overlay(shape.strokeBorder(Color.secondary.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [5])))
         }
-    }
-
-    /// Cut out of the screenshot's own pixels, which copies none of them.
-    private static func image(for shot: Shot) -> UIImage? {
-        guard let whole = UIImage(named: shot.name) else {
-            return nil
-        }
-        guard shot.top > 0 || shot.bottom < 1, let pixels = whole.cgImage else {
-            return whole
-        }
-        let height = CGFloat(pixels.height)
-        let band = CGRect(x: 0, y: (shot.top * height).rounded(),
-                          width: CGFloat(pixels.width), height: ((shot.bottom - shot.top) * height).rounded())
-        guard let part = pixels.cropping(to: band) else {
-            return whole
-        }
-        return UIImage(cgImage: part, scale: whole.scale, orientation: whole.imageOrientation)
     }
 }
