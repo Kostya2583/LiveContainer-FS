@@ -109,6 +109,23 @@ static BOOL checkJITEnabled() {
 }
 
 static NSString *enableJITWithStikJIT(NSString *docPath) {
+    // Built-in JIT is a Premium feature: the app says how long Premium lasts,
+    // or that it has just confirmed it for this launch. The app asks the same
+    // before a launch from the home screen, but not every launch starts
+    // there — a link opened in another guest leads straight here. Ahead of
+    // everything else, so that a launch that is refused sets nothing up and
+    // is told why, whatever else it lacks.
+    {
+        NSUserDefaults *shared = NSUserDefaults.lcSharedDefaults;
+        NSTimeInterval clock = NSDate.date.timeIntervalSince1970;
+        // The latest the clock has been seen at stands in for one wound back.
+        NSTimeInterval now = MAX(clock, [shared doubleForKey:@"FSAccessClockHighWaterMark"]);
+        BOOL justConfirmed = fabs(clock - [shared doubleForKey:@"FlekPremiumConfirmedAt"]) < 60;
+        if (!justConfirmed && [shared doubleForKey:@"FlekPremiumUntil"] <= now) {
+            return @"Built-in JIT needs Premium. Open FlekDeck to renew Premium, or choose StikDebug in Settings › JIT & JIT-Less, which is free.";
+        }
+    }
+
     __block NSError *error;
     NSExtension *ext = [NSExtension extensionWithIdentifier:LCSharedUtils.liveProcessBundleIdentifier error:&error];
     if (!ext) {
@@ -139,21 +156,6 @@ static NSString *enableJITWithStikJIT(NSString *docPath) {
         }
     }
     
-    // Built-in JIT is a Premium feature: the app says how long Premium lasts,
-    // or that it has just confirmed it for this launch. The app asks the same
-    // before a launch from the home screen, but not every launch starts
-    // there — a link opened in another guest leads straight here.
-    {
-        NSUserDefaults *shared = NSUserDefaults.lcSharedDefaults;
-        NSTimeInterval clock = NSDate.date.timeIntervalSince1970;
-        // The latest the clock has been seen at stands in for one wound back.
-        NSTimeInterval now = MAX(clock, [shared doubleForKey:@"FSAccessClockHighWaterMark"]);
-        BOOL justConfirmed = fabs(clock - [shared doubleForKey:@"FlekPremiumConfirmedAt"]) < 60;
-        if (!justConfirmed && [shared doubleForKey:@"FlekPremiumUntil"] <= now) {
-            return @"Built-in JIT needs Premium. Open FlekDeck to renew Premium, or choose StikDebug in Settings › JIT & JIT-Less, which is free.";
-        }
-    }
-
     // The helper reaches this device through a VPN. Where that is FlekDeck's own
     // it is turned on as the guest launches: by the app for a window, and here
     // for a single-process launch, where this is the app.
