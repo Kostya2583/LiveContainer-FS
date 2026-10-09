@@ -63,13 +63,12 @@ enum FlekBuiltInJIT {
     }
 
     /// What a pairing file made on this device carries besides its record.
-    /// LCBootstrap looks for it by this name.
     static let madeOnDeviceKey = "created_on_device"
 
-    /// Whether the pairing file was made on this device, which is a Premium
-    /// feature, and so is using a file made that way. The file says so itself:
-    /// a note of it kept anywhere else would be lost, or left behind, the
-    /// moment the file is copied out and imported again.
+    /// Whether the pairing file was made on this device rather than imported,
+    /// for saying which. The file says so itself: a note of it kept anywhere
+    /// else would be lost, or left behind, the moment the file is copied out
+    /// and imported again.
     static var isPairingFileMadeOnDevice: Bool {
         guard let data = try? Data(contentsOf: LCPath.pairingFilePath),
               let record = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] else {
@@ -137,7 +136,7 @@ enum FlekJITSetup {
         /// Some of its three steps are done, this many.
         case underWay(stepsDone: Int)
         case ready
-        /// The pairing file was made on this device, and Premium has ended.
+        /// Set up, and Premium, which built-in JIT is used with, has ended.
         case needsPremium
         /// This copy cannot use built-in JIT, for the reason given.
         case unavailable(String)
@@ -172,13 +171,15 @@ enum FlekJITSetup {
             return .unavailable(blocker)
         }
         let hasFile = FlekBuiltInJIT.hasPairingFile
-        if hasFile, FlekBuiltInJIT.isPairingFileMadeOnDevice, !FlekPremium.isActive {
-            return .needsPremium
-        }
         // As the VPN's model last found it, which it notes for guests.
         let hasVPN = shared.bool(forKey: "LCBuiltInVPNConfigured")
         guard hasFile || hasVPN else {
             return .notStarted
+        }
+        // Only of a setup there is: one never started is still the invitation
+        // to start, and what that takes is said where it is started.
+        if !FlekPremium.isActive {
+            return .needsPremium
         }
         let steps = [
             hasFile,
@@ -223,12 +224,13 @@ enum FlekJITSetup {
         if let blocker = FlekBuiltInJIT.blocker {
             throw NotReady(message: blocker)
         }
+        // Ahead of the setup: without Premium there is none to send anyone to.
+        try await ensurePremium()
         // Another FlekDeck uses the primary one's pairing file, which it
         // cannot see.
         if DataManager.shared.model.multiLCStatus == 0, !FlekBuiltInJIT.hasPairingFile {
             throw NotReady(message: "lc.flek.jit.notReady.setUp".loc)
         }
-        try await ensurePremiumForPairingFile()
         let vpn = FlekLoopbackVPN.shared
         if FlekLoopbackVPN.isAvailable {
             await vpn.refresh()
@@ -247,16 +249,13 @@ enum FlekJITSetup {
         }
     }
 
-    /// A pairing file made on this device is used with Premium only, at every
-    /// launch and not just while it is being made: Premium bought for a day
-    /// would otherwise set up JIT for good.
+    /// Built-in JIT is used with Premium only, at every launch and not just
+    /// while it is being set up: Premium bought for a day would otherwise set
+    /// up JIT for good.
     @MainActor
-    private static func ensurePremiumForPairingFile() async throws {
+    private static func ensurePremium() async throws {
         // What a guest goes by where it starts without this having been asked.
         FlekPremium.publish()
-        guard FlekBuiltInJIT.isPairingFileMadeOnDevice else {
-            return
-        }
         switch await FlekPremium.confirm() {
         case .active:
             FlekPremium.noteConfirmedForLaunch()

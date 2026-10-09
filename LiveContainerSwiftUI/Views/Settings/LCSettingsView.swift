@@ -1171,11 +1171,23 @@ struct LCSettingsView: View {
                     } label: {
                         Text("lc.settings.jitEnabler".loc)
                     }
+                    // StikDebug is set up outside FlekDeck, which can only
+                    // explain how.
+                    if JITEnabler == .StikJIT {
+                        NavigationLink {
+                            FlekStikDebugGuideView()
+                        } label: {
+                            Label("lc.flek.jit.stikdebug.help".loc, systemImage: "questionmark.circle")
+                        }
+                    }
                     
                 } header: {
                     Text("JIT")
                 } footer: {
-                    Text("lc.settings.JitDesc".loc)
+                    // Built-in is what a copy starts on, and the one enabler
+                    // that takes Premium, so under it the rest of the menu is
+                    // said to be free.
+                    Text((JITEnabler == .StikJITHeadless ? "lc.flek.jit.enablerFooter" : "lc.settings.JitDesc").loc)
                 }
                 // The pairing file is the primary FlekDeck's, as it is upstream.
                 if JITEnabler == .StikJITHeadless, sharedModel.multiLCStatus == 0 {

@@ -16978,6 +16978,17 @@
         }
       }
     },
+    "lc.flek.jit.enablerFooter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Built-in is the easiest and needs Premium. The other options are free."
+          }
+        }
+      }
+    },
     "lc.flek.jit.footer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17176,6 +17187,50 @@
         }
       }
     },
+    "lc.flek.jit.offer.premium.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The easy way: right here, with no other apps."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.offer.premium.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Up with Premium"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.offer.stikdebug.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free. Takes two more apps and a computer."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.offer.stikdebug.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use StikDebug Instead"
+          }
+        }
+      }
+    },
     "lc.flek.jit.pair.activity.code %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17264,17 +17319,6 @@
         }
       }
     },
-    "lc.flek.jit.pair.create.caption.premium" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No computer needed. Premium only."
-          }
-        }
-      }
-    },
     "lc.flek.jit.pair.details" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17304,17 +17348,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "From a computer, for example."
-          }
-        }
-      }
-    },
-    "lc.flek.jit.pair.import.caption.free" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "From a computer, for example. No Premium needed."
           }
         }
       }
@@ -17484,24 +17517,13 @@
         }
       }
     },
-    "lc.flek.jit.premium.alternative" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Or import a pairing file made elsewhere, on a computer for example. That needs no Premium."
-          }
-        }
-      }
-    },
     "lc.flek.jit.premium.message" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Premium creates the pairing file on this device, with no computer needed. It works while Premium is active."
+            "value" : "Premium sets JIT up inside FlekDeck, with no other apps needed. It works while Premium is active."
           }
         }
       }
@@ -17512,7 +17534,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This app launches with JIT, and the pairing file was made on this device, which works only while Premium is active. Renew Premium, or import another pairing file in Settings › JIT & JIT-Less."
+            "value" : "This app launches with built-in JIT, which works only while Premium is active. Get Premium, or switch to StikDebug, which is free, in Settings › JIT & JIT-Less."
           }
         }
       }
@@ -17682,17 +17704,6 @@
         }
       }
     },
-    "lc.flek.jit.step1.locked" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Made on this device. Works only while Premium is active."
-          }
-        }
-      }
-    },
     "lc.flek.jit.step1.title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17799,6 +17810,457 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose Apps"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.appSettings.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On FlekDeck’s home screen, touch and hold the app’s icon and tap **Settings**."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.appSettings.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the App’s Settings"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.back.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When StikDebug shows **JIT request completed**, switch back to FlekDeck. The app is running with JIT."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.back.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go Back to FlekDeck"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.chapter.connect" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect StikDebug"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.chapter.help" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If You Get Stuck"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.chapter.ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get Ready"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.chapter.use" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use It in FlekDeck"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.connect.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open **LocalDevVPN** and tap **Connect**. Allow the VPN if iOS asks."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.connect.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect LocalDevVPN"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.details" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More Details"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.discord" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "StikDebug Discord"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.enabler.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In FlekDeck, open **Settings** › **JIT & JIT-Less** and set **JIT Enabler** to **StikDebug**."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.enabler.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose StikDebug"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.getVPN" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get LocalDevVPN"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.github" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "StikDebug on GitHub"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.help" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Need Help?"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.import.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In **StikDebug**, open **Settings** and tap **Import Pairing File**, then choose the file."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.import.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import the Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.importFails.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make sure Wi-Fi is on and LocalDevVPN shows **Connected**: another VPN turns it off. In LocalDevVPN’s settings, **Tunnel IP** should be 10.7.0.0 and **Device IP** 10.7.0.1. Then import the file again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.importFails.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If the Import Fails"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.install.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open **FlekSt0re**, search for **StikDebug** and install it."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.install.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install StikDebug"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.intro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "StikDebug is a free app that turns JIT on for the apps in FlekDeck. It needs iOS 17.4 or later, and a computer for the first setup."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.launchWithJIT.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scroll down to **Launch with JIT** and turn it on."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.launchWithJIT.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn On Launch with JIT"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.listed.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekDeck should now appear on StikDebug’s **Apps** tab. If it doesn’t, close StikDebug and open it again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.listed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check That FlekDeck Is Listed"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.more.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This guide can’t cover every case. StikDebug’s community can help with the rest."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.more.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More Help"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.pairing.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On a Mac or PC, install **iloader** from iloader.app and connect this device with a cable. Click **Manage Pairing File**, then **Export** and confirm. Send the file to this device: with AirDrop from a Mac, or through iCloud Drive or a message to yourself from a PC."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.pairing.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make a Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.script.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It appears right below. On this device, apps need one for JIT to work. **universal.js** suits most; UTM, DolphiniOS, Flycast and ARMSX2 need **legacy.js**."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.script.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a JIT Launch Script"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.start.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make sure LocalDevVPN is connected, then start the app. FlekDeck switches to StikDebug, which asks to enable JIT. Tap **Enable JIT**, or **Enable and Run Script**."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.start.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start the App"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.stops.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check that LocalDevVPN is connected. After an iOS update the pairing file expires: make a new one and import it again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.stops.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If JIT Stops Working"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "StikDebug Setup"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.vpn.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It’s free on the App Store."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.vpn.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install LocalDevVPN"
           }
         }
       }
@@ -18337,7 +18799,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The pairing file was made on this device. It works only while Premium is active."
+            "value" : "Built-in JIT works only while Premium is active."
           }
         }
       }

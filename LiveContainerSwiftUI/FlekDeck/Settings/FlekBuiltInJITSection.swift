@@ -7,6 +7,10 @@
 //  with, the VPN it connects through, a check that the two work, and the apps
 //  to use it for.
 //
+//  Built-in JIT is a Premium feature, the whole of it. Without Premium the
+//  steps give way to an offer of it, and beside that to the free way to JIT,
+//  StikDebug, with the guide to setting that up.
+//
 //  It is meant to be gone through without having read anything: one button on
 //  the page is filled at a time, the one to tap next, and the check runs by
 //  itself once the two steps before it are done.
@@ -34,7 +38,7 @@ struct FlekBuiltInJITSection: View {
     /// image, and two of those at once would mount it twice.
     private static let checkQueue = DispatchQueue(label: "com.fs.flekdeck.builtInJIT.check")
 
-    private static let localDevVPNURL = URL(string: "https://apps.apple.com/app/localdevvpn/id6755608044")!
+    static let localDevVPNURL = URL(string: "https://apps.apple.com/app/localdevvpn/id6755608044")!
 
     @ObservedObject private var vpn = FlekLoopbackVPN.shared
 
@@ -43,17 +47,20 @@ struct FlekBuiltInJITSection: View {
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var pairingFileFound = FlekBuiltInJIT.hasPairingFile
-    /// Made on this device rather than imported, which takes Premium to use.
-    /// This and the next are read as the page comes up, not here: the view is
-    /// made anew each time the page is redrawn, and one of them reads a file.
+    /// Made on this device rather than imported. Read as the page comes up,
+    /// not here: the view is made anew each time the page is redrawn, and
+    /// this reads a file.
     @State private var pairingMadeOnDevice = false
-    @State private var isPremium = false
-    /// While the server is asked about Premium, before the file is made.
+    /// By what is kept, from the start, so that the steps are not preceded by
+    /// a glimpse of the offer.
+    @State private var isPremium = FlekPremium.isActive
+    /// While the server is asked about Premium.
     @State private var isCheckingPremium = false
+    @State private var showsPremiumSheet = false
     @State private var isChoosingPairingFile = false
     @State private var pairingSheet: PairingSheet?
-    /// Set from the Premium sheet, which has to be gone before the file
-    /// importer can come up.
+    /// Set from the help sheet, which has to be gone before the file importer
+    /// can come up.
     @State private var importsAfterSheet = false
     @State private var readiness = Readiness.unchecked
     /// When the check last passed, or zero. Kept, so that the step stays
@@ -72,6 +79,8 @@ struct FlekBuiltInJITSection: View {
                 // cannot pass.
                 Text(blocker)
                     .foregroundStyle(.red)
+            } else if !isPremium {
+                premiumOffer
             } else {
                 pairingStep
                 vpnStep
@@ -108,6 +117,28 @@ struct FlekBuiltInJITSection: View {
             }
         } header: {
             Text("lc.flek.jit.header".loc)
+                // On the header, which is there whatever the section shows
+                // under it, and is one view: a modifier on the section would
+                // be applied to every row, and so run once per row.
+                .onAppear {
+                    pairingMadeOnDevice = FlekBuiltInJIT.isPairingFileMadeOnDevice
+                    isPremium = FlekPremium.isActive
+                    if readiness == .unchecked, readyAt > 0, pairingFileFound {
+                        readiness = .ready
+                    }
+                }
+                .task {
+                    if FlekLoopbackVPN.isAvailable {
+                        await vpn.refresh()
+                    }
+                    await refreshPremium()
+                }
+                .onChange(of: scenePhase) { phase in
+                    // Back from getting Premium, as likely as not.
+                    if phase == .active {
+                        Task { await refreshPremium() }
+                    }
+                }
         } footer: {
             Text("lc.flek.jit.footer".loc)
         }
@@ -154,7 +185,7 @@ struct FlekBuiltInJITSection: View {
     /// The step to do next. Its button is the filled one, so that one thing on
     /// the page always stands out as what to tap.
     private var nextStep: Int {
-        if !isPairingFileUsable {
+        if !pairingFileFound {
             return 1
         }
         if FlekLoopbackVPN.isAvailable, !vpn.isConfigured {
@@ -169,11 +200,93 @@ struct FlekBuiltInJITSection: View {
         readyAt = 0
     }
 
+    // MARK: Without Premium
+
+    /// In place of the steps: Premium, as the easy way, with the one filled
+    /// button, and under it StikDebug, which is free and takes another app, a
+    /// VPN app and a computer, with the guide to setting it up.
+    @ViewBuilder
+    private var premiumOffer: some View {
+        offer(systemImage: "crown",
+              title: "lc.flek.jit.offer.premium.title".loc,
+              caption: "lc.flek.jit.offer.premium.caption".loc) {
+            if isCheckingPremium {
+                ProgressView()
+            } else {
+                stepButton("lc.flek.jit.getPremium".loc, isProminent: true) {
+                    // With Premium the steps take the offer's place.
+                    withPremium {}
+                }
+            }
+        }
+        // On one row, as on the first step.
+        .sheet(isPresented: $showsPremiumSheet) {
+            PremiumRequiredView(message: "lc.flek.jit.premium.message".loc)
+        }
+        NavigationLink {
+            FlekStikDebugGuideView()
+        } label: {
+            offer(systemImage: "wrench.and.screwdriver",
+                  title: "lc.flek.jit.offer.stikdebug.title".loc,
+                  caption: "lc.flek.jit.offer.stikdebug.caption".loc) {
+                EmptyView()
+            }
+        }
+    }
+
+    /// One of the two ways offered, laid out as a step is, with a symbol where
+    /// a step has its number.
+    private func offer<Control: View>(systemImage: String, title: String, caption: String,
+                                      @ViewBuilder control: () -> Control) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                // As wide as a step's number, whichever symbol it is.
+                Image(systemName: "1.circle")
+                    .hidden()
+                Image(systemName: systemImage)
+                    .foregroundStyle(.secondary)
+            }
+            .font(.title2)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                Text(caption)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            control()
+        }
+        .padding(.vertical, 2)
+    }
+
+    /// Runs `proceed` once Premium is settled, with the server where nothing
+    /// kept says yes: it may have been got a moment ago. Without Premium the
+    /// offer takes the steps' place, and says how to get it.
+    private func withPremium(_ proceed: @escaping () -> Void) {
+        guard !isCheckingPremium else {
+            return
+        }
+        isCheckingPremium = true
+        Task {
+            let answer = await FlekPremium.confirm()
+            isCheckingPremium = false
+            switch answer {
+            case .active:
+                isPremium = true
+                proceed()
+            case .inactive:
+                isPremium = false
+                showsPremiumSheet = true
+            case .unconfirmed:
+                show("lc.flek.jit.premium.unconfirmed".loc)
+            }
+        }
+    }
+
     // MARK: 1. Pairing file
 
     private enum PairingSheet: Identifiable {
         case create
-        case premium
         /// How a pairing file is made on a computer.
         case importHelp
 
@@ -183,8 +296,6 @@ struct FlekBuiltInJITSection: View {
     /// Whether the pairing file can be made on this device, or why not.
     private enum OnDevicePairing {
         case available
-        /// The device can, and it is a Premium feature.
-        case needsPremium
         case needsNewerSystem
         /// The pairing library is not in this build.
         case missing
@@ -194,28 +305,15 @@ struct FlekBuiltInJITSection: View {
         guard #available(iOS 27.0, *) else {
             return .needsNewerSystem
         }
-        guard LCDevicePairing.isAvailable else {
-            return .missing
-        }
-        return isPremium ? .available : .needsPremium
-    }
-
-    /// A file made on this device is of no use once Premium has ended.
-    private var isPairingFileLocked: Bool {
-        pairingFileFound && pairingMadeOnDevice && !isPremium
-    }
-
-    private var isPairingFileUsable: Bool {
-        pairingFileFound && !isPairingFileLocked
+        return LCDevicePairing.isAvailable ? .available : .missing
     }
 
     @ViewBuilder
     private var pairingStep: some View {
-        step(1, isDone: isPairingFileUsable,
+        step(1, isDone: pairingFileFound,
              title: "lc.flek.jit.step1.title".loc,
-             caption: pairingCaption,
-             captionColor: isPairingFileLocked ? .red : .secondary) {
-            if isPairingFileUsable {
+             caption: pairingCaption) {
+            if pairingFileFound {
                 Menu("lc.flek.jit.replace".loc) {
                     Button {
                         createPairingFile()
@@ -246,39 +344,10 @@ struct FlekBuiltInJITSection: View {
                 FlekPairingImportHelpView {
                     importsAfterSheet = true
                 }
-            case .premium:
-                PremiumRequiredView(
-                    message: "lc.flek.jit.premium.message".loc,
-                    alternative: .init(text: "lc.flek.jit.premium.alternative".loc,
-                                       buttonTitle: "lc.flek.jit.pair.importFile".loc) {
-                        importsAfterSheet = true
-                    }
-                )
             }
         }
         // On one row: a modifier on the section would be applied to every row,
-        // and so present, or run, once per row.
-        .onAppear {
-            let madeOnDevice = FlekBuiltInJIT.isPairingFileMadeOnDevice
-            let premium = FlekPremium.isActive
-            pairingMadeOnDevice = madeOnDevice
-            isPremium = premium
-            if readiness == .unchecked, readyAt > 0, pairingFileFound, premium || !madeOnDevice {
-                readiness = .ready
-            }
-        }
-        .task {
-            if FlekLoopbackVPN.isAvailable {
-                await vpn.refresh()
-            }
-            await refreshPremium()
-        }
-        .onChange(of: scenePhase) { phase in
-            // Back from buying Premium, as likely as not.
-            if phase == .active {
-                Task { await refreshPremium() }
-            }
-        }
+        // and so present once per row.
         .betterFileImporter(isPresented: $isChoosingPairingFile, types: Self.pairingFileTypes, multiple: false) { urls in
             importPairingFile(from: urls[0])
         } onDismiss: {
@@ -288,17 +357,16 @@ struct FlekBuiltInJITSection: View {
         // The two ways to a pairing file, for as long as there is none to use.
         // Making it here comes first wherever the device can do that, and is
         // shown where it cannot, with the reason.
-        if !isPairingFileUsable {
+        if !pairingFileFound {
             pairingOption(title: "lc.flek.jit.pair.create".loc, caption: onDeviceCaption,
-                          button: (onDevicePairing == .needsPremium ? "lc.flek.jit.getPremium" : "lc.flek.jit.create").loc,
+                          button: "lc.flek.jit.create".loc,
                           isProminent: isOnDevicePairingOffered,
                           isEnabled: isOnDevicePairingOffered,
                           isBusy: isCheckingPremium) {
                 createPairingFile()
             }
             pairingOption(title: "lc.flek.jit.pair.importFile".loc,
-                          caption: (onDevicePairing == .needsPremium ? "lc.flek.jit.pair.import.caption.free"
-                                                                     : "lc.flek.jit.pair.import.caption").loc,
+                          caption: "lc.flek.jit.pair.import.caption".loc,
                           button: "lc.flek.jit.import".loc,
                           isProminent: !isOnDevicePairingOffered,
                           help: { pairingSheet = .importHelp }) {
@@ -342,24 +410,19 @@ struct FlekBuiltInJITSection: View {
         .padding(.vertical, 2)
     }
 
-    /// Whether making the file here can be asked for at all, Premium or not.
     private var isOnDevicePairingOffered: Bool {
-        onDevicePairing == .available || onDevicePairing == .needsPremium
+        onDevicePairing == .available
     }
 
     private var onDeviceCaption: String {
         switch onDevicePairing {
         case .available: return "lc.flek.jit.pair.create.caption".loc
-        case .needsPremium: return "lc.flek.jit.pair.create.caption.premium".loc
         case .needsNewerSystem: return "lc.flek.jit.pair.create.caption.os".loc
         case .missing: return "lc.flek.jit.pair.create.caption.missing".loc
         }
     }
 
     private var pairingCaption: String {
-        if isPairingFileLocked {
-            return "lc.flek.jit.step1.locked".loc
-        }
         guard pairingFileFound else {
             // What the file is for, over the two ways to get one.
             return "lc.flek.jit.step1.caption".loc
@@ -367,28 +430,12 @@ struct FlekBuiltInJITSection: View {
         return (pairingMadeOnDevice ? "lc.flek.jit.step1.done.created" : "lc.flek.jit.step1.done").loc
     }
 
-    /// Making the file here is a Premium feature, so that is settled first, and
-    /// with the server where nothing kept says yes: Premium may have been
-    /// bought a moment ago.
+    /// Premium is settled first, as it is for everything here: it may have
+    /// ended since the page came up.
     private func createPairingFile() {
-        guard !isCheckingPremium else {
-            return
-        }
-        isCheckingPremium = true
-        Task {
-            let answer = await FlekPremium.confirm()
-            isCheckingPremium = false
-            switch answer {
-            case .active:
-                isPremium = true
-                devicePairing.begin()
-                pairingSheet = .create
-            case .inactive:
-                isPremium = false
-                pairingSheet = .premium
-            case .unconfirmed:
-                show("lc.flek.jit.premium.unconfirmed".loc)
-            }
+        withPremium {
+            devicePairing.begin()
+            pairingSheet = .create
         }
     }
 
@@ -404,11 +451,11 @@ struct FlekBuiltInJITSection: View {
         }
     }
 
-    /// What is kept about Premium, and the server's word where that says no
-    /// and something here hangs on it.
+    /// What is kept about Premium, and the server's word where that says no,
+    /// unless nothing here could be used with it either.
     private func refreshPremium() async {
         isPremium = FlekPremium.isActive
-        guard !isPremium, FlekDevicePairing.isSupported || pairingMadeOnDevice else {
+        guard !isPremium, FlekBuiltInJIT.blocker == nil else {
             return
         }
         if await FlekPremium.refresh() == true {
@@ -527,14 +574,14 @@ struct FlekBuiltInJITSection: View {
                 stepButton("lc.flek.jit.check".loc, isProminent: nextStep == 3) {
                     checkReadiness()
                 }
-                .disabled(!isPairingFileUsable || FlekBuiltInJIT.blocker != nil)
+                .disabled(!pairingFileFound || FlekBuiltInJIT.blocker != nil)
             }
         }
     }
 
-    /// Ready, and with a pairing file that can still be used.
+    /// Ready, and with the pairing file still there.
     private var isReady: Bool {
-        readiness == .ready && isPairingFileUsable
+        readiness == .ready && pairingFileFound
     }
 
     /// Runs the check without being asked once the two steps before it are
@@ -544,7 +591,7 @@ struct FlekBuiltInJITSection: View {
     private func checkOnceSetUp() {
         // After whatever called this has had its changes take.
         DispatchQueue.main.async {
-            guard isPairingFileUsable, FlekBuiltInJIT.blocker == nil, !isChecking, !isReady,
+            guard pairingFileFound, FlekBuiltInJIT.blocker == nil, !isChecking, !isReady,
                   FlekLoopbackVPN.isAvailable, vpn.isConfigured else {
                 return
             }
