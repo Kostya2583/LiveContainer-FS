@@ -1424,9 +1424,12 @@ struct FlekInstallerSkeletonRow: View {
     }
 }
 
-/// Animated checkmark shown briefly after a successful install.
+/// Animated checkmark shown briefly after a successful install, and larger
+/// where a pairing file has just been received.
 struct FlekRowCheckmark: View {
     let accent: Color
+    /// Across. The check's stroke and the room around it go by it.
+    var size: CGFloat = 30
     @State private var trimEnd: CGFloat = 0
 
     var body: some View {
@@ -1435,10 +1438,10 @@ struct FlekRowCheckmark: View {
                 .fill(Color.green)
             CheckmarkShape()
                 .trim(from: 0, to: trimEnd)
-                .stroke(.white, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                .padding(8)
+                .stroke(.white, style: StrokeStyle(lineWidth: size / 12, lineCap: .round, lineJoin: .round))
+                .padding(size * 4 / 15)
         }
-        .frame(width: 30, height: 30)
+        .frame(width: size, height: size)
         .onAppear {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             withAnimation(.easeOut(duration: 0.35).delay(0.1)) {

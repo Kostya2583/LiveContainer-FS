@@ -17033,17 +17033,6 @@
         }
       }
     },
-    "lc.flek.jit.how" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "How?"
-          }
-        }
-      }
-    },
     "lc.flek.jit.import" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17055,13 +17044,13 @@
         }
       }
     },
-    "lc.flek.jit.importHelp.address" : {
+    "lc.flek.jit.importHelp.address %@" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open it on your computer: github.com/Alex23Grig/flekpair"
+            "value" : "Open it on your computer:\n%@"
           }
         }
       }
@@ -17073,6 +17062,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Get FlekPair"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.importManually" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Manually"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.importNote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For a pairing file you brought over yourself, with AirDrop for example."
           }
         }
       }
@@ -17116,7 +17127,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connect this device with a cable and click Export Pairing File. Tap Trust here if asked."
+            "value" : "Connect this device with a cable and click Send to FlekDeck. Tap Trust here if asked."
           }
         }
       }
@@ -17127,7 +17138,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Send the file to this device, with AirDrop for example, then tap Import File."
+            "value" : "Tap Refresh below. FlekDeck collects the file."
           }
         }
       }
@@ -17330,6 +17341,94 @@
         }
       }
     },
+    "lc.flek.jit.pair.fetch.empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pairing file on the server is empty. Send it again with FlekPair."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.notAFile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The server answered with something other than a pairing file. Check the connection and try again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.nothingNew" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No new pairing file has been sent for this device. Send one with FlekPair on a computer, then refresh."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.nothingSent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No pairing file has been sent for this device yet. Send it with FlekPair on a computer, then refresh."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.otherDevice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pairing file on the server is for another device."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.refused %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The server couldn’t hand the file over (error %lld). Try again later."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.unknownDevice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekDeck doesn’t know this device’s UDID, so it can’t look for the file. Import it manually instead."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.unreachable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The server couldn’t be reached. Check the connection and try again."
+          }
+        }
+      }
+    },
     "lc.flek.jit.pair.footer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17341,24 +17440,24 @@
         }
       }
     },
-    "lc.flek.jit.pair.import.caption" : {
+    "lc.flek.jit.pair.fromComputer" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "From a computer, for example."
+            "value" : "Get from a Computer"
           }
         }
       }
     },
-    "lc.flek.jit.pair.importFile" : {
+    "lc.flek.jit.pair.fromComputer.caption" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Import File"
+            "value" : "With FlekPair, on a Mac or PC."
           }
         }
       }
@@ -17414,6 +17513,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open Settings"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.received" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing File Received"
           }
         }
       }
@@ -17568,6 +17678,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ready"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.refresh" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh"
           }
         }
       }

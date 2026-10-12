@@ -58,7 +58,12 @@ struct FlekBuiltInJITSection: View {
     @State private var isCheckingPremium = false
     @State private var showsPremiumSheet = false
     @State private var isChoosingPairingFile = false
+    /// While the server is asked, unasked, for the file FlekPair sent.
+    @State private var isLookingForPairingFile = false
     @State private var pairingSheet: PairingSheet?
+    /// A pairing file came from the server with the computer's guide up. The
+    /// guide shows that, and then goes by itself.
+    @State private var pairingFileReceived = false
     /// Set from the help sheet, which has to be gone before the file importer
     /// can come up.
     @State private var importsAfterSheet = false
@@ -132,11 +137,16 @@ struct FlekBuiltInJITSection: View {
                         await vpn.refresh()
                     }
                     await refreshPremium()
+                    collectSentPairingFile()
                 }
                 .onChange(of: scenePhase) { phase in
-                    // Back from getting Premium, as likely as not.
+                    // Back from getting Premium, as likely as not, or from the
+                    // computer the pairing file was sent from.
                     if phase == .active {
-                        Task { await refreshPremium() }
+                        Task {
+                            await refreshPremium()
+                            collectSentPairingFile()
+                        }
                     }
                 }
         } footer: {
@@ -322,8 +332,8 @@ struct FlekBuiltInJITSection: View {
                         Text(onDeviceCaption)
                     }
                     .disabled(!isOnDevicePairingOffered)
-                    Button("lc.flek.jit.pair.importFile".loc) {
-                        isChoosingPairingFile = true
+                    Button("lc.flek.jit.pair.fromComputer".loc) {
+                        pairingSheet = .importHelp
                     }
                 }
                 .buttonStyle(.bordered)
@@ -341,7 +351,9 @@ struct FlekBuiltInJITSection: View {
                     checkOnceSetUp()
                 }
             case .importHelp:
-                FlekPairingImportHelpView {
+                FlekPairingImportHelpView(received: pairingFileReceived) {
+                    await takeSentPairingFile()
+                } onImport: {
                     importsAfterSheet = true
                 }
             }
@@ -356,7 +368,10 @@ struct FlekBuiltInJITSection: View {
 
         // The two ways to a pairing file, for as long as there is none to use.
         // Making it here comes first wherever the device can do that, and is
-        // shown where it cannot, with the reason.
+        // shown where it cannot, with the reason. The other is a computer's,
+        // and always opens its guide: what to do there, and under it the two
+        // ways the file gets here, collected from where FlekPair sent it or
+        // picked by hand.
         if !pairingFileFound {
             pairingOption(title: "lc.flek.jit.pair.create".loc, caption: onDeviceCaption,
                           button: "lc.flek.jit.create".loc,
@@ -365,21 +380,18 @@ struct FlekBuiltInJITSection: View {
                           isBusy: isCheckingPremium) {
                 createPairingFile()
             }
-            pairingOption(title: "lc.flek.jit.pair.importFile".loc,
-                          caption: "lc.flek.jit.pair.import.caption".loc,
+            pairingOption(title: "lc.flek.jit.pair.fromComputer".loc,
+                          caption: "lc.flek.jit.pair.fromComputer.caption".loc,
                           button: "lc.flek.jit.import".loc,
-                          isProminent: !isOnDevicePairingOffered,
-                          help: { pairingSheet = .importHelp }) {
-                isChoosingPairingFile = true
+                          isProminent: !isOnDevicePairingOffered) {
+                pairingSheet = .importHelp
             }
         }
     }
 
     /// One of the ways to a pairing file, set in under the step it belongs to.
-    /// `help` puts a "How?" after the line about it.
     private func pairingOption(title: String, caption: String, button: String, isProminent: Bool,
                                isEnabled: Bool = true, isBusy: Bool = false,
-                               help: (() -> Void)? = nil,
                                action: @escaping () -> Void) -> some View {
         HStack(spacing: 12) {
             // As wide as a step's number, so the text lines up with the step's.
@@ -392,12 +404,6 @@ struct FlekBuiltInJITSection: View {
                 Text(caption)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                if let help {
-                    // Borderless, so that it is tapped by itself in the row.
-                    Button("lc.flek.jit.how".loc, action: help)
-                        .buttonStyle(.borderless)
-                        .font(.footnote)
-                }
             }
             Spacer(minLength: 8)
             if isBusy {
@@ -440,6 +446,7 @@ struct FlekBuiltInJITSection: View {
     }
 
     private func pairingSheetClosed() {
+        pairingFileReceived = false
         // How Cancel and a swipe down end a pairing under way. Once paired
         // there is nothing left to end.
         if devicePairing.state != .paired {
@@ -471,29 +478,77 @@ struct FlekBuiltInJITSection: View {
         UTType(filenameExtension: "mobiledevicepair", conformingTo: .data),
     ].compactMap { $0 }
 
-    /// Takes the file only if it holds a RemotePairing record, which is the one
-    /// StikJIT connects with. A pairing file made by an older tool holds only a
-    /// lockdown record, and would otherwise fail much later, at an app's
-    /// launch, with an error that says nothing about the file.
     private func importPairingFile(from url: URL) {
         do {
-            let data = try Data(contentsOf: url)
-            let record = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
-            guard let record, record["public_key"] is Data, record["private_key"] is Data,
-                  record["identifier"] is String else {
-                throw "lc.flek.jit.pairingFile.wrongKind".loc
-            }
-            let destination = LCPath.pairingFilePath
-            try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(),
-                                                    withIntermediateDirectories: true)
-            try data.write(to: destination, options: .atomic)
-            pairingFileFound = true
-            // Still one made on this device, if that is what was brought back.
-            pairingMadeOnDevice = FlekBuiltInJIT.isPairingFileMadeOnDevice
-            setupChanged()
-            checkOnceSetUp()
+            try FlekBuiltInJIT.storePairingFile(try Data(contentsOf: url))
+            pairingFileTaken()
         } catch {
             show(error.localizedDescription)
+        }
+    }
+
+    /// There is a pairing file, or another than there was.
+    private func pairingFileTaken() {
+        pairingFileFound = true
+        // Still one made on this device, if that is what was brought back.
+        pairingMadeOnDevice = FlekBuiltInJIT.isPairingFileMadeOnDevice
+        // The computer's guide has nothing left to say, if that is what is up:
+        // the file may have been found while it was being read. It says that
+        // the file has come and closes itself.
+        if pairingSheet == .importHelp {
+            pairingFileReceived = true
+        }
+        setupChanged()
+        checkOnceSetUp()
+    }
+
+    /// Takes the pairing file FlekPair sent for this device, when the guide's
+    /// Refresh asks for it. What stood in the way, or nil once the file is
+    /// taken: the guide is up over the page, and says it itself.
+    private func takeSentPairingFile() async -> String? {
+        do {
+            let file = try await FlekPairingDownload.fetch()
+            // With a file in place, what was taken from the server before is
+            // nothing new: the server keeps a file until the next is sent.
+            // Taking it again would put an old file over the one in use. And
+            // where a look without being asked brought it in while this one
+            // was out, it would start over the check that look started.
+            if pairingFileFound, FlekPairingDownload.wasTaken(file) {
+                return "lc.flek.jit.pair.fetch.nothingNew".loc
+            }
+            try FlekBuiltInJIT.storePairingFile(file)
+            FlekPairingDownload.noteTaken(file)
+            pairingFileTaken()
+            return nil
+        } catch {
+            return error.localizedDescription
+        }
+    }
+
+    /// Looks for a file FlekPair sent without being asked: as the page comes
+    /// up, and when the app is back in front, which is when the user is back
+    /// from the computer. Only while there is no pairing file, and saying
+    /// nothing of finding none. It does not take again what was taken before:
+    /// the server keeps a file until the next is sent, and one removed here is
+    /// still there. Nor does it look while a file is being made here: that
+    /// one is about to take this one's place, and the check a file brings on
+    /// would run across the pairing.
+    private func collectSentPairingFile() {
+        guard isPremium, !pairingFileFound, pairingSheet != .create,
+              FlekBuiltInJIT.blocker == nil, !isLookingForPairingFile else {
+            return
+        }
+        isLookingForPairingFile = true
+        Task {
+            defer { isLookingForPairingFile = false }
+            // A file the user has got another way meanwhile is left alone.
+            guard let file = try? await FlekPairingDownload.fetch(),
+                  !pairingFileFound, pairingSheet != .create, !FlekPairingDownload.wasTaken(file),
+                  (try? FlekBuiltInJIT.storePairingFile(file)) != nil else {
+                return
+            }
+            FlekPairingDownload.noteTaken(file)
+            pairingFileTaken()
         }
     }
 
@@ -763,25 +818,46 @@ struct FlekJITAppsView: View {
     }
 }
 
-/// How a pairing file is made on a computer, for whoever is about to import
-/// one and has never made one.
+/// The way to a pairing file that goes by a computer: how the file is made
+/// there, and under that the two ways it gets here.
 ///
-/// The tool it sends them to is FlekPair, FlekSt0re's own: iloader with
+/// The tool it sends the user to is FlekPair, FlekSt0re's own: iloader with
 /// everything but the export of the file taken out, so that there is one
-/// button to click. iloader itself and idevice_pair make the same file and
-/// are kept under Other Options, for whoever has one of them already, or is
-/// on Linux, which FlekPair is not built for.
+/// button to click, and which sends the file on for FlekDeck to collect.
+/// Refresh collects it, and is the button that stands out. Import Manually is
+/// for a file carried over by hand, which is what iloader itself and
+/// idevice_pair leave one with: they make the same file and are kept under
+/// Other Options, for whoever has one of them already, or is on Linux, which
+/// FlekPair is not built for.
 struct FlekPairingImportHelpView: View {
     /// The newest release, whichever that is by then.
     private static let flekPairURL = URL(string: "https://github.com/Alex23Grig/flekpair/releases/latest")!
+    /// The same address as it is read and typed.
+    private static let flekPairAddress = flekPairURL.absoluteString.replacingOccurrences(of: "https://", with: "")
     private static let iloaderURL = URL(string: "https://github.com/nab138/iloader/releases/latest")!
     private static let idevicePairURL = URL(string: "https://github.com/jkcoxson/idevice_pair/releases/latest")!
 
-    /// Called when the file is at hand and is to be imported. The sheet is
-    /// still up at that point, so the importer has to wait for it to go.
+    /// How long the mark of a file received is up before the sheet goes: long
+    /// enough to be seen, and no longer, as the page behind has gone on.
+    private static let receivedPause: UInt64 = 1_300_000_000
+
+    /// Whether the file has come, by Refresh here or found without asking
+    /// while this was up.
+    var received = false
+    /// Asks for the file FlekPair sent. What stood in the way, or nil once
+    /// the file is taken.
+    var onRefresh: () async -> String?
+    /// Called when a file is to be picked by hand. The sheet is still up at
+    /// that point, so the importer has to wait for it to go.
     var onImport: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+
+    @State private var isRefreshing = false
+    /// Why the last Refresh brought nothing.
+    @State private var failure: String?
+    /// The mark of a file received is up, and the sheet about to go.
+    @State private var showsReceived = false
 
     var body: some View {
         NavigationView {
@@ -795,14 +871,47 @@ struct FlekPairingImportHelpView: View {
                     Link("lc.flek.jit.importHelp.get".loc, destination: Self.flekPairURL)
                 } footer: {
                     // The page is wanted on the computer, not on this device,
-                    // so its address is there to be typed as well.
-                    Text("lc.flek.jit.importHelp.address".loc)
+                    // so its address is there to be typed as well: the one the
+                    // row opens, on a line of its own so that it stays whole.
+                    Text(String(format: "lc.flek.jit.importHelp.address %@".loc, Self.flekPairAddress))
                 }
                 Section {
-                    Button("lc.flek.jit.pair.importFile".loc) {
+                    // Filled and the full width, with no row behind it: of the
+                    // two ways, the one to go for. It stays filled while it
+                    // asks and takes no taps: disabled, it would turn gray
+                    // under a spinner drawn for the fill.
+                    Button(action: refresh) {
+                        HStack(spacing: 8) {
+                            if isRefreshing {
+                                // Small, so that the button keeps its height
+                                // and nothing under it moves.
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .tint(.white)
+                            }
+                            Text("lc.flek.jit.refresh".loc)
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .allowsHitTesting(!isRefreshing)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                } footer: {
+                    if let failure {
+                        Text(failure)
+                            .foregroundStyle(.red)
+                    }
+                }
+                Section {
+                    Button("lc.flek.jit.importHelp.importManually".loc) {
                         onImport()
                         dismiss()
                     }
+                } footer: {
+                    Text("lc.flek.jit.importHelp.importNote".loc)
                 }
                 Section {
                     DisclosureGroup("lc.flek.jit.importHelp.other".loc) {
@@ -823,6 +932,87 @@ struct FlekPairingImportHelpView: View {
                     }
                 }
             }
+        }
+        // Over the bar as well: there is nothing left to cancel.
+        .overlay {
+            if showsReceived {
+                FlekPairingReceivedView()
+                    .transition(.opacity)
+            }
+        }
+        .onChange(of: received) { hasCome in
+            if hasCome {
+                showReceived()
+            }
+        }
+        // Ended with the sheet, so that one closed by hand meanwhile is not
+        // followed by a second closing, of whatever is up by then.
+        .task(id: showsReceived) {
+            guard showsReceived else { return }
+            try? await Task.sleep(nanoseconds: Self.receivedPause)
+            if !Task.isCancelled {
+                dismiss()
+            }
+        }
+    }
+
+    private func showReceived() {
+        guard !showsReceived else { return }
+        UIAccessibility.post(notification: .announcement, argument: "lc.flek.jit.pair.received".loc)
+        withAnimation(.easeOut(duration: 0.2)) {
+            showsReceived = true
+        }
+    }
+
+    /// Why nothing came is said under the button: an alert on the page would
+    /// be behind this sheet.
+    private func refresh() {
+        // For a press that is no touch: VoiceOver's, or a keyboard's.
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        failure = nil
+        Task {
+            let problem = await onRefresh()
+            isRefreshing = false
+            if let problem {
+                failure = problem
+            } else {
+                showReceived()
+            }
+        }
+    }
+}
+
+/// What the computer's guide shows between a pairing file's coming and its own
+/// going: the mark an install ends on, larger, which draws its check and gives
+/// its light tap as it appears, and a ring going out from it once, as from
+/// something that has just landed.
+private struct FlekPairingReceivedView: View {
+    private static let markSize: CGFloat = 72
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isIn = false
+
+    var body: some View {
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .stroke(Color.green, lineWidth: 2)
+                    .frame(width: Self.markSize, height: Self.markSize)
+                    .scaleEffect(isIn ? 1.8 : 1)
+                    .opacity(isIn ? 0 : 0.5)
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.7).delay(0.15), value: isIn)
+                FlekRowCheckmark(accent: .green, size: Self.markSize)
+                    .scaleEffect(isIn || reduceMotion ? 1 : 0.6)
+                    .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.6), value: isIn)
+            }
+            Text("lc.flek.jit.pair.received".loc)
+                .font(.title3.weight(.semibold))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+        .onAppear {
+            isIn = true
         }
     }
 }

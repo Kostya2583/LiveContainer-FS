@@ -62,6 +62,27 @@ enum FlekBuiltInJIT {
         (try? LCPath.pairingFilePath.checkResourceIsReachable()) ?? false
     }
 
+    /// Whether a pairing file, read as a property list, holds a RemotePairing
+    /// record, which is the one StikJIT connects with. A pairing file made by
+    /// an older tool holds only a lockdown record.
+    static func isUsablePairingFile(_ file: [String: Any]) -> Bool {
+        file["public_key"] is Data && file["private_key"] is Data && file["identifier"] is String
+    }
+
+    /// Keeps `data` as the pairing file, if it is one built-in JIT can use.
+    /// One that is not would otherwise fail much later, at an app's launch,
+    /// with an error that says nothing about the file.
+    static func storePairingFile(_ data: Data) throws {
+        guard let file = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+              isUsablePairingFile(file) else {
+            throw "lc.flek.jit.pairingFile.wrongKind".loc
+        }
+        let destination = LCPath.pairingFilePath
+        try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(),
+                                                withIntermediateDirectories: true)
+        try data.write(to: destination, options: .atomic)
+    }
+
     /// What a pairing file made on this device carries besides its record.
     static let madeOnDeviceKey = "created_on_device"
 
