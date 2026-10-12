@@ -11,6 +11,8 @@
 
 #include <dlfcn.h>
 #include <execinfo.h>
+#include <notify.h>
+#import <Network/Network.h>
 #include <signal.h>
 #include <sys/mman.h>
 #include <stdlib.h>
@@ -108,6 +110,96 @@ static BOOL checkJITEnabled() {
 #endif
 }
 
+/// Says in the app itself, over whatever it shows, that Airplane Mode can go
+/// off again. A notification would not do: FlekDeck is what is in front, and
+/// one of its own is not shown then.
+static void LCShowJITNotice(int attempt) {
+    UIWindow *window = nil;
+    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+        if (![scene isKindOfClass:UIWindowScene.class]) continue;
+        for (UIWindow *candidate in ((UIWindowScene *)scene).windows) {
+            if (candidate.isHidden) continue;
+            if (!window || candidate.isKeyWindow) window = candidate;
+        }
+        if (window.isKeyWindow) break;
+    }
+    if (!window) {
+        // The app has not put its window up yet.
+        if (attempt < 20) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                LCShowJITNotice(attempt + 1);
+            });
+        }
+        return;
+    }
+
+    UIVisualEffectView *notice = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
+    notice.userInteractionEnabled = NO;
+    notice.layer.cornerRadius = 18;
+    notice.layer.cornerCurve = kCACornerCurveContinuous;
+    notice.clipsToBounds = YES;
+    notice.translatesAutoresizingMaskIntoConstraints = NO;
+    UILabel *label = [UILabel new];
+    label.text = @"JIT is on. Airplane Mode can be turned off.";
+    label.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
+    label.textColor = UIColor.whiteColor;
+    label.textAlignment = NSTextAlignmentCenter;
+    label.numberOfLines = 0;
+    label.translatesAutoresizingMaskIntoConstraints = NO;
+    [notice.contentView addSubview:label];
+    [window addSubview:notice];
+    [NSLayoutConstraint activateConstraints:@[
+        [label.topAnchor constraintEqualToAnchor:notice.contentView.topAnchor constant:10],
+        [label.bottomAnchor constraintEqualToAnchor:notice.contentView.bottomAnchor constant:-10],
+        [label.leadingAnchor constraintEqualToAnchor:notice.contentView.leadingAnchor constant:16],
+        [label.trailingAnchor constraintEqualToAnchor:notice.contentView.trailingAnchor constant:-16],
+        [notice.topAnchor constraintEqualToAnchor:window.safeAreaLayoutGuide.topAnchor constant:8],
+        [notice.centerXAnchor constraintEqualToAnchor:window.centerXAnchor],
+        [notice.widthAnchor constraintLessThanOrEqualToAnchor:window.widthAnchor constant:-32],
+    ]];
+    notice.alpha = 0;
+    [UIView animateWithDuration:0.25 animations:^{
+        notice.alpha = 1;
+    }];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 6 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        [UIView animateWithDuration:0.3 animations:^{
+            notice.alpha = 0;
+        } completion:^(BOOL finished) {
+            [notice removeFromSuperview];
+        }];
+    });
+}
+
+/// Waits for the helper to say that the debugger has let go of this app,
+/// which with TXM is some time after JIT came on, as the app prepares its
+/// memory through it first. Only then is the connection it came over done
+/// with, and only where the device is on nothing, as in Airplane Mode, is
+/// there anything to tell: JIT cannot be started over mobile data, so
+/// Airplane Mode is how it is started away from Wi-Fi.
+static void LCWatchForJITHelperDone(void) {
+    static int token;
+    NSString *name = [NSString stringWithFormat:@"com.flekdeck.jit.done.%d", getpid()];
+    // On the main queue, which is served once the app is running.
+    notify_register_dispatch(name.UTF8String, &token, dispatch_get_main_queue(), ^(int fired) {
+        notify_cancel(fired);
+        nw_path_monitor_t monitor = nw_path_monitor_create();
+        nw_path_monitor_set_queue(monitor, dispatch_get_main_queue());
+        __block BOOL answered = NO;
+        nw_path_monitor_set_update_handler(monitor, ^(nw_path_t path) {
+            if (answered) return;
+            answered = YES;
+            nw_path_monitor_cancel(monitor);
+            if (nw_path_uses_interface_type(path, nw_interface_type_wifi) ||
+                nw_path_uses_interface_type(path, nw_interface_type_wired) ||
+                nw_path_uses_interface_type(path, nw_interface_type_cellular)) {
+                return;
+            }
+            LCShowJITNotice(0);
+        });
+        nw_path_monitor_start(monitor);
+    });
+}
+
 static NSString *enableJITWithStikJIT(NSString *docPath) {
     // Built-in JIT is a Premium feature: the app says how long Premium lasts,
     // or that it has just confirmed it for this launch. The app asks the same
@@ -184,6 +276,7 @@ static NSString *enableJITWithStikJIT(NSString *docPath) {
         @"waitForVPN": @(waitForVPN),
         @"pid": @(getpid())
     };
+    LCWatchForJITHelperDone();
     ext.requestCancellationBlock = ^(NSUUID *uuid, NSError *jitError) {
         error = jitError;
     };

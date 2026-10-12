@@ -104,7 +104,7 @@ enum FlekBuiltInJIT {
     static func isDeviceReachable(within timeout: TimeInterval = 0.7) async -> Bool {
         await withCheckedContinuation { continuation in
             let connection = NWConnection(host: "10.7.0.1", port: 49152, using: .tcp)
-            let answer = OneAnswer { isReachable in
+            let answer = OneAnswer<Bool> { isReachable in
                 connection.cancel()
                 continuation.resume(returning: isReachable)
             }
@@ -123,17 +123,59 @@ enum FlekBuiltInJIT {
         }
     }
 
+    /// What the device is connected through, which decides whether JIT can be
+    /// started. iOS takes the connection built-in JIT makes through the VPN
+    /// while the device is on Wi-Fi or on nothing at all, as in Airplane Mode,
+    /// and never while it is on mobile data, which it takes the VPN to be
+    /// part of. And a VPN cannot start on nothing, though one that is on
+    /// stays on. So away from Wi-Fi the order is: the VPN on, then Airplane
+    /// Mode. Found on a device with iOS 27, and what StikJIT's guide says.
+    enum Connection {
+        case wifi
+        case mobileData
+        /// No connection at all, as in Airplane Mode.
+        case offline
+    }
+
+    /// Asked only to explain a device that does not answer through the VPN.
+    /// Nil where it cannot be told.
+    static func connection() async -> Connection? {
+        await withCheckedContinuation { continuation in
+            let monitor = NWPathMonitor()
+            let answer = OneAnswer<Connection?> { connection in
+                monitor.cancel()
+                continuation.resume(returning: connection)
+            }
+            monitor.pathUpdateHandler = { path in
+                if path.usesInterfaceType(.wifi) || path.usesInterfaceType(.wiredEthernet) {
+                    answer.give(.wifi)
+                } else if path.usesInterfaceType(.cellular) {
+                    answer.give(.mobileData)
+                } else if path.status == .satisfied {
+                    answer.give(nil)
+                } else {
+                    answer.give(.offline)
+                }
+            }
+            let queue = DispatchQueue.global(qos: .userInitiated)
+            monitor.start(queue: queue)
+            queue.asyncAfter(deadline: .now() + 0.5) {
+                answer.give(nil)
+            }
+        }
+    }
+
     /// Passes on the first answer it is given and drops the rest: the
     /// connection and the timeout both give one.
-    private final class OneAnswer: @unchecked Sendable {
+    private final class OneAnswer<Answer>: @unchecked Sendable {
         private let lock = NSLock()
-        private var handler: ((Bool) -> Void)?
+        private var handler: ((Answer) -> Void)?
 
-        init(_ handler: @escaping (Bool) -> Void) {
+        init(_ handler: @escaping (Answer) -> Void) {
             self.handler = handler
         }
 
-        func give(_ answer: Bool) {
+        func give(_ answer: Answer) {
             lock.lock()
             let handler = self.handler
             self.handler = nil
@@ -148,7 +190,38 @@ enum FlekJITSetup {
     struct NotReady: LocalizedError {
         var title = "lc.flek.jit.notReady.title".loc
         let message: String
+        /// What to say instead where the launch is kept and started once the
+        /// connection has changed, which is then all that is missing. Nil
+        /// where something else is.
+        var messageWhileWaiting: String?
         var errorDescription: String? { message }
+    }
+
+    /// Says when what the device is connected through has changed, for a
+    /// launch that waits on it: asked for Wi-Fi or Airplane Mode, the user
+    /// changes it in Control Center or in Settings, and the app is to start
+    /// when they have.
+    final class ConnectionWatch {
+        private let monitor = NWPathMonitor()
+        private let queue = DispatchQueue(label: "FlekJITSetup.ConnectionWatch")
+        private var hasSeenFirst = false
+
+        init(onChange: @escaping @MainActor () -> Void) {
+            monitor.pathUpdateHandler = { [weak self] _ in
+                guard let self else { return }
+                // The first is the connection as it is, not a change of it.
+                guard self.hasSeenFirst else {
+                    self.hasSeenFirst = true
+                    return
+                }
+                Task { @MainActor in onChange() }
+            }
+            monitor.start(queue: queue)
+        }
+
+        deinit {
+            monitor.cancel()
+        }
     }
 
     /// Where the setup stands, for showing it outside its own page.
@@ -259,15 +332,43 @@ enum FlekJITSetup {
                 do {
                     try await vpn.connect()
                 } catch {
+                    // On no connection at all a VPN cannot start, and needs
+                    // one for a moment.
+                    if await FlekBuiltInJIT.connection() == .offline {
+                        throw connectionNotReady("lc.flek.jit.notReady.offline")
+                    }
                     throw NotReady(message: "lc.flek.jit.notReady.vpn".loc)
+                }
+                // With the VPN up the device still does not answer over mobile
+                // data, and a launch would end in the helper's timeout, which
+                // asks about the VPN. The VPN is left on, so that Airplane
+                // Mode is all that is still needed. Not answering for another
+                // reason is left to the launch, as it was.
+                if !(await FlekBuiltInJIT.isDeviceReachable()), await FlekBuiltInJIT.connection() == .mobileData {
+                    throw connectionNotReady("lc.flek.jit.notReady.mobileData")
                 }
                 return
             }
         }
         // No VPN of FlekDeck's own, which leaves LocalDevVPN.
         if !(await FlekBuiltInJIT.isDeviceReachable()) {
-            throw NotReady(message: (FlekLoopbackVPN.isAvailable ? "lc.flek.jit.notReady.setUp" : "lc.flek.jit.notReady.vpn").loc)
+            if FlekLoopbackVPN.isAvailable {
+                throw NotReady(message: "lc.flek.jit.notReady.setUp".loc)
+            }
+            // Whether LocalDevVPN is connected cannot be told, so over mobile
+            // data both it and Airplane Mode are asked for, in their order.
+            if await FlekBuiltInJIT.connection() == .mobileData {
+                throw connectionNotReady("lc.flek.jit.notReady.mobileData.other")
+            }
+            throw NotReady(message: "lc.flek.jit.notReady.vpn".loc)
         }
+    }
+
+    /// Not ready for what the device is connected through, which the user is
+    /// about to change: said one way where they are to try again, and another
+    /// where the app starts by itself once they have.
+    private static func connectionNotReady(_ key: String) -> NotReady {
+        NotReady(message: key.loc, messageWhileWaiting: "\(key).waiting".loc)
     }
 
     /// Built-in JIT is used with Premium only, at every launch and not just

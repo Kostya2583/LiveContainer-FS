@@ -6,6 +6,7 @@
 //
 @import Foundation;
 #import <CommonCrypto/CommonCrypto.h>
+#import <notify.h>
 #import "../LiveContainer/FoundationPrivate.h"
 #import "../LiveContainer/UIKitPrivate.h"
 #import "../LiveContainer/utils.h"
@@ -55,9 +56,15 @@ int StikJITHeadlessMain(void) {
     for (int attempt = 0; attempt < 12 && [appInfo[@"waitForVPN"] boolValue] && [error containsString:@"Timed out connecting to"]; attempt++) {
         error = [StikJITWrapper enableJITWith:pid timeout:0.5 pairingFile:pairingFile ddiPath:ddiPath scriptJs:scriptJs];
     }
-    if (error.length < 1) return 0;
+    if (error.length < 1) {
+        // The debugger has let go of the app, which with TXM is some time
+        // after JIT came on: from here the app needs no connection, and says
+        // so where the user is waiting to switch one back on.
+        notify_post([NSString stringWithFormat:@"com.flekdeck.jit.done.%d", pid].UTF8String);
+        return 0;
+    }
     if ([error containsString:@"Timed out connecting to"]) {
-        error = [error stringByAppendingString:@"\n\nIs the VPN connected? Turn it on in Settings, under JIT, or connect LocalDevVPN."];
+        error = [error stringByAppendingString:@"\n\nIs the VPN connected, and this device on Wi-Fi or in Airplane Mode? Turn the VPN on in Settings, under JIT, or connect LocalDevVPN."];
         // FIXME: auto open URL does not work
         // NSString *callbackScheme = appInfo[@"callbackScheme"];
         // LSApplicationWorkspace* workspace = [PrivClass(LSApplicationWorkspace) defaultWorkspace];

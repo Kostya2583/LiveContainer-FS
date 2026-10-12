@@ -16967,6 +16967,39 @@
         }
       }
     },
+    "lc.flek.jit.check.mobileData" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT can’t be turned on over mobile data. Join Wi-Fi or turn on Airplane Mode, then check again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.check.mobileData.other" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT can’t be turned on over mobile data. Join Wi-Fi, or connect LocalDevVPN and then turn on Airplane Mode."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.check.offline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The VPN can’t start without a connection. Turn Airplane Mode off for a moment and check again."
+          }
+        }
+      }
+    },
     "lc.flek.jit.create" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16995,7 +17028,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "JIT lets emulators and some other apps run at full speed. Developer Mode has to be on in the Settings app."
+            "value" : "JIT lets emulators and some other apps run at full speed. Developer Mode has to be on in the Settings app. Apps with JIT can’t be started over mobile data: use Wi-Fi or Airplane Mode."
           }
         }
       }
@@ -17161,6 +17194,72 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "More"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.mobileData" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, which can’t be started over mobile data. Join Wi-Fi or turn on Airplane Mode, then try again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.mobileData.other" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, which can’t be started over mobile data. Join Wi-Fi, or connect LocalDevVPN and then turn on Airplane Mode."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.mobileData.other.waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, which can’t be started over mobile data. Join Wi-Fi, or connect LocalDevVPN and then turn on Airplane Mode, and it starts by itself."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.mobileData.waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, which can’t be started over mobile data. Join Wi-Fi or turn on Airplane Mode, and it starts by itself."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.offline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, and the VPN it needs can’t start without a connection. Turn Airplane Mode off for a moment and try again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.offline.waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, and the VPN it needs can’t start without a connection. Turn Airplane Mode off for a moment."
           }
         }
       }
@@ -18150,7 +18249,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Make sure Wi-Fi is on and LocalDevVPN shows **Connected**: another VPN turns it off. In LocalDevVPN’s settings, **Tunnel IP** should be 10.7.0.0 and **Device IP** 10.7.0.1. Then import the file again."
+            "value" : "Make sure this device is on a Wi-Fi network and LocalDevVPN shows **Connected**: another VPN turns it off. In LocalDevVPN’s settings, **Tunnel IP** should be 10.7.0.0 and **Device IP** 10.7.0.1. Then import the file again."
           }
         }
       }
@@ -18337,7 +18436,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Check that LocalDevVPN is connected. After an iOS update the pairing file expires: make a new one and import it again."
+            "value" : "Check that LocalDevVPN is connected and this device is on Wi-Fi: JIT can’t start over mobile data. Away from Wi-Fi, connect LocalDevVPN and then turn on Airplane Mode. After an iOS update the pairing file expires: make a new one and import it again."
           }
         }
       }

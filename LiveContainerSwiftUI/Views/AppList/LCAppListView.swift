@@ -68,6 +68,14 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     @State private var jitNotReadyMessage: String?
     /// Kept after the warning has gone, so that it does not blank on its way out.
     @State private var jitNotReadyTitle = "lc.flek.jit.notReady.title".loc
+    /// A warning to put up once the one that is up has gone: an alert keeps
+    /// the text it came up with.
+    @State private var jitNotReadyNext: (title: String, message: String)?
+    /// A launch held back for what the device is connected through, to be
+    /// started once that has changed. The warning stays up meanwhile.
+    @State private var waitingLaunch: (() async -> Void)?
+    @State private var connectionWatch: FlekJITSetup.ConnectionWatch?
+    @State private var isRetryingLaunch = false
     @State var errorInfo = ""
     /// The failed install the user tapped, driving the failed-install alert.
     @State private var failedInstallItem: InstallItem?
@@ -547,12 +555,24 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             get: { jitNotReadyMessage != nil },
             set: { if !$0 { jitNotReadyMessage = nil } }
         )) {
-            Button("lc.tabView.settings".loc) {
-                handleHomeTap(.defaultApp(.settings))
+            if waitingLaunch == nil {
+                Button("lc.tabView.settings".loc) {
+                    handleHomeTap(.defaultApp(.settings))
+                }
+                Button("lc.common.ok".loc, role: .cancel) {}
+            } else {
+                // Up for as long as the launch waits, and taken down by it:
+                // the button is for not waiting.
+                Button("lc.common.cancel".loc, role: .cancel) {
+                    stopWaitingForConnection()
+                }
             }
-            Button("lc.common.ok".loc, role: .cancel) {}
         } message: {
             Text(jitNotReadyMessage ?? "")
+        }
+        // Back from Settings, where Airplane Mode has a switch as well.
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            retryWaitingLaunch()
         }
         .alert("lc.flek.installFailedTitle".loc, isPresented: Binding(
             get: { failedInstallItem != nil },
@@ -1256,11 +1276,103 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 try await app.runApp(multitask: false)
             }
         } catch let notReady as FlekJITSetup.NotReady {
-            jitNotReadyTitle = notReady.title
-            jitNotReadyMessage = notReady.message
+            showJITNotReady(notReady) {
+                await launchHomeApp(app, parallel: parallel)
+            }
         } catch {
             errorInfo = error.localizedDescription
             errorShow = true
+        }
+    }
+
+    /// Says why an app set to launch with JIT was not started. Where all that
+    /// is missing is the connection, which the user is about to change, the
+    /// launch is kept and started once they have, with the warning up until
+    /// then: Control Center opens over it.
+    private func showJITNotReady(_ notReady: FlekJITSetup.NotReady, retry: @escaping () async -> Void) {
+        if let message = notReady.messageWhileWaiting {
+            waitingLaunch = retry
+            if connectionWatch == nil {
+                connectionWatch = FlekJITSetup.ConnectionWatch {
+                    retryWaitingLaunch()
+                }
+            }
+            presentJITNotReady(title: notReady.title, message: message)
+        } else {
+            stopWaitingForConnection()
+            presentJITNotReady(title: notReady.title, message: notReady.message)
+        }
+    }
+
+    /// The warning that is up, or about to be.
+    private var jitNotReadyShown: String? {
+        jitNotReadyNext?.message ?? jitNotReadyMessage
+    }
+
+    private func presentJITNotReady(title: String, message: String) {
+        guard jitNotReadyShown != message else { return }
+        guard jitNotReadyMessage != nil || jitNotReadyNext != nil else {
+            jitNotReadyTitle = title
+            jitNotReadyMessage = message
+            return
+        }
+        // The one that is up goes first, and the latest asked for follows it.
+        let isAlreadyChanging = jitNotReadyNext != nil
+        jitNotReadyNext = (title, message)
+        jitNotReadyMessage = nil
+        guard !isAlreadyChanging else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            guard let next = jitNotReadyNext else { return }
+            jitNotReadyNext = nil
+            jitNotReadyTitle = next.title
+            jitNotReadyMessage = next.message
+        }
+    }
+
+    private func stopWaitingForConnection() {
+        waitingLaunch = nil
+        connectionWatch = nil
+    }
+
+    /// The connection has changed, or FlekDeck is back in front, with a
+    /// launch waiting: asks again whether JIT can be started, a few times
+    /// over, as what a change of connection opens takes a moment to open.
+    private func retryWaitingLaunch() {
+        guard waitingLaunch != nil, !isRetryingLaunch, UIApplication.shared.applicationState == .active else {
+            return
+        }
+        isRetryingLaunch = true
+        Task {
+            defer { isRetryingLaunch = false }
+            for attempt in 0..<4 {
+                if attempt > 0 {
+                    try? await Task.sleep(nanoseconds: 800_000_000)
+                }
+                guard let launch = waitingLaunch else { return }
+                do {
+                    try await FlekJITSetup.ensureReady()
+                } catch let notReady as FlekJITSetup.NotReady {
+                    guard let message = notReady.messageWhileWaiting else {
+                        // Something else is in the way now.
+                        showJITNotReady(notReady, retry: launch)
+                        return
+                    }
+                    if message != jitNotReadyShown {
+                        // The next step of the same errand: Airplane Mode off
+                        // for the VPN to start, then on again.
+                        presentJITNotReady(title: notReady.title, message: message)
+                        return
+                    }
+                    continue
+                } catch {
+                    return
+                }
+                stopWaitingForConnection()
+                jitNotReadyNext = nil
+                jitNotReadyMessage = nil
+                await launch()
+                return
+            }
         }
     }
 
@@ -2398,6 +2510,10 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
 
         do {
             try await appFound.runApp(multitask: nil, containerFolderName: container, urlStr: urlStr, forceJIT: forceJIT)
+        } catch let notReady as FlekJITSetup.NotReady {
+            showJITNotReady(notReady) {
+                await launchAppWithBundleId(bundleId: bundleId, container: container, urlStr: urlStr, forceJIT: forceJIT)
+            }
         } catch {
             errorInfo = error.localizedDescription
             errorShow = true

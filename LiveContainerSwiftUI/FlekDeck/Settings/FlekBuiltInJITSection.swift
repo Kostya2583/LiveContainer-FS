@@ -691,6 +691,14 @@ struct FlekBuiltInJITSection: View {
             if vpn.isConfigured {
                 try? await vpn.connect()
             }
+            // Over mobile data the device does not answer however the VPN is,
+            // and on no connection at all a VPN that is off cannot start. The
+            // check would only say that it timed out and ask about the VPN.
+            if !(await FlekBuiltInJIT.isDeviceReachable()), let reason = await connectionReason() {
+                readiness = .failed(reason)
+                readyAt = 0
+                return
+            }
             Self.checkQueue.async {
                 let error = LCUtils.prepareBuiltInJIT { stage, fraction in
                     let step = Self.stepText(stage, fraction)
@@ -711,6 +719,20 @@ struct FlekBuiltInJITSection: View {
                     }
                 }
             }
+        }
+    }
+
+    /// Why the device does not answer, where that is down to what it is
+    /// connected through, with the one thing to do about it next.
+    private func connectionReason() async -> String? {
+        switch await FlekBuiltInJIT.connection() {
+        case .mobileData:
+            // FlekDeck's own VPN has just been turned on, and stays on.
+            return (vpn.isConfigured ? "lc.flek.jit.check.mobileData" : "lc.flek.jit.check.mobileData.other").loc
+        case .offline where vpn.isConfigured && !vpn.isOn:
+            return "lc.flek.jit.check.offline".loc
+        default:
+            return nil
         }
     }
 
