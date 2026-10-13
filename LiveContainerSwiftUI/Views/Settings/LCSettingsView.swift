@@ -775,8 +775,8 @@ struct LCSettingsView: View {
                             Text("Premium (Debug Builds Only)")
                         }
 #endif
-                        // The page Premium Access opens to get the UDID, for
-                        // trying a server out. HTTPS only; empty means FlekSt0re's.
+                        // A page for Premium Access to open in place of FlekSt0re's
+                        // profile, for trying a server out. HTTPS only.
                         HStack {
                             Text("UDID Profile Page")
                             Spacer()

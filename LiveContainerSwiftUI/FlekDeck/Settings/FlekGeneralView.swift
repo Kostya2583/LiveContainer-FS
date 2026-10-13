@@ -26,11 +26,14 @@
 //  for how many apps, or what is in its way. Either way it leads to the JIT
 //  page.
 //
-//  A build without a FlekSt0re device ID also gets a Premium Access card, since
-//  Premium is linked to the device's UDID, which such a build cannot know by
-//  itself. The card opens the page that downloads a profile reporting it,
-//  FlekUDIDProfile, and walks through installing that in FlekUDIDProfileView.
-//  It goes once the UDID is in.
+//  Once a certificate is imported the page opens with the device itself, in
+//  place of the setup card: which model it is and its UDID, and under them
+//  whether Premium is active for it. A build FlekSt0re signed learns the UDID
+//  and Premium from FlekSt0re's status service. One it did not sign cannot
+//  know the UDID by itself, and offers to add it: that downloads a profile
+//  reporting it, FlekUDIDProfile, and walks through installing that in
+//  FlekUDIDProfileView. Premium is FlekSt0re's to grant, so such a build has
+//  none to show and says where to get it.
 //
 
 import SwiftUI
@@ -49,8 +52,14 @@ struct FlekGeneralView<JITPage: View>: View {
     /// The imported certificate as the card shows it; nil while none is.
     @State private var certificate: FlekImportedCertificate?
     @State private var removalConfirmationShown = false
-    @State private var premiumAlert: FlekPremiumAlert?
-    @State private var udidProfileGuideShown = false
+    /// Set to get the UDID with the profile.
+    @State private var asksForUDID = false
+    @State private var statusUnreachableShown = false
+    @State private var premiumSheetShown = false
+    /// While FlekSt0re's status service is asked about this device.
+    @State private var isCheckingStatus = false
+    /// For a moment after the UDID has been copied.
+    @State private var udidCopied = false
     /// The UDID the profile has just reported, while the page says so.
     @State private var importedUDID: String?
     /// Where the JIT setup stands, and how many apps use it. Read as the page
@@ -62,6 +71,10 @@ struct FlekGeneralView<JITPage: View>: View {
     /// This device's UDID, once FlekDeck knows it: from FlekSt0re, typed in for
     /// JIT, or reported by the UDID profile.
     @AppStorage("LCDeviceUDID", store: LCUtils.appGroupUserDefault) private var deviceUDID: String = ""
+    /// What is kept of Premium, read here so that the page follows a change
+    /// of it. Whether it is active is FlekPremium's to say, from the same.
+    @AppStorage("FSSubscriptionStatus") private var keptPremiumStatus = false
+    @AppStorage("FSSubscriptionEndDate") private var keptPremiumEnd = ""
 
     /// Whether the Info.plist carries a FlekSt0re device ID, as the builds
     /// FlekSt0re signs do. Their certificate is one bought through FlekSt0re:
@@ -70,10 +83,10 @@ struct FlekGeneralView<JITPage: View>: View {
         Bundle.main.flekStoreDeviceID != nil
     }
 
-    /// Whether to show the Premium card: on a build FlekSt0re did not sign,
-    /// until the device's UDID is known.
-    private var needsDeviceUDID: Bool {
-        !isFlekStoreBuild && !deviceUDID.trimmingCharacters(in: .whitespacesAndNewlines).isDeviceUDID
+    /// The UDID, where FlekDeck knows it.
+    private var knownUDID: String? {
+        let udid = deviceUDID.trimmingCharacters(in: .whitespacesAndNewlines)
+        return udid.isDeviceUDID ? udid : nil
     }
 
     /// Whether the card offers to remove the certificate.
@@ -119,13 +132,14 @@ struct FlekGeneralView<JITPage: View>: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
+                // The device and its Premium wait for the certificate: until
+                // one is imported, getting it is all the page is about.
                 if sharedModel.needsCertificate {
                     setupCard
+                } else {
+                    deviceCard
                 }
                 certificateCard
-                if needsDeviceUDID {
-                    premiumCard
-                }
                 NavigationLink {
                     jitPage()
                 } label: {
@@ -136,8 +150,8 @@ struct FlekGeneralView<JITPage: View>: View {
             .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 32)
-            // On the page rather than the Premium card, which goes as the UDID
-            // comes in.
+            // On the page rather than the device's card, which has an alert of
+            // its own.
             .alert(
                 "lc.flek.udidProfile.importedTitle".loc,
                 isPresented: Binding(get: { importedUDID != nil }, set: { if !$0 { importedUDID = nil } }),
@@ -152,7 +166,8 @@ struct FlekGeneralView<JITPage: View>: View {
             }
         }
         .onReceive(FlekUDIDProfile.udidReceived) { udid in
-            udidProfileGuideShown = false
+            // Where the Premium sheet was what asked for it, it says so itself.
+            guard !premiumSheetShown else { return }
             // Once the sheet has gone, which the alert would otherwise race.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 importedUDID = udid
@@ -173,6 +188,13 @@ struct FlekGeneralView<JITPage: View>: View {
             if FlekLoopbackVPN.isAvailable {
                 await vpn.refresh()
                 loadJITStanding()
+            }
+        }
+        .task {
+            // Without being asked only where there is something to learn: the
+            // UDID, or a Premium bought since.
+            if knownUDID == nil || !FlekPremium.isActive {
+                await refreshDeviceStatus(isAsked: false)
             }
         }
         .alert(removalTitle, isPresented: $removalConfirmationShown) {
@@ -219,7 +241,7 @@ struct FlekGeneralView<JITPage: View>: View {
         switch jitStanding {
         case .notStarted:
             FlekSetupOption(
-                icon: .symbol(FlekSymbol.jitConnection, .black),
+                icon: .symbol(FlekSymbol.jit, .black),
                 title: "lc.flek.setup.jit.title".loc,
                 subtitle: jitDescription,
                 showsChevron: true
@@ -252,7 +274,7 @@ struct FlekGeneralView<JITPage: View>: View {
             // As the certificate's card is where this FlekDeck cannot use
             // one: the heading faded, and what is wrong in the tray.
             FlekSetupOption(
-                icon: .symbol(FlekSymbol.jitConnection, .black),
+                icon: .symbol(FlekSymbol.jit, .black),
                 title: "lc.flek.setup.jit.title".loc,
                 subtitle: jitDescription,
                 isDimmed: true,
@@ -288,7 +310,7 @@ struct FlekGeneralView<JITPage: View>: View {
                                note: String? = nil, isGood: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             FlekSetupHeader(
-                icon: .symbol(FlekSymbol.jitConnection, .black),
+                icon: .symbol(FlekSymbol.jit, .black),
                 title: title,
                 showsChevron: true
             ) {
@@ -501,62 +523,285 @@ struct FlekGeneralView<JITPage: View>: View {
         return message
     }
 
-    /// Premium is linked to the device's UDID, which a build FlekSt0re did not
-    /// sign cannot know by itself. The card asks first, then opens the page that
-    /// downloads the UDID profile in Safari inside FlekDeck and shows the steps;
-    /// the card goes once the UDID comes back, taking the sheet with it. Its alerts
-    /// and sheet hang from the card rather than the page, which already has
-    /// one of each.
-    private var premiumCard: some View {
-        Button {
-            premiumAlert = .prompt
-        } label: {
-            FlekSetupOption(
-                icon: .asset("premiumLogo"),
-                title: "lc.flek.premium.title".loc,
-                subtitle: "lc.flek.premium.desc".loc,
-                showsChevron: true
-            ) {
-                FlekSetupPoints(points: ["lc.flek.premium.point1".loc])
-            }
+    // MARK: - Device
+
+    /// The device and its Premium, first on the page: which model it is, its
+    /// UDID once FlekDeck knows it, and under them whether Premium is active
+    /// for it.
+    private var deviceCard: some View {
+        VStack(spacing: 0) {
+            deviceRow
+            Divider()
+                // From where the text starts, as between two Settings rows.
+                .padding(.leading, 16 + 56 + 8)
+            premiumRow
         }
-        .buttonStyle(FlekCardPressStyle())
-        .alert(
-            premiumAlert?.title ?? "",
-            isPresented: Binding(get: { premiumAlert != nil }, set: { if !$0 { premiumAlert = nil } }),
-            presenting: premiumAlert
-        ) { alert in
-            switch alert {
-            case .prompt:
-                Button("lc.flek.premium.installProfile".loc) {
-                    installProfile()
-                }
-                .keyboardShortcut(.defaultAction)
-                Button("lc.common.cancel".loc, role: .cancel) {}
-            case .failed:
-                Button("lc.common.ok".loc, role: .cancel) {}
-            }
-        } message: { alert in
-            Text(alert.message)
+        .background(FlekSetupCardBackground())
+        .sheet(isPresented: $premiumSheetShown) {
+            FlekPremiumOfferView()
         }
-        .sheet(isPresented: $udidProfileGuideShown) {
-            FlekUDIDProfileView()
+        .alert("lc.flek.premium.title".loc, isPresented: $statusUnreachableShown) {
+            Button("lc.common.ok".loc, role: .cancel) {}
+        } message: {
+            Text("lc.flek.jit.premium.unconfirmed".loc)
         }
     }
 
-    /// Opens the page that downloads the UDID profile in Safari inside FlekDeck,
-    /// and once that is closed shows the steps that are left, in Settings.
-    private func installProfile() {
-        guard let page = FlekUDIDProfile.pageURL else {
-            // After the prompt this follows has gone.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                premiumAlert = .failed
+    /// The model, which FlekDeck can read for itself, and the UDID, which it
+    /// has to be told. What getting it shows hangs from the row rather than
+    /// the page, which already has an alert and a sheet of its own.
+    private var deviceRow: some View {
+        HStack(alignment: .center, spacing: 8) {
+            FlekSetupTile(color: .blue, size: 56) {
+                Image(systemName: FlekDeviceModel.isPad ? "apps.ipad" : "apps.iphone")
+                    // Larger than the other tiles' glyphs: a thin outline, which
+                    // reads smaller at their size.
+                    .font(.system(size: 32))
+                    .foregroundStyle(.white)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(FlekDeviceModel.name)
+                    .font(.system(size: 17))
+                Text("lc.flek.general.udid".loc)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    if let udid = knownUDID {
+                        Text(Self.shortened(udid))
+                            .font(.system(size: 15, design: .monospaced))
+                            .foregroundStyle(Color.primary.opacity(0.75))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                        Spacer(minLength: 0)
+                        copyButton(for: udid)
+                    } else {
+                        Text("lc.flek.general.udid.unknown".loc)
+                            .font(.system(size: 15))
+                            .foregroundStyle(.orange)
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if knownUDID == nil {
+                udidRetrieval
+            }
+        }
+        .padding(16)
+        .flekUDIDRetrieval(isAsked: $asksForUDID)
+    }
+
+    /// How an unknown UDID is got. A build FlekSt0re signed asks the status
+    /// service, which knows the device it was signed for. Any other has it
+    /// reported by a profile, which the user installs.
+    @ViewBuilder
+    private var udidRetrieval: some View {
+        if FlekPremium.deviceID == nil {
+            Button("lc.flek.general.udid.add".loc) {
+                asksForUDID = true
+            }
+            .font(.system(size: 15, weight: .semibold))
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .controlSize(.small)
+        } else if isCheckingStatus {
+            ProgressView()
+        } else {
+            refreshButton
+        }
+    }
+
+    /// The UDID is shown with its middle left out, and copied whole.
+    private func copyButton(for udid: String) -> some View {
+        Button {
+            UIPasteboard.general.string = udid
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            udidCopied = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                udidCopied = false
+            }
+        } label: {
+            Image(systemName: udidCopied ? "checkmark" : "square.on.square")
+                .font(.system(size: 18))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 24, height: 20)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(FlekCardPressStyle())
+        .accessibilityLabel("lc.flek.general.udid.copy".loc)
+    }
+
+    private var refreshButton: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            Task { await refreshDeviceStatus(isAsked: true) }
+        } label: {
+            Image(systemName: "arrow.clockwise")
+                .font(.system(size: 18))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 24, height: 24)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(FlekCardPressStyle())
+        .accessibilityLabel("lc.flek.premium.refresh".loc)
+    }
+
+    /// Where Premium stands by what is kept of it.
+    private enum PremiumStanding {
+        case checking
+        /// Until this day, or with no end given.
+        case active(until: String?)
+        case ended(String)
+        case none
+    }
+
+    private var premiumStanding: PremiumStanding {
+        // Read so that the page follows what is kept.
+        _ = keptPremiumStatus
+        let end = Self.dayText(keptPremiumEnd)
+        if isCheckingStatus {
+            return .checking
+        }
+        if FlekPremium.isActive {
+            return .active(until: end)
+        }
+        if let end {
+            return .ended(end)
+        }
+        return .none
+    }
+
+    /// Premium for this device. Active, it says until when and can be asked
+    /// about again. Otherwise the row leads to how Premium is got, which is
+    /// also all there is to say on a build FlekSt0re did not sign.
+    @ViewBuilder
+    private var premiumRow: some View {
+        switch premiumStanding {
+        case .checking:
+            premiumRowContent {
+                HStack(spacing: 6) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("lc.flek.premium.checking".loc)
+                        .foregroundStyle(.secondary)
+                }
+            } accessory: {
+                EmptyView()
+            }
+        case .active(let until):
+            premiumRowContent {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                    Text(until.map { String(format: "lc.flek.premium.validTill %@".loc, $0) } ?? "lc.flek.premium.active".loc)
+                }
+                .foregroundStyle(.green)
+            } accessory: {
+                if FlekPremium.deviceID != nil {
+                    refreshButton
+                }
+            }
+        case .ended(let day):
+            premiumOffer {
+                Text(String(format: "lc.flek.premium.ended %@".loc, day))
+                    .foregroundStyle(.red)
+            }
+        case .none:
+            premiumOffer {
+                Text("lc.flek.premium.unlock".loc)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    /// The row as the way to getting Premium.
+    private func premiumOffer<Status: View>(@ViewBuilder status: () -> Status) -> some View {
+        Button {
+            premiumSheetShown = true
+        } label: {
+            premiumRowContent(status: status) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color(UIColor.tertiaryLabel))
+            }
+        }
+        .buttonStyle(FlekCardPressStyle())
+    }
+
+    private func premiumRowContent<Status: View, Accessory: View>(
+        @ViewBuilder status: () -> Status,
+        @ViewBuilder accessory: () -> Accessory
+    ) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            // A full-bleed square, given the tiles' squircle.
+            Image("premiumLogo")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 56, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: (56 * 0.2237).rounded(), style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("lc.flek.premium.title".loc)
+                    .font(.system(size: 17))
+                    .foregroundStyle(.primary)
+                status()
+            }
+            .font(.system(size: 15))
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            accessory()
+        }
+        .padding(16)
+        .contentShape(Rectangle())
+    }
+
+    /// Asks FlekSt0re's status service about this device, where there is an
+    /// ID to ask by, and keeps what it says: Premium, and the UDID of the
+    /// device this copy was signed for. A failure is only said where the user
+    /// asked.
+    private func refreshDeviceStatus(isAsked: Bool) async {
+        guard !isCheckingStatus, let deviceID = FlekPremium.deviceID else {
+            return
+        }
+        isCheckingStatus = true
+        defer { isCheckingStatus = false }
+        guard case .answered(let response) = await AccessVerificationService.fetchStatus(encryptedUDID: deviceID) else {
+            if isAsked {
+                statusUnreachableShown = true
             }
             return
         }
-        FlekInAppSafari.open(page) {
-            udidProfileGuideShown = true
+        // An answer is one for the access check as well.
+        AccessVerdictStore.save(response, for: deviceID)
+        FlekPremium.keep(response)
+        let udid = response.udid.trimmingCharacters(in: .whitespacesAndNewlines)
+        if udid.isDeviceUDID {
+            deviceUDID = udid
         }
+    }
+
+    /// The UDID with its middle left out: its ends are what it is told apart
+    /// by, and the whole of it has no room here.
+    private static func shortened(_ udid: String) -> String {
+        guard udid.count > 16 else {
+            return udid
+        }
+        return udid.prefix(8) + "......" + udid.suffix(8)
+    }
+
+    /// The day of an end date as the status service writes one, or nil for
+    /// none.
+    private static func dayText(_ end: String) -> String? {
+        let end = end.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !end.isEmpty else {
+            return nil
+        }
+        if let date = DateFormatter.deviceServiceFormatter.date(from: end) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            return formatter.string(from: date)
+        }
+        return end.split(separator: " ").first.map(String.init)
     }
 
     /// Takes the place of the certificate's points when this FlekDeck cannot
@@ -683,28 +928,6 @@ private struct FlekImportedCertificate {
     private static func holderName(_ commonName: String) -> String {
         guard let separator = commonName.range(of: ": ") else { return commonName }
         return String(commonName[separator.upperBound...])
-    }
-}
-
-/// What the Premium card asks, or reports.
-private enum FlekPremiumAlert {
-    /// Whether to install the UDID profile.
-    case prompt
-    /// That there is no page to open.
-    case failed
-
-    var title: String {
-        switch self {
-        case .prompt: return "lc.flek.premium.promptTitle".loc
-        case .failed: return "lc.flek.udidProfile.failedTitle".loc
-        }
-    }
-
-    var message: String {
-        switch self {
-        case .prompt: return "lc.flek.premium.promptMessage".loc
-        case .failed: return "lc.flek.udidProfile.failedMessage".loc
-        }
     }
 }
 

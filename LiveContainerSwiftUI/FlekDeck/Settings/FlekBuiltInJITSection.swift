@@ -233,7 +233,7 @@ struct FlekBuiltInJITSection: View {
         }
         // On one row, as on the first step.
         .sheet(isPresented: $showsPremiumSheet) {
-            PremiumRequiredView(message: "lc.flek.jit.premium.message".loc)
+            FlekPremiumOfferView()
         }
         NavigationLink {
             FlekStikDebugGuideView()

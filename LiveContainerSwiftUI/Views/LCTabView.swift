@@ -104,6 +104,7 @@ struct LCTabView: View {
         .task {
             setupInitialRepositoriesIfNeeded()
             Task { await MultiRepoSearchModel.prefetchAllRepos() }
+            Task { await FlekUDIDProfile.collectUDID() }
             await verifyAccess()
         }
         .onReceive(pub) { out in
@@ -133,6 +134,11 @@ struct LCTabView: View {
             }
             Task {
                 await verifyAccess()
+            }
+            // The UDID profile is installed in Settings, with FlekDeck in the
+            // background: back here is when to ask what it reported.
+            Task {
+                await FlekUDIDProfile.collectUDID()
             }
         }
         .onOpenURL { url in

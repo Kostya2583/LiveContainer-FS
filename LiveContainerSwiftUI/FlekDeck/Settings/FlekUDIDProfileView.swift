@@ -2,15 +2,17 @@
 //  FlekUDIDProfileView.swift
 //  LiveContainerSwiftUI
 //
-//  The sheet General shows while the UDID profile is being installed: the steps
-//  iOS takes the user through, from allowing the download to coming back.
+//  The sheet shown for getting the UDID with the profile: the steps iOS takes
+//  the user through, from downloading the profile to coming back. The first
+//  step has the button that downloads it, so that what is about to happen
+//  is read before it does.
 //
-//  A server takes the device's answer and sends the user back with the UDID,
-//  see FlekUDIDProfile. Once it is in, General drops the card this sheet hangs
-//  from, which closes it.
+//  FlekSt0re's server takes the device's answer, and FlekDeck collects the UDID
+//  from it when the user is back, see FlekUDIDProfile. Once it is in, what
+//  shows this sheet closes it.
 //
 //  The download itself happens in Safari inside FlekDeck, FlekInAppSafari,
-//  before this sheet: handed to the system, the address would reach the
+//  over this sheet: handed to the system, the address would reach the
 //  default browser, which need not be Safari, and no other browser takes a
 //  configuration profile.
 //
@@ -101,6 +103,11 @@ struct FlekUDIDProfileView: View {
 
     @Environment(\.dismiss) private var dismiss
 
+    /// The download page has been opened and closed again.
+    @State private var hasDownloaded = false
+    /// There was no page to open for the profile.
+    @State private var downloadFailed = false
+
     var body: some View {
         NavigationView {
             ScrollView {
@@ -110,7 +117,16 @@ struct FlekUDIDProfileView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.horizontal, 4)
                     ForEach(Self.steps) { step in
-                        stepCard(step)
+                        // The first step is done from here; the rest are iOS's.
+                        if step.id == 1 {
+                            stepCard(step, isDone: hasDownloaded) {
+                                downloadButton
+                            }
+                        } else {
+                            stepCard(step) {
+                                EmptyView()
+                            }
+                        }
                     }
                     securityDelayNote
                 }
@@ -136,6 +152,11 @@ struct FlekUDIDProfileView: View {
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
+        .alert("lc.flek.udidProfile.failedTitle".loc, isPresented: $downloadFailed) {
+            Button("lc.common.ok".loc, role: .cancel) {}
+        } message: {
+            Text("lc.flek.udidProfile.failedMessage".loc)
+        }
         .apply { sheet in
             // The grabber the design draws. It is iOS 16 API, so the result is
             // erased: left in the static type, iOS 15 would trap resolving it
@@ -148,9 +169,38 @@ struct FlekUDIDProfileView: View {
         }
     }
 
+    /// Downloads the profile: the one filled button while that is still to
+    /// do, and a quieter one for doing it again, as a profile left too long
+    /// is dropped by iOS.
+    @ViewBuilder
+    private var downloadButton: some View {
+        if hasDownloaded {
+            Button("lc.flek.udidProfile.downloadAgain".loc, action: downloadProfile)
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+        } else {
+            Button("lc.flek.udidProfile.download".loc, action: downloadProfile)
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+        }
+    }
+
+    /// Opens the download of the UDID profile in Safari inside FlekDeck, over
+    /// this sheet, which is back with the steps that are left once the page
+    /// is closed.
+    private func downloadProfile() {
+        guard let page = FlekUDIDProfile.startRequest() else {
+            downloadFailed = true
+            return
+        }
+        FlekInAppSafari.open(page) {
+            hasDownloaded = true
+        }
+    }
+
     /// Stolen Device Protection may hold back installing a profile for an hour
     /// away from familiar places: longer than iOS keeps a downloaded profile,
-    /// or FlekDeck serves one, so the download has to be started again after.
+    /// so the download has to be started again after.
     private var securityDelayNote: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "exclamationmark")
@@ -173,19 +223,31 @@ struct FlekUDIDProfileView: View {
         .background(FlekSetupCardBackground())
     }
 
-    private func stepCard(_ step: Step) -> some View {
+    /// A step: its number, or a check once it is done, what it is, and under
+    /// that whatever it is done with from here.
+    private func stepCard<Action: View>(_ step: Step, isDone: Bool = false,
+                                        @ViewBuilder action: () -> Action) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            Text(verbatim: "\(step.id)")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 28, height: 28)
-                .background(Circle().fill(Color.accentColor))
+            Group {
+                if isDone {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 13, weight: .bold))
+                } else {
+                    Text(verbatim: "\(step.id)")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+            }
+            .foregroundStyle(.white)
+            .frame(width: 28, height: 28)
+            .background(Circle().fill(isDone ? Color.green : Color.accentColor))
             VStack(alignment: .leading, spacing: 8) {
                 Text(step.title)
                     .font(.system(size: 17))
                 Text(emphasizing: step.body)
                     .font(.system(size: 14))
                     .fixedSize(horizontal: false, vertical: true)
+                action()
+                    .padding(.top, 4)
             }
             // The title's line level with the number beside it.
             .padding(.top, 3)
@@ -193,5 +255,43 @@ struct FlekUDIDProfileView: View {
         }
         .padding(16)
         .background(FlekSetupCardBackground())
+    }
+}
+
+/// Getting the UDID with the profile: asking whether to, and then the steps,
+/// the first of which downloads it. Hung from whatever offers it: General's
+/// device row, and the Premium sheet, as a subscription is for a UDID.
+/// Setting `isAsked` starts it.
+struct FlekUDIDRetrieval: ViewModifier {
+    @Binding var isAsked: Bool
+    @State private var guideShown = false
+
+    func body(content: Content) -> some View {
+        content
+            .alert("lc.flek.general.udid.addTitle".loc, isPresented: $isAsked) {
+                Button("lc.flek.premium.installProfile".loc) {
+                    // Once the question has gone.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        guideShown = true
+                    }
+                }
+                .keyboardShortcut(.defaultAction)
+                Button("lc.common.cancel".loc, role: .cancel) {}
+            } message: {
+                Text("lc.flek.premium.promptMessage".loc)
+            }
+            .sheet(isPresented: $guideShown) {
+                FlekUDIDProfileView()
+            }
+            // The UDID is in, and the steps have nothing left to say.
+            .onReceive(FlekUDIDProfile.udidReceived) { _ in
+                guideShown = false
+            }
+    }
+}
+
+extension View {
+    func flekUDIDRetrieval(isAsked: Binding<Bool>) -> some View {
+        modifier(FlekUDIDRetrieval(isAsked: isAsked))
     }
 }

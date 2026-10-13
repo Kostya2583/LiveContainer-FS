@@ -16703,6 +16703,61 @@
         }
       }
     },
+    "lc.flek.general.udid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UDID"
+          }
+        }
+      }
+    },
+    "lc.flek.general.udid.add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        }
+      }
+    },
+    "lc.flek.general.udid.addTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Device UDID"
+          }
+        }
+      }
+    },
+    "lc.flek.general.udid.copy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy UDID"
+          }
+        }
+      }
+    },
+    "lc.flek.general.udid.unknown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown"
+          }
+        }
+      }
+    },
     "lc.flek.haptics.light" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17737,17 +17792,6 @@
         }
       }
     },
-    "lc.flek.jit.premium.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Premium sets JIT up inside FlekDeck, with no other apps needed. It works while Premium is active."
-          }
-        }
-      }
-    },
     "lc.flek.jit.premium.needed" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18650,13 +18694,35 @@
         }
       }
     },
-    "lc.flek.premium.desc" : {
+    "lc.flek.premium.active" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get more from FlekDeck with advanced features and services."
+            "value" : "Active"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.checking" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking…"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.ended %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ended %@"
           }
         }
       }
@@ -18672,13 +18738,156 @@
         }
       }
     },
-    "lc.flek.premium.point1" : {
+    "lc.flek.premium.offer.agreement %@ %@ %@" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unlock all Trainer features available in FlekSt0re-modified apps"
+            "value" : "By subscribing, you agree to our %@, %@ and %@."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.jit.detail %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable JIT right on your %@ with Built‑in FlekJIT."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.jit.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT. Without a computer."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.period" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/ month"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.plan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monthly membership"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.price" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "$2.99"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.privacy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy Policy"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.refund" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refund Policy"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.renews" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renews automatically. Cancel anytime."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.subscribe" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscribe"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.terms" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terms of Service"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.trainer.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get full access in FlekSt0re-modified apps."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.trainer.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every Trainer feature."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.udidAdded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device UDID added. You can subscribe now."
           }
         }
       }
@@ -18694,13 +18903,13 @@
         }
       }
     },
-    "lc.flek.premium.promptTitle" : {
+    "lc.flek.premium.refresh" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get Premium Access"
+            "value" : "Refresh"
           }
         }
       }
@@ -18712,6 +18921,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Premium Access"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.unlock" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock the full power of FlekDeck."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.validTill %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valid till %@"
           }
         }
       }
@@ -19123,6 +19354,28 @@
         }
       }
     },
+    "lc.flek.udidProfile.download" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download Profile"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.downloadAgain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download Again"
+          }
+        }
+      }
+    },
     "lc.flek.udidProfile.failedMessage" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -19184,7 +19437,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "If **Stolen Device Protection** is on and your iPhone is away from a familiar location such as home or work, iOS may ask you to wait up to an hour before installing the profile. When the delay ends, open **Premium Access** in FlekDeck again to download a new profile, and install it within the hour."
+            "value" : "If **Stolen Device Protection** is on and your iPhone is away from a familiar location such as home or work, iOS may ask you to wait up to an hour before installing the profile. When the delay ends, come back here to download a new profile, and install it within the hour."
           }
         }
       }
@@ -19206,7 +19459,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "When iOS asks for permission to download a configuration profile, tap **Allow**."
+            "value" : "Tap **Download Profile** below. When iOS asks for permission to download a configuration profile, tap **Allow**, then close the page."
           }
         }
       }
@@ -19217,7 +19470,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap “Allow”"
+            "value" : "Download the profile"
           }
         }
       }
@@ -19250,7 +19503,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open the **FlekDeck UDID Profile** and tap Install in the top-right corner."
+            "value" : "Open the downloaded profile and tap **Install** in the top-right corner."
           }
         }
       }
@@ -19294,7 +19547,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "After installation, your UDID will be detected and imported into FlekDeck automatically."
+            "value" : "After installation, open FlekDeck again. Your UDID will be imported automatically."
           }
         }
       }
