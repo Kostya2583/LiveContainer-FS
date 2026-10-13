@@ -132,7 +132,6 @@ struct FlekGeneralView<JITPage: View>: View {
                     jitCard
                 }
                 .buttonStyle(FlekCardPressStyle())
-                footnote
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
@@ -584,17 +583,6 @@ struct FlekGeneralView<JITPage: View>: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color(UIColor.tertiarySystemFill))
         )
-    }
-
-    private var footnote: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Image(systemName: "info.circle")
-            Text("lc.flek.setup.footer".loc)
-        }
-        .font(.system(size: 15))
-        .foregroundStyle(.secondary)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 2)
     }
 
     // MARK: - Certificate

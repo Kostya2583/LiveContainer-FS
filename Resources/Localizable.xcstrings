@@ -15961,7 +15961,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "JIT & JIT-Less"
+            "value" : "JIT"
           }
         }
       }
@@ -16929,7 +16929,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Built-in JIT needs iOS 17.4 or later."
+            "value" : "FlekJIT needs iOS 17.4 or later."
           }
         }
       }
@@ -16940,7 +16940,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Built-in JIT isn’t available in the Simulator."
+            "value" : "FlekJIT isn’t available in the Simulator."
           }
         }
       }
@@ -16951,7 +16951,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This build of FlekDeck doesn’t include built-in JIT."
+            "value" : "This build of FlekDeck doesn’t include FlekJIT."
           }
         }
       }
@@ -17017,7 +17017,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Built-in is the easiest and needs Premium. The other options are free."
+            "value" : "FlekJIT is the easiest and needs Premium. The other options are free."
           }
         }
       }
@@ -17061,7 +17061,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Built-in JIT"
+            "value" : "FlekJIT Set Up"
           }
         }
       }
@@ -17198,6 +17198,17 @@
         }
       }
     },
+    "lc.flek.jit.name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekJIT"
+          }
+        }
+      }
+    },
     "lc.flek.jit.notReady.mobileData" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17270,7 +17281,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This app is set to launch with JIT, but JIT isn’t set up. Set it up in Settings › JIT & JIT-Less."
+            "value" : "This app is set to launch with JIT, but JIT isn’t set up. Set it up in Settings › JIT."
           }
         }
       }
@@ -17292,7 +17303,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This app is set to launch with JIT, but the VPN isn’t connected. Turn it on in Settings › JIT & JIT-Less, or connect LocalDevVPN."
+            "value" : "This app is set to launch with JIT, but the VPN isn’t connected. Turn it on in Settings › JIT, or connect LocalDevVPN."
           }
         }
       }
@@ -17721,7 +17732,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Built-in JIT can’t use this kind of pairing file. Make a new one with FlekPair."
+            "value" : "FlekJIT can’t use this kind of pairing file. Make a new one with FlekPair."
           }
         }
       }
@@ -17743,7 +17754,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This app launches with built-in JIT, which works only while Premium is active. Get Premium, or switch to StikDebug, which is free, in Settings › JIT & JIT-Less."
+            "value" : "This app launches with FlekJIT, which works only while Premium is active. Get Premium, or switch to StikDebug, which is free, in Settings › JIT."
           }
         }
       }
@@ -18172,7 +18183,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In FlekDeck, open **Settings** › **JIT & JIT-Less** and set **JIT Enabler** to **StikDebug**."
+            "value" : "In FlekDeck, open **Settings** › **JIT** and set **JIT Enabler** to **StikDebug**."
           }
         }
       }
@@ -18848,17 +18859,6 @@
         }
       }
     },
-    "lc.flek.setup.footer" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You can change this later in Settings."
-          }
-        }
-      }
-    },
     "lc.flek.setup.jit.desc" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -19019,7 +19019,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Built-in JIT works only while Premium is active."
+            "value" : "FlekJIT works only while Premium is active."
           }
         }
       }

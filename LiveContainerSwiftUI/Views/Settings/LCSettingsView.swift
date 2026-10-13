@@ -29,7 +29,7 @@ enum JITEnablerType : Int, CaseIterable, Identifiable {
         case .SideStore: "SideStore"
         case .JITStreamerEBLegacy: "JitStreamer-EB (Relaunch)"
         case .SideJITServer: "SideJITServer/JITStreamer 2.0"
-        case .StikJITHeadless: "Built-in"
+        case .StikJITHeadless: "FlekJIT (Built-in)"
         }
     }
 
@@ -183,7 +183,6 @@ struct LCSettingsView: View {
     /// Read from the shared model, which follows the stored password, so a
     /// certificate imported anywhere else — at launch, or through a
     /// flekdeck://certificate link — shows here as well.
-    private var certificateDataFound: Bool { sharedModel.isCertificateImported }
     
     @State private var isViewAppeared = false
     
@@ -623,7 +622,9 @@ struct LCSettingsView: View {
                         }
                     }
                     NavigationLink { jitPage } label: {
-                        categoryRow("lc.flek.cat.jit".loc, "j.circle", .blue, iconSize: 20)
+                        // The mark an app set to launch with JIT carries on its
+                        // icon, on a dark tile.
+                        categoryRow("lc.flek.cat.jit".loc, FlekSymbol.jit, .black)
                     }
                     NavigationLink { contentRestrictionsPage } label: {
                         categoryRow("lc.flek.cat.content".loc, "nosign", .red, iconSize: 20)
@@ -932,7 +933,7 @@ struct LCSettingsView: View {
 
     /// `iconSize` is per-symbol on purpose. Point size sets the em, not the drawn
     /// shape, and how much of that em a symbol inks varies by design — an enclosed
-    /// glyph like `j.circle` or a thin one like `app.grid` reads far smaller than a
+    /// glyph like `info.circle` or a thin one like `app.grid` reads far smaller than a
     /// `.fill` symbol at the same size. The default suits most of the set; the
     /// densest symbols pass a smaller value rather than everything sharing one size
     /// and half the rows looking undersized.
@@ -1113,29 +1114,9 @@ struct LCSettingsView: View {
     }
 
     @ViewBuilder private var jitPage: some View {
+        // JIT alone: the certificate that JIT-less takes, with its removal and
+        // its diagnosis, is on General.
         Form {
-                if sharedModel.multiLCStatus != 2 {
-                    Section {
-                        // Importing is General's job now, through its own page.
-                        // Removing is offered where General offers it: not on a
-                        // build whose Info.plist carries a FlekSt0re device ID.
-                        if certificateDataFound && Bundle.main.flekStoreDeviceID == nil {
-                            Button("lc.settings.removeCertificate".loc) {
-                                Task { await removeCertificate() }
-                            }
-                        }
-                        
-                        NavigationLink {
-                            LCJITLessDiagnoseView()
-                        } label: {
-                            Text("lc.settings.jitlessDiagnose".loc)
-                        }
-                    } header: {
-                        Text("lc.settings.jitLess".loc)
-                    } footer: {
-                        Text("lc.settings.jitLessDesc".loc)
-                    }
-                }
                 Section {
                     if JITEnabler == .SideJITServer || JITEnabler == .JITStreamerEBLegacy {
                         HStack {
@@ -1181,10 +1162,8 @@ struct LCSettingsView: View {
                         }
                     }
                     
-                } header: {
-                    Text("JIT")
                 } footer: {
-                    // Built-in is what a copy starts on, and the one enabler
+                    // FlekJIT is what a copy starts on, and the one enabler
                     // that takes Premium, so under it the rest of the menu is
                     // said to be free.
                     Text((JITEnabler == .StikJITHeadless ? "lc.flek.jit.enablerFooter" : "lc.settings.JitDesc").loc)
@@ -1411,16 +1390,8 @@ struct LCSettingsView: View {
         LCUtils.appGroupUserDefault.set(NSDate.now, forKey: "LCCertificateUpdateDate")
     }
     
-    func removeCertificate() async {
-        guard let doRemove = await certificateRemoveAlert.open(), doRemove else {
-            return
-        }
-        clearCertificate()
-    }
-
-    /// Forgets the stored certificate. General asks first in words of its own,
-    /// which depend on the certificate; removeCertificate() asks with the
-    /// generic warning.
+    /// Forgets the stored certificate. General asks first, in words of its own
+    /// that depend on the certificate.
     func clearCertificate() {
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificateData")
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificatePassword")

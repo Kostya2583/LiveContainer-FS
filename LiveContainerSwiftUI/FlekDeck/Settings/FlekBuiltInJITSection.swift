@@ -115,13 +115,15 @@ struct FlekBuiltInJITSection: View {
             // On the one row that is always here, the steps giving way to a
             // blocker, and for the same reason as the modifiers on the first
             // step: on the section it would be presented once per row.
-            .alert("lc.flek.jit.header".loc, isPresented: $noticeShow) {
+            .alert("lc.flek.jit.name".loc, isPresented: $noticeShow) {
                 Button("lc.common.ok".loc) {}
             } message: {
                 Text(notice)
             }
         } header: {
             Text("lc.flek.jit.header".loc)
+                // A name, to be read as it is written.
+                .textCase(nil)
                 // On the header, which is there whatever the section shows
                 // under it, and is one view: a modifier on the section would
                 // be applied to every row, and so run once per row.

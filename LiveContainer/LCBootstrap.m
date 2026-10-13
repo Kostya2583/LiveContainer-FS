@@ -214,7 +214,7 @@ static NSString *enableJITWithStikJIT(NSString *docPath) {
         NSTimeInterval now = MAX(clock, [shared doubleForKey:@"FSAccessClockHighWaterMark"]);
         BOOL justConfirmed = fabs(clock - [shared doubleForKey:@"FlekPremiumConfirmedAt"]) < 60;
         if (!justConfirmed && [shared doubleForKey:@"FlekPremiumUntil"] <= now) {
-            return @"Built-in JIT needs Premium. Open FlekDeck to renew Premium, or choose StikDebug in Settings › JIT & JIT-Less, which is free.";
+            return @"FlekJIT needs Premium. Open FlekDeck to renew Premium, or choose StikDebug in Settings › JIT, which is free.";
         }
     }
 
@@ -295,7 +295,7 @@ static NSString *enableJITWithStikJIT(NSString *docPath) {
     if (checkJITEnabled()) {
         return nil;
     }
-    return error ? [@"Built-in StikJIT failed: " stringByAppendingString:error.localizedDescription] : nil;
+    return error ? [@"FlekJIT failed: " stringByAppendingString:error.localizedDescription] : nil;
 }
 
 void overwriteMainCFBundle(void) {

@@ -396,7 +396,7 @@ extension LCUtils {
             // Nothing takes the link where StikDebug is not installed, and
             // without a word the wait for JIT would just go on.
             if await !UIApplication.shared.open(launchURL), jitEnabler == .StikJIT {
-                onServerMessage?("StikDebug could not be opened. Is it installed? Need Help in Settings › JIT & JIT-Less shows how to set it up.")
+                onServerMessage?("StikDebug could not be opened. Is it installed? Need Help in Settings › JIT shows how to set it up.")
             }
         } else if jitEnabler == .SideStore {
             onServerMessage?("JIT acquisition will continue in SideStore.")

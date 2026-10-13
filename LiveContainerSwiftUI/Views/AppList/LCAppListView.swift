@@ -2611,7 +2611,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                         // installed, and the window would wait for JIT unanswered.
                         UIApplication.shared.open(url) { opened in
                             if !opened {
-                                errorInfo = "StikDebug could not be opened. Is it installed? Need Help in Settings › JIT & JIT-Less shows how to set it up."
+                                errorInfo = "StikDebug could not be opened. Is it installed? Need Help in Settings › JIT shows how to set it up."
                                 errorShow = true
                             }
                         }
