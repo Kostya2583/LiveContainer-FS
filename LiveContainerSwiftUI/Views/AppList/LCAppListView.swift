@@ -123,6 +123,9 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     @State private var isEditing = false
     @State private var showSettingsCover = false
     @State private var showInstallerCover = false
+    /// A URL or URL scheme the Installer handed on, to be opened once its
+    /// page has gone: nothing can be presented over it while it is up.
+    @State private var linkAfterInstaller: String?
     @State private var showSearch = false
     @State private var installerPreselectFlekstore = false
     @State private var installerPreselectRepoURL: String?
@@ -439,6 +442,10 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
         }
         .fullScreenCover(isPresented: $showInstallerCover, onDismiss: {
             installerPreselectRepoURL = nil
+            if let link = linkAfterInstaller {
+                linkAfterInstaller = nil
+                Task { await openWebView(urlString: link) }
+            }
         }) {
             FlekMinimizingCover(
                 isPresented: $showInstallerCover,
@@ -744,6 +751,16 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 }
             }
             return true
+        }
+        // From the Installer's Open URL or URL Scheme. Its full-screen page
+        // goes first; in a window it is already out of the way.
+        .onReceive(NotificationCenter.default.publisher(for: .flekOpenURL)) { notification in
+            guard let link = notification.object as? String else { return }
+            if showInstallerCover {
+                linkAfterInstaller = link
+            } else {
+                Task { await openWebView(urlString: link) }
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.InstallAppNotification)) { obj in
             if let obj2 = obj.object as? [String: Any], let installUrl = obj2["url"] as? URL {

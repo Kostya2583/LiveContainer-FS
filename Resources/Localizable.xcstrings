@@ -18848,6 +18848,17 @@
         }
       }
     },
+    "lc.flek.openURL" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open URL or URL Scheme"
+          }
+        }
+      }
+    },
     "lc.flek.personalization" : {
       "extractionState" : "manual",
       "localizations" : {

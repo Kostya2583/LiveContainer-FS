@@ -24,6 +24,10 @@ extension Notification.Name {
     /// An app page is waiting in `FlekInstallerView.pendingDetailRequest` for an
     /// installer that is already open to pick up.
     static let flekInstallerOpenAppDetail = Notification.Name("FlekInstallerOpenAppDetail")
+    /// A URL or URL scheme the Installer was given to open, for the home
+    /// screen to open: it is what launches apps and has the browser. The
+    /// object is the text as typed.
+    static let flekOpenURL = Notification.Name("FlekOpenURL")
 }
 
 struct FlekInstallerView: View {
@@ -47,6 +51,8 @@ struct FlekInstallerView: View {
     @FocusState private var searchFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var importUrlHelper = InputHelper()
+    /// Asks for a URL or URL scheme to open, as LiveContainer's link button did.
+    @StateObject private var openURLHelper = InputHelper()
     @State private var choosingIPA = false
     @State private var switcherBarVisible = true
     @State private var barIsLandscape = false
@@ -292,6 +298,22 @@ struct FlekInstallerView: View {
                 }
             },
             actionCancel: { _ in importUrlHelper.close(result: nil) }
+        )
+        .textFieldAlert(
+            isPresented: $openURLHelper.show,
+            title: "lc.appList.enterUrlTip".loc,
+            text: $openURLHelper.initVal,
+            placeholder: "scheme://",
+            action: { newText in
+                openURLHelper.close(result: newText)
+                let link = (newText ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !link.isEmpty else { return }
+                // Handed on before the Installer goes, so that the home screen,
+                // which opens it, knows to wait for it to have gone.
+                NotificationCenter.default.post(name: .flekOpenURL, object: link)
+                onClose()
+            },
+            actionCancel: { _ in openURLHelper.close(result: nil) }
         )
     }
 
@@ -809,6 +831,13 @@ struct FlekInstallerView: View {
                     Task { _ = await importUrlHelper.open() }
                 } label: {
                     Label("lc.appList.installFromUrl".loc, systemImage: "link.badge.plus")
+                }
+                // LiveContainer's link button: a URL scheme opens the installed
+                // app that takes it, a web address the browser inside FlekDeck.
+                Button {
+                    Task { _ = await openURLHelper.open() }
+                } label: {
+                    Label("lc.flek.openURL".loc, systemImage: "link")
                 }
             } label: {
                 HStack(spacing: 8) {
