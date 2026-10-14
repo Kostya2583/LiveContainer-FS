@@ -17253,28 +17253,6 @@
         }
       }
     },
-    "lc.flek.jit.mobileData.add.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose Shortcuts in the list that opens, then tap Add Shortcut."
-          }
-        }
-      }
-    },
-    "lc.flek.jit.mobileData.add.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add the FlekJIT Shortcut"
-          }
-        }
-      }
-    },
     "lc.flek.jit.mobileData.addAgain" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17292,7 +17270,117 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Turns Mobile Data off while JIT starts, then back on."
+            "value" : "Optional. Lets apps with JIT start on mobile data."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About Mobile Data Shortcut"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Shortcut"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The shortcut is called FlekJIT and only turns Mobile Data off and on. Shortcuts appears for a moment each time it runs."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.setUpHeader" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How to Set It Up"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.step1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap Add Shortcut below and choose Shortcuts in the list that opens."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.step2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Shortcuts, tap Add Shortcut, then come back to FlekDeck."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.step3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on Mobile Data Shortcut. Shortcuts opens once to check that it works."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.who" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only needed if you open apps with JIT without Wi-Fi. On Wi-Fi nothing changes."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.why" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps with JIT can’t start while this device is on mobile data, so without Wi-Fi you’d have to turn on Airplane Mode each time. This shortcut turns Mobile Data off while JIT starts and back on right after. Calls and messages keep working."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.whyHeader" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why Use It"
           }
         }
       }

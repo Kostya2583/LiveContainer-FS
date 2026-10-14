@@ -44,6 +44,10 @@ final class FlekMobileDataShortcut: ObservableObject {
     /// What the shortcut's link back to FlekDeck is addressed to.
     static let linkHost = "jit-mobile-data"
 
+    /// Where it is noted that the user has been through adding the shortcut,
+    /// which the page's switch waits for.
+    nonisolated static let wasAddedKey = "FlekJITMobileDataShortcutAdded"
+
     /// The words the shortcut goes by. Any other does nothing, which is how
     /// it is tried out.
     private enum Word {
@@ -275,19 +279,15 @@ final class FlekMobileDataShortcut: ObservableObject {
 }
 
 /// The row on the JIT page that the shortcut is added and turned on from, laid
-/// out as the setup's steps are.
+/// out as the setup's steps are and said to be optional: the setup is whole
+/// without it. Its (?) says what it is for and how it is set up, and so does
+/// Add, as the share sheet that adds it has to be told where to send it.
 struct FlekMobileDataShortcutRow: View {
-    private struct SharedFile: Identifiable {
-        let url: URL
-        var id: URL { url }
-    }
-
     @ObservedObject private var shortcut = FlekMobileDataShortcut.shared
     /// The user has been through adding it. Whether it is there cannot be
     /// asked, only tried, which turning it on does.
-    @AppStorage("FlekJITMobileDataShortcutAdded") private var wasAdded = false
-    @State private var asksToAdd = false
-    @State private var sharedFile: SharedFile?
+    @AppStorage(FlekMobileDataShortcut.wasAddedKey) private var wasAdded = false
+    @State private var helpShown = false
     /// While the shortcut is tried out, with the Shortcuts app in front.
     @State private var isTrying = false
     @State private var missingShown = false
@@ -298,27 +298,27 @@ struct FlekMobileDataShortcutRow: View {
                 .font(.title2)
                 .foregroundStyle(shortcut.isOn ? Color.green : Color.secondary)
             VStack(alignment: .leading, spacing: 2) {
-                Text("lc.flek.jit.mobileData.title".loc)
+                HStack(spacing: 6) {
+                    Text("lc.flek.jit.mobileData.title".loc)
+                    Button {
+                        helpShown = true
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                    }
+                    // A button of its own: the row has others.
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel("lc.flek.jit.mobileData.help".loc)
+                }
                 Text("lc.flek.jit.mobileData.caption".loc)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-            }
-            // One alert to a view: two on the same one get in each other's way.
-            .alert("lc.flek.jit.mobileData.add.title".loc, isPresented: $asksToAdd) {
-                Button("lc.common.continue".loc) {
-                    // Once the alert has gone, which a sheet cannot come up over.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                        add()
-                    }
-                }
-                Button("lc.common.cancel".loc, role: .cancel) {}
-            } message: {
-                Text("lc.flek.jit.mobileData.add.message".loc)
             }
             Spacer(minLength: 8)
             control
                 .alert("lc.flek.jit.mobileData.title".loc, isPresented: $missingShown) {
                     Button("lc.flek.jit.mobileData.addAgain".loc) {
+                        // Once the alert has gone, which a sheet cannot come
+                        // up over.
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                             startAdding()
                         }
@@ -329,13 +329,8 @@ struct FlekMobileDataShortcutRow: View {
                 }
         }
         .padding(.vertical, 2)
-        .sheet(item: $sharedFile) { file in
-            FlekShareSheet(items: [file.url]) { completed in
-                sharedFile = nil
-                if completed {
-                    wasAdded = true
-                }
-            }
+        .sheet(isPresented: $helpShown) {
+            FlekMobileDataShortcutHelpView()
         }
     }
 
@@ -379,8 +374,8 @@ struct FlekMobileDataShortcutRow: View {
     }
 
     /// From an iCloud link the Shortcuts app needs no telling what to do. From
-    /// the share sheet it is one of many places the file could go, so the way
-    /// is said first.
+    /// the share sheet it is one of many places the file could go, so the
+    /// steps come first, with the button that adds it.
     private func startAdding() {
         if let link = FlekMobileDataShortcut.iCloudLink {
             UIApplication.shared.open(link) { opened in
@@ -389,11 +384,90 @@ struct FlekMobileDataShortcutRow: View {
                 }
             }
         } else {
-            asksToAdd = true
+            helpShown = true
+        }
+    }
+}
+
+/// What the shortcut is for and how it is set up: whether to bother with it is
+/// for whoever opens apps with JIT away from Wi-Fi to decide. Add Shortcut is
+/// the button that stands out, and the sheet goes once the shortcut has been
+/// handed on, leaving the switch on the page as what is left to do.
+struct FlekMobileDataShortcutHelpView: View {
+    private struct SharedFile: Identifiable {
+        let url: URL
+        var id: URL { url }
+    }
+
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage(FlekMobileDataShortcut.wasAddedKey) private var wasAdded = false
+    @State private var sharedFile: SharedFile?
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section {
+                    Text("lc.flek.jit.mobileData.help.why".loc)
+                } header: {
+                    Text("lc.flek.jit.mobileData.help.whyHeader".loc)
+                } footer: {
+                    Text("lc.flek.jit.mobileData.help.who".loc)
+                }
+                Section {
+                    Label("lc.flek.jit.mobileData.help.step1".loc, systemImage: "1.circle")
+                    Label("lc.flek.jit.mobileData.help.step2".loc, systemImage: "2.circle")
+                    Label("lc.flek.jit.mobileData.help.step3".loc, systemImage: "3.circle")
+                } header: {
+                    Text("lc.flek.jit.mobileData.help.setUpHeader".loc)
+                }
+                Section {
+                    // Filled and the full width, with no row behind it, as the
+                    // computer guide's Refresh.
+                    Button(action: add) {
+                        Text("lc.flek.jit.mobileData.help.add".loc)
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                } footer: {
+                    Text("lc.flek.jit.mobileData.help.note".loc)
+                }
+            }
+            .navigationTitle("lc.flek.jit.mobileData.title".loc)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("lc.common.done".loc) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .sheet(item: $sharedFile) { file in
+            FlekShareSheet(items: [file.url]) { completed in
+                sharedFile = nil
+                guard completed else { return }
+                wasAdded = true
+                // Once the share sheet has gone: two going at once is refused.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    dismiss()
+                }
+            }
         }
     }
 
     private func add() {
+        if let link = FlekMobileDataShortcut.iCloudLink {
+            UIApplication.shared.open(link) { opened in
+                guard opened else { return }
+                wasAdded = true
+                dismiss()
+            }
+            return
+        }
         guard let file = FlekMobileDataShortcut.fileToAdd() else {
             return
         }
