@@ -20,6 +20,12 @@
 }
 @end
 
+// Implemented in StikJITHeadless.framework, which is loaded on demand.
+@interface StikJITPreflight : NSObject
++ (NSError *)prepareDeviceWithPairingFile:(NSURL *)pairingFile ddiPath:(NSURL *)ddiPath timeout:(NSTimeInterval)timeout progress:(void (^)(NSInteger stage, double fraction))progress;
++ (NSError *)resetCachedDDIAt:(NSURL *)ddiPath;
+@end
+
 @implementation LCUtils
 #pragma mark Certificate & password
 
@@ -39,24 +45,8 @@
 
 
 #pragma mark Multitasking
-+ (NSString *)liveProcessBundleIdentifier {
-    // first check if we have LiveProcess extension in our own bundle
-    NSBundle *liveProcessBundle = [NSBundle bundleWithPath:[NSBundle.mainBundle.builtInPlugInsPath stringByAppendingPathComponent:@"LiveProcess.appex"]];
-    if(liveProcessBundle) {
-        return liveProcessBundle.bundleIdentifier;
-    }
-    
-    // in LC2, attempt to guess LC1's LiveProcess extension
-    NSString *bundleID = [NSString stringWithFormat:@"com.kdt.livecontainer.%@.LiveProcess", LCSharedUtils.teamIdentifier];
-    if([NSExtension extensionWithIdentifier:bundleID error:nil]) {
-        return bundleID;
-    }
-    
-    return nil;
-}
-
 + (void)launchMultitaskGuestApp:(NSString *)displayName completionHandler:(void (^)(NSNumber *pid, NSError *error))completionHandler {
-    if(!self.liveProcessBundleIdentifier) {
+    if(!LCSharedUtils.liveProcessBundleIdentifier) {
         NSError *error = [NSError errorWithDomain:displayName code:2 userInfo:@{NSLocalizedDescriptionKey: @"LiveProcess extension not found. Please reinstall FlekDeck and select Keep Extensions"}];
         if (completionHandler) completionHandler(nil, error);
         return;
@@ -172,6 +162,15 @@
     return ans;
 }
 
++ (NSDictionary<NSString*, id>*)getCertInfoWithKeyData:(NSData*)keyData password:(NSString*)password {
+    NSError *error;
+    [self loadStoreFrameworksWithError2:&error];
+    if (error) {
+        return nil;
+    }
+    return [NSClassFromString(@"ZSigner") getCertInfoWithCert:keyData pass:password];
+}
+
 + (int)validateCertificateWithCompletionHandler:(void(^)(int status, NSDate *expirationDate, NSString *organizationalUnitName, NSString *error))completionHandler {
     NSError *error;
     NSData *certData = [LCUtils certificateData];
@@ -198,14 +197,123 @@
     return NO;
 }
 
-+ (NSString *)base64EncodedUniversalJITScript {
+// Upstream keeps what built-in JIT reads beside built-in SideStore's pairing
+// file, so that the two share one.
++ (NSURL *)builtInJITFolder {
+    NSURL *docURL = [NSFileManager.defaultManager URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject;
+    return [docURL URLByAppendingPathComponent:@"SideStore/Documents"];
+}
+
+// A guest enables JIT for itself, through a second LiveProcess that reads the
+// pairing file and the disk image cache. Neither a window nor that helper can
+// read this app's container, so the folder is handed over as a sandbox
+// extension, left where the bootstrap looks for one. A token only lasts until
+// the device restarts, hence one per launch rather than one per import.
++ (BOOL)issueBuiltInJITSandboxExtension {
+    NSURL *folder = self.builtInJITFolder;
+    BOOL isPrimary = [NSUserDefaults.lcAppUrlScheme isEqualToString:LCSharedUtils.lcUnorderedUrlSchemes.firstObject];
+    BOOL hasPairingFile = [NSFileManager.defaultManager fileExistsAtPath:[folder URLByAppendingPathComponent:@"ALTPairingFile.mobiledevicepairing"].path];
+    if (!isPrimary && !hasPairingFile) {
+        // The primary FlekDeck's pairing file is the one in use, and so is its token.
+        return NO;
+    }
+    if (![NSFileManager.defaultManager createDirectoryAtURL:[folder URLByAppendingPathComponent:@"DMG"] withIntermediateDirectories:YES attributes:nil error:nil]) {
+        return NO;
+    }
+    char *token = sandbox_extension_issue_file(APP_SANDBOX_READ_WRITE, folder.fileSystemRepresentation, 0);
+    if (!token) {
+        return NO;
+    }
+    [NSUserDefaults.lcSharedDefaults setObject:@(token) forKey:@"LCStikJITSandboxExtension"];
+    free(token);
+    return YES;
+}
+
+// StikJITHeadless.framework carries StikJIT, which needs iOS 17.4, so nothing
+// links it. A guest's helper loads it by path; Settings loads it here.
++ (Class)builtInJITPreflightClass {
+    static Class preflightClass;
     static dispatch_once_t onceToken;
-    static NSString *script;
     dispatch_once(&onceToken, ^{
-        NSData *data = [NSData dataWithContentsOfFile:[NSBundle.mainBundle pathForResource:@"universal" ofType:@"js"]];
-        script = [data base64EncodedStringWithOptions:0];
+        if (@available(iOS 17.4, *)) {
+            NSString *path = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"StikJITHeadless.framework/StikJITHeadless"];
+            if (dlopen(path.fileSystemRepresentation, RTLD_LAZY)) {
+                preflightClass = NSClassFromString(@"StikJITPreflight");
+            } else {
+                NSLog(@"[LC] StikJITHeadless did not load: %s", dlerror());
+            }
+        }
     });
-    return script;
+    return preflightClass;
+}
+
+// Asked of the system the way the app is relaunched into a guest: by bundle
+// identifier, which brings Settings forward wherever it was left. The link
+// goes with the request, since Settings' own links to its pages are private
+// and are refused when an app tries to open one as a URL. Whether a link sent
+// this way is followed is up to the system; where the request is refused for
+// it, Settings is opened without.
++ (void)openSettingsAppWithLink:(NSURL *)link completionHandler:(void (^)(NSInteger route))completionHandler {
+    // Off the main thread: the request waits on another process.
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSString *settings = @"com.apple.Preferences";
+        LSApplicationWorkspace *workspace = [NSClassFromString(@"LSApplicationWorkspace") defaultWorkspace];
+        void (^finish)(NSInteger) = ^(NSInteger route) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completionHandler(route);
+            });
+        };
+        void (^openWithoutLink)(void) = ^{
+            BOOL opened = [workspace respondsToSelector:@selector(openApplicationWithBundleID:)] &&
+                [workspace openApplicationWithBundleID:settings];
+            finish(opened ? 2 : 0);
+        };
+        Class configurationClass = NSClassFromString(@"_LSOpenConfiguration");
+        if (!link || !configurationClass ||
+            ![workspace respondsToSelector:@selector(openApplicationWithBundleIdentifier:configuration:completionHandler:)]) {
+            openWithoutLink();
+            return;
+        }
+        _LSOpenConfiguration *configuration = [configurationClass new];
+        configuration.frontBoardOptions = @{@"__PayloadURL": link};
+        [workspace openApplicationWithBundleIdentifier:settings configuration:configuration completionHandler:^(BOOL success, NSError *error) {
+            if (success) {
+                finish(1);
+            } else {
+                openWithoutLink();
+            }
+        }];
+    });
+}
+
++ (BOOL)isBuiltInJITLoadable {
+    return self.builtInJITPreflightClass != nil;
+}
+
++ (NSError *)builtInJITUnavailableError {
+    return [NSError errorWithDomain:@"StikJIT" code:0 userInfo:@{NSLocalizedDescriptionKey: @"StikJITHeadless.framework could not be loaded."}];
+}
+
+// Blocks until the device answers and its developer disk image is mounted,
+// downloading the image first if the cache does not hold it.
++ (NSError *)prepareBuiltInJITWithProgress:(void (^)(NSInteger stage, double fraction))progress {
+    Class preflightClass = self.builtInJITPreflightClass;
+    if (!preflightClass) {
+        return self.builtInJITUnavailableError;
+    }
+    NSURL *folder = self.builtInJITFolder;
+    return [preflightClass prepareDeviceWithPairingFile:[folder URLByAppendingPathComponent:@"ALTPairingFile.mobiledevicepairing"]
+                                                ddiPath:[folder URLByAppendingPathComponent:@"DMG"]
+                                                timeout:2
+                                               progress:progress ?: ^(NSInteger stage, double fraction) {}];
+}
+
++ (NSError *)resetBuiltInJITDiskImage {
+    Class preflightClass = self.builtInJITPreflightClass;
+    if (!preflightClass) {
+        return self.builtInJITUnavailableError;
+    }
+    return [preflightClass resetCachedDDIAt:[self.builtInJITFolder URLByAppendingPathComponent:@"DMG"]];
 }
 
 #pragma mark Setup
@@ -439,6 +547,9 @@
     // we don't care about errors when removing unnecessary files. errors occur probably because the file does not exist
     // we remove the extension
     [manager removeItemAtURL:[appBundlePath URLByAppendingPathComponent:@"PlugIns"] error:nil];
+    // remove StikJIT stuff since we use LC1's extension
+    [manager removeItemAtURL:[appBundlePath URLByAppendingPathComponent:@"Frameworks/StikJIT.framework"] error:nil];
+    [manager removeItemAtURL:[appBundlePath URLByAppendingPathComponent:@"Frameworks/StikJITHeadless.framework"] error:nil];
     // remove all sidestore stuff
     if([NSUserDefaults sideStoreExist]) {
         [manager removeItemAtURL:[appBundlePath URLByAppendingPathComponent:@"Frameworks/SideStoreSupport.framework"] error:nil];

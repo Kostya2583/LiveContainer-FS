@@ -18,4 +18,9 @@
 + (NSString*)findDefaultContainerWithBundleId:(NSString*)bundleId;
 + (NSArray<NSString*>*)lcUnorderedUrlSchemes;
 + (NSArray<NSString*>*)lcUrlSchemes;
++ (NSString *)liveProcessBundleIdentifier;
+// Turns on FlekDeck's own VPN, which built-in JIT connects through, if the user
+// has set it up. The handler gets whether a start was asked for, on the main
+// queue; the tunnel itself is up a moment later.
++ (void)startBuiltInVPNWithCompletionHandler:(void (^)(BOOL requested))completionHandler;
 @end

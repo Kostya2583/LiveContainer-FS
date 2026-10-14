@@ -364,6 +364,35 @@ int checkCert(NSData *key,
     return teamId;
 }
 
++ (NSDictionary<NSString*, id>*)getCertInfoWithCert:(NSData *)cert pass:(NSString *)pass {
+    string strPassword = [pass cStringUsingEncoding:NSUTF8StringEncoding];
+
+    ZLog::logs.clear();
+
+    ZSignAsset zSignAsset;
+    if (!zSignAsset.InitSimple([cert bytes], (int)[cert length], nil, 0, strPassword)) {
+        ZLog::logs.clear();
+        return nil;
+    }
+
+    NSMutableDictionary<NSString*, id>* info = [NSMutableDictionary new];
+    info[@"commonName"] = [NSString stringWithUTF8String:zSignAsset.m_strSubjectCN.c_str()];
+    info[@"teamId"] = [NSString stringWithUTF8String:zSignAsset.m_strTeamId.c_str()];
+
+    // Read from the certificate itself, so an expired one is caught offline
+    // too — checkCert only reports the date once Apple's OCSP server answers.
+    const ASN1_TIME* notAfter = X509_get0_notAfter((X509*)zSignAsset.m_x509Cert);
+    struct tm expiry = {};
+    if (notAfter && ASN1_TIME_to_tm(notAfter, &expiry) == 1) {
+        info[@"notAfter"] = [NSDate dateWithTimeIntervalSince1970:timegm(&expiry)];
+    }
+
+    // ZSignAsset has no destructor to release what InitSimple parsed.
+    X509_free((X509*)zSignAsset.m_x509Cert);
+    EVP_PKEY_free((EVP_PKEY*)zSignAsset.m_evpPKey);
+    return info;
+}
+
 + (int)checkCert:(NSData *)cert pass:(NSString *)pass completionHandler:(void(^)(int status, NSDate* expirationDate, NSString* organizationalUnitName, NSString *error))completionHandler {
     return checkCert(cert, pass, completionHandler);
 }

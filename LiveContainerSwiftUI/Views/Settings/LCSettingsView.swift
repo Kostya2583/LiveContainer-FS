@@ -18,6 +18,7 @@ enum JITEnablerType : Int, CaseIterable, Identifiable {
     case SideStore = 4
     case StosDebug = 5
     case StosDebugLC = 6
+    case StikJITHeadless = 7
     
     var displayName: String {
         switch self {
@@ -28,7 +29,13 @@ enum JITEnablerType : Int, CaseIterable, Identifiable {
         case .SideStore: "SideStore"
         case .JITStreamerEBLegacy: "JitStreamer-EB (Relaunch)"
         case .SideJITServer: "SideJITServer/JITStreamer 2.0"
+        case .StikJITHeadless: "FlekJIT (Built-in)"
         }
+    }
+
+    /// Left out of the menu, and still honoured for whoever chose it before.
+    var isNoLongerOffered: Bool {
+        self == .SideStore || self == .JITStreamerEBLegacy
     }
 }
 
@@ -37,24 +44,11 @@ struct LCSettingsView: View {
     @State private var showBackgroundInstallReport = false
     @State var errorShow = false
     @State var errorInfo = ""
-    @State var successShow = false
-    @State var successInfo = ""
-    @State private var udid: String = ""
-    
-    @State private var subscriptionEndDate: String?
-    @State private var hasSubscription: Bool = false
-    @State private var isSubscriptionLoading: Bool = false
-    
-    
-    
+
     @StateObject private var installLC2Alert = AlertHelper<Int>()
-    @State private var certificateDataFound = false
     
-    @StateObject private var certificateImportAlert = YesNoHelper()
     @StateObject private var certificateImportFromBuiltInSideStoreAlert = YesNoHelper()
     @StateObject private var certificateRemoveAlert = YesNoHelper()
-    @StateObject private var certificateImportFileAlert = AlertHelper<URL>()
-    @StateObject private var certificateImportPasswordAlert = InputHelper()
     
     @AppStorage("LCFrameShortcutIcons") var frameShortIcon = false
     @AppStorage("LCSwitchAppWithoutAsking") var silentSwitchApp = false
@@ -85,7 +79,7 @@ struct LCSettingsView: View {
     
     @AppStorage("LCSideJITServerAddress", store: LCUtils.appGroupUserDefault) var sideJITServerAddress : String = ""
     @AppStorage("LCDeviceUDID", store: LCUtils.appGroupUserDefault) var deviceUDID: String = ""
-    @AppStorage("FSDeviceUDID") private var fsDeviceUDID: String = ""
+    @AppStorage(FlekUDIDProfile.pageAddressKey) private var udidProfilePageAddress = ""
     @AppStorage("LCJITEnablerType", store: LCUtils.appGroupUserDefault) var JITEnabler: JITEnablerType = .SideJITServer
     
     @State var store : Store = .Unknown
@@ -97,21 +91,12 @@ struct LCSettingsView: View {
     @AppStorage("LCWaitForDebugger") var waitForDebugger = false
     @AppStorage("LCSharePrivateDataWithLiveProcess") var sharePrivateDataWithLiveProcess = false
     @AppStorage("LCOpenPrivateAppsWithoutCopying") var openPrivateAppsWithoutCopying = false
+    @AppStorage("FlekPairWithoutCode") var pairWithoutCode = false
+#if DEBUG
+    @AppStorage("FlekDebugPremium") var debugPremium = false
+#endif
     @AppStorage("BKNoWatchdogs") var disableLiveProcessWatchdog = false
     
-    ///Flekstore user defaults
-    @AppStorage("FSEncryptedUDID")
-    private var encryptedUDID: String = ""
-
-    @AppStorage("FSSubscriptionEndDate")
-    private var subscriptionEndDateStored: String = ""
-
-    @AppStorage("FSSubscriptionStatus")
-    private var subscriptionStatusStored: Bool = false
-    
-    @AppStorage("FSSubscriptionInitialized")
-    private var subscriptionInitialized: Bool = false
-
     // Written from inside LiveProcess by LCHostIdentityInit. The extension has no
     // UI of its own and cannot be attached to on someone else's device, so the app
     // group is the only way to see whether the identifier reached a parallel guest.
@@ -160,32 +145,18 @@ struct LCSettingsView: View {
 
     @EnvironmentObject private var sharedModel : SharedModel
     
+    /// Read from the shared model, which follows the stored password, so a
+    /// certificate imported anywhere else — at launch, or through a
+    /// flekdeck://certificate link — shows here as well.
+    
     @State private var isViewAppeared = false
     
     let storeName = LCUtils.getStoreName()
     
     init() {
-        _certificateDataFound = State(initialValue: LCSharedUtils.certificatePassword() != nil)
         _store = State(initialValue: LCUtils.store())
     }
     
-    let fsPassword: String = {
-        if let dict = Bundle.main.infoDictionary,
-           let value = dict["fsPassword"] as? String,
-           !value.isEmpty {
-            return value
-        }
-        return "12345"
-    }()
-
-    private static let subscriptionDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone.current
-        return formatter
-    }()
-
     // Kept as separate lines on purpose. "What this app published" and "what a
     // parallel guest actually resolved" are different facts, and collapsing them
     // into one value hides the case worth catching: a guest that read an
@@ -289,46 +260,6 @@ struct LCSettingsView: View {
         return !publishedEncryptedUdid.isEmpty && hostIdentityUdid != publishedEncryptedUdid
     }
 
-    private func formattedSubscriptionDate(_ dateString: String) -> String {
-        if let date = DateFormatter.deviceServiceFormatter.date(from: dateString) {
-            return Self.subscriptionDateFormatter.string(from: date)
-        }
-
-        if let dateOnly = dateString.split(separator: " ").first {
-            return String(dateOnly)
-        }
-
-        return dateString
-    }
-    
-    
-    // MARK: - UDID
-
-    /// The UDID with only its ends legible.
-    ///
-    /// Enough of it survives to recognise the device at a glance and to match
-    /// against a support request, and not enough to register or sign with. The
-    /// copy button beside it still yields the real value, which is the one place
-    /// it is needed — reading it off a screen is not, and a screenshot or a
-    /// shoulder is how it usually escapes.
-    private var maskedUdid: String {
-        Self.masking(udid)
-    }
-
-    /// Keeps the first and last `ends` characters and replaces the rest with one
-    /// bullet each, so the length still shows.
-    ///
-    /// A value too short to split that way is masked completely rather than
-    /// printed with its two ends touching, which would show all of it.
-    static func masking(_ value: String, ends: Int = 6) -> String {
-        guard value.count > ends * 2 else {
-            return String(repeating: "\u{2022}", count: value.count)
-        }
-        return String(value.prefix(ends))
-            + String(repeating: "\u{2022}", count: value.count - ends * 2)
-            + String(value.suffix(ends))
-    }
-
     /// Name of the step the haptics slider currently sits on, shown beside it —
     /// a strength is easier to recognise by name than by a bare number, and the
     /// left end being "Off" is the part worth being explicit about.
@@ -362,57 +293,134 @@ struct LCSettingsView: View {
     var body: some View {
         NavigationView {
             Form {
+                // MARK: - Categories
                 Section {
-                    HStack(spacing: 12) {
-                        Image(systemName: "wallet.pass.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(Color.blue)
-                            .cornerRadius(8)
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("UDID")
-                                .font(.body)
-                            
-                            Text(maskedUdid)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                                .scaledToFit()
-                                .minimumScaleFactor(0.3)
-                        }
-                        Spacer()
-                        
-                        if udid.isEmpty {
-                            Button {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                Task {
-                                    await checkSubscription()
-                                }
-                            } label: {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 18))
-                                    .foregroundColor(.blue)
-                            }
-                            .disabled(isSubscriptionLoading)
-                        } else {
-                            Button(action: {
-                                UIPasteboard.general.string = udid
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            }) {
-                                Image(systemName: "doc.on.doc")
-                                    .font(.system(size: 18))
-                                    .foregroundColor(.blue)
+                    // Where the certificate is imported. It carries the red mark
+                    // while none is — the same thing the Settings icon on the
+                    // home screen counts.
+                    NavigationLink { generalPage } label: {
+                        HStack(spacing: 0) {
+                            categoryRow("lc.flek.cat.general".loc, "gear", .gray, iconSize: 20)
+                            if sharedModel.needsCertificate {
+                                Spacer(minLength: 8)
+                                attentionMark
                             }
                         }
                     }
-                    .padding(.vertical, 6)
+                    NavigationLink { FlekPersonalizationView() } label: {
+                        categoryRow("lc.flek.personalization".loc, "paintbrush.fill", .purple)
+                    }
+                    NavigationLink { launchBehaviorPage } label: {
+                        categoryRow("lc.flek.cat.launch".loc, FlekSymbol.appGrid, .blue, iconSize: 22)
+                    }
+                    if #available(iOS 16.1, *) {
+                        NavigationLink { multitaskPage } label: {
+                            categoryRow("lc.flek.cat.multitask".loc, "macwindow.on.rectangle", .green)
+                        }
+                    }
+                    NavigationLink { jitPage } label: {
+                        // The mark an app set to launch with JIT carries on its
+                        // icon, on a dark tile.
+                        categoryRow("lc.flek.cat.jit".loc, FlekSymbol.jit, .black)
+                    }
+                    NavigationLink { contentRestrictionsPage } label: {
+                        categoryRow("lc.flek.cat.content".loc, "nosign", .red, iconSize: 20)
+                    }
+                    NavigationLink { signingPage } label: {
+                        categoryRow("lc.flek.cat.signing".loc, "signature", .mint, iconSize: 15)
+                    }
+                    NavigationLink { LCTweaksView() } label: {
+                        categoryRow("Tweaks", "wrench.and.screwdriver.fill", .orange, iconSize: 17)
+                    }
+                    NavigationLink { FlekAboutView() } label: {
+                        categoryRow("lc.flek.cat.about".loc, "info.circle", .gray, iconSize: 20)
+                    }
+                }
+                Section {
+                    linkRow("FlekIconFlekStore", "FlekSt0re.com", action: openFlekstore)
+                    linkRow("GitHub", "GitHub - LiveContainer", action: openGitHub)
+                    linkRow("GitHub", "lc.flek.sourceCode".loc, action: openFlekDeckRepo)
+                    linkRow("Twitter", "khanhduytran0", action: openTwitter)
+                    linkRow("GitHub", "GitHub - Huge_Black", action: openGitHub2)
+                } footer: {
+                    // Centred so it closes the page with the version and build lines
+                    // below it, rather than trailing off to one side of them. A Text
+                    // sizes to its content, so it takes the full width first and
+                    // centres what it wraps onto a second line.
+                    Text("lc.settings.warning".loc)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                }
+                
+                VStack(spacing: 2){
+                    Text(LCUtils.getVersionInfo())
+                        .foregroundStyle(.gray)
+                        // The branch and hash make this long enough to wrap in the
+                        // width the padding below leaves it. Two lines to wrap into,
+                        // and shrinking only once that is not enough either.
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.5)
+                        .multilineTextAlignment(.center)
+                        // Filling the width gives the five-tap developer-mode gesture
+                        // the whole line to land on, not just the glyphs.
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 5) {
+                            sharedModel.developerMode = true
+                        }
+                    
+                    HStack(spacing:0){
+                        Text("Build: ")
+                            .foregroundStyle(.gray)
+                        // A Link here would take over the whole Form row and swallow
+                        // the version tap above it, so open the URL by hand instead.
+                        Text("FlekSt0re")
+                            .foregroundStyle(.blue)
+                            .contentShape(Rectangle())
+                            .onTapGesture(perform: openFlekstore)
+                    }
+                    // The size this line has always been. Only the version below the
+                    // footer was meant to match it, and a font set here is nearer the
+                    // text than the one on the stack, so it is the one that lands.
+                    .font(.body)
+                    
+                }
+                .font(.footnote)
+                // Line up with the footer above rather than with the cards: a row is
+                // kept 20pt clear of each window edge, and a section footer a further
+                // 20pt inside that, so a long version string wraps where the warning
+                // does. The padding sits within the frame so the background still
+                // covers the whole row — inset the row itself and the cell's own card
+                // colour shows along both edges.
+                .padding(.horizontal, 20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(UIColor.systemGroupedBackground))
+                .listRowInsets(EdgeInsets())
 
+                if BetaOverlayManager.isBetaiOS {
+                    Section {
+                        HStack(spacing: 10) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.red)
+                                .font(.title3)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("iOS Beta Detected")
+                                    .font(.subheadline.bold())
+                                    .foregroundStyle(.red)
+                                Text("Beta versions of iOS may cause certificate revocation. Apps and features may not work correctly. Please roll back to the stable release version.")
+                                    .font(.caption)
+                                    .foregroundStyle(.red.opacity(0.8))
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                if sharedModel.developerMode {
                     // Developer-only. This is a diagnostic — it exists to compare what the
                     // guest's identity check actually saw against what the app holds — and it
                     // means nothing to anyone not chasing that particular mismatch.
-                    if sharedModel.developerMode {
+                    Section {
                         // MARK: - Multitask identity
                         // What reached the last app launched in parallel. A guest reads
                         // the identifier from the host process' bundle, which is the
@@ -517,191 +525,9 @@ struct LCSettingsView: View {
                         } message: {
                             Text("\(backgroundInstallReport)\n\nCopied to clipboard.")
                         }
-                    }
-
-                    // MARK: - Subscription Status
-                    HStack(spacing: 12) {
-                        Image("premiumLogo")
-                            .resizable()
-                            .frame(width: 36, height: 36)
-                            .cornerRadius(8)
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Premium Subscription")
-                                .font(.body)
-
-                            if isSubscriptionLoading {
-                                HStack(spacing: 6) {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                    Text("Checking…")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-                            } else if hasSubscription, let endDate = subscriptionEndDate {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.green)
-                                        .font(.subheadline)
-                                    Text("Valid till \(formattedSubscriptionDate(endDate))")
-                                        .font(.subheadline)
-                                        .foregroundColor(.green)
-                                }
-                            } else if let endDate = subscriptionEndDate {
-                                Text("Ended \(formattedSubscriptionDate(endDate))")
-                                    .font(.subheadline)
-                                    .foregroundColor(.red)
-                            } else {
-                                Text("No active subscription")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                            }
-                        }
-
-                        Spacer()
-
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            Task {
-                                if !udid.isEmpty {
-                                    await checkSubscription()
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 18))
-                                .foregroundColor(.blue)
-                        }
-                        .disabled(isSubscriptionLoading)
-                    }
-                    .padding(.vertical, 6)
-                }
-                // MARK: - Certificate (shown only when no certificate is detected)
-                if sharedModel.multiLCStatus != 2 && !certificateDataFound {
-                    Section {
-                        Button("Import Flekstore certificate") {
-                            Task { await importEmbeddedCertificate() }
-                        }
-                        
-                        Button("lc.settings.importCertificate".loc) {
-                            Task { await importCertificate() }
-                        }
                     } header: {
-                        Text("lc.settings.jitLess".loc)
-                    } footer: {
-                        Text("lc.settings.jitLessDesc".loc)
+                        Text("Diagnostics")
                     }
-                }
-                // MARK: - Categories
-                Section {
-                    NavigationLink { FlekPersonalizationView() } label: {
-                        categoryRow("lc.flek.personalization".loc, "paintbrush.fill", .purple)
-                    }
-                    NavigationLink { launchBehaviorPage } label: {
-                        categoryRow("lc.flek.cat.launch".loc, FlekSymbol.appGrid, .blue, iconSize: 22)
-                    }
-                    if #available(iOS 16.1, *) {
-                        NavigationLink { multitaskPage } label: {
-                            categoryRow("lc.flek.cat.multitask".loc, "macwindow.on.rectangle", .green)
-                        }
-                    }
-                    NavigationLink { jitPage } label: {
-                        categoryRow("lc.flek.cat.jit".loc, "j.circle", .blue, iconSize: 20)
-                    }
-                    NavigationLink { contentRestrictionsPage } label: {
-                        categoryRow("lc.flek.cat.content".loc, "nosign", .red, iconSize: 20)
-                    }
-                    NavigationLink { signingPage } label: {
-                        categoryRow("lc.flek.cat.signing".loc, "signature", .mint, iconSize: 15)
-                    }
-                    NavigationLink { LCTweaksView() } label: {
-                        categoryRow("Tweaks", "wrench.and.screwdriver.fill", .orange, iconSize: 17)
-                    }
-                    NavigationLink { FlekAboutView() } label: {
-                        categoryRow("lc.flek.cat.about".loc, "info.circle", .gray, iconSize: 20)
-                    }
-                }
-                Section {
-                    linkRow("FlekIconFlekStore", "FlekSt0re.com", action: openFlekstore)
-                    linkRow("GitHub", "GitHub - LiveContainer", action: openGitHub)
-                    linkRow("GitHub", "lc.flek.sourceCode".loc, action: openFlekDeckRepo)
-                    linkRow("Twitter", "khanhduytran0", action: openTwitter)
-                    linkRow("GitHub", "GitHub - Huge_Black", action: openGitHub2)
-                } footer: {
-                    // Centred so it closes the page with the version and build lines
-                    // below it, rather than trailing off to one side of them. A Text
-                    // sizes to its content, so it takes the full width first and
-                    // centres what it wraps onto a second line.
-                    Text("lc.settings.warning".loc)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                }
-                
-                VStack(spacing: 2){
-                    Text(LCUtils.getVersionInfo())
-                        .foregroundStyle(.gray)
-                        // The branch and hash make this long enough to wrap in the
-                        // width the padding below leaves it. Two lines to wrap into,
-                        // and shrinking only once that is not enough either.
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.5)
-                        .multilineTextAlignment(.center)
-                        // Filling the width gives the five-tap developer-mode gesture
-                        // the whole line to land on, not just the glyphs.
-                        .frame(maxWidth: .infinity)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 5) {
-                            sharedModel.developerMode = true
-                        }
-                    
-                    HStack(spacing:0){
-                        Text("Build: ")
-                            .foregroundStyle(.gray)
-                        // A Link here would take over the whole Form row and swallow
-                        // the version tap above it, so open the URL by hand instead.
-                        Text("FlekSt0re")
-                            .foregroundStyle(.blue)
-                            .contentShape(Rectangle())
-                            .onTapGesture(perform: openFlekstore)
-                    }
-                    // The size this line has always been. Only the version below the
-                    // footer was meant to match it, and a font set here is nearer the
-                    // text than the one on the stack, so it is the one that lands.
-                    .font(.body)
-                    
-                }
-                .font(.footnote)
-                // Line up with the footer above rather than with the cards: a row is
-                // kept 20pt clear of each window edge, and a section footer a further
-                // 20pt inside that, so a long version string wraps where the warning
-                // does. The padding sits within the frame so the background still
-                // covers the whole row — inset the row itself and the cell's own card
-                // colour shows along both edges.
-                .padding(.horizontal, 20)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(UIColor.systemGroupedBackground))
-                .listRowInsets(EdgeInsets())
-
-                if BetaOverlayManager.isBetaiOS {
-                    Section {
-                        HStack(spacing: 10) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.red)
-                                .font(.title3)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("iOS Beta Detected")
-                                    .font(.subheadline.bold())
-                                    .foregroundStyle(.red)
-                                Text("Beta versions of iOS may cause certificate revocation. Apps and features may not work correctly. Please roll back to the stable release version.")
-                                    .font(.caption)
-                                    .foregroundStyle(.red.opacity(0.8))
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-
-                if sharedModel.developerMode {
                     Section {
                         if #available(iOS 16.1, *) {
                             Toggle(isOn: $showRotationPanel) {
@@ -741,6 +567,32 @@ struct LCSettingsView: View {
                         }
                         Toggle(isOn: $disableLiveProcessWatchdog) {
                             Text("Disable LiveProcess watchdog termination")
+                        }
+                        // Has "Create on This Device" advertise a pairing that
+                        // asks for no code, to find out whether iOS goes along
+                        // with it. If it asks anyway, the code is 000000.
+                        Toggle(isOn: $pairWithoutCode) {
+                            Text("Create Pairing File Without a Code")
+                        }
+#if DEBUG
+                        // Stands in for a subscription in a build run from
+                        // Xcode, which has no FlekSt0re device ID to look one
+                        // up by. Release builds have neither this nor what
+                        // reads it.
+                        Toggle(isOn: $debugPremium) {
+                            Text("Premium (Debug Builds Only)")
+                        }
+#endif
+                        // A page for Premium Access to open in place of FlekSt0re's
+                        // profile, for trying a server out. HTTPS only.
+                        HStack {
+                            Text("UDID Profile Page")
+                            Spacer()
+                            TextField("https://", text: $udidProfilePageAddress)
+                                .multilineTextAlignment(.trailing)
+                                .keyboardType(.URL)
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.never)
                         }
                         Button {
                             exportDyld()
@@ -792,47 +644,9 @@ struct LCSettingsView: View {
             }
             .navigationTitle("lc.tabView.settings".loc)
             .navigationBarTitleDisplayMode(.large)
-            .onAppear {
-                loadEncryptedUDIDFromPlist()
-                hydrateSubscriptionStateFromStorage()
-
-                // Fetch once for initial subscription bootstrap only.
-                if !subscriptionInitialized {
-                    Task {
-                        await checkSubscription()
-                        subscriptionInitialized = true
-                    }
-                }
-            }
-            .onChange(of: deviceUDID) { newValue in
-                udid = newValue
-            }
-            .onChange(of: subscriptionStatusStored) { newValue in
-                hasSubscription = newValue
-            }
-            .onChange(of: subscriptionEndDateStored) { newValue in
-                subscriptionEndDate = newValue.isEmpty ? nil : newValue
-            }
             .alert("lc.common.error".loc, isPresented: $errorShow){
             } message: {
                 Text(errorInfo)
-            }
-            .alert("lc.common.success".loc, isPresented: $successShow){
-            } message: {
-                Text(successInfo)
-            }
-            .alert("lc.settings.importCertificate".loc, isPresented: $certificateImportAlert.show) {
-                Button {
-                    certificateImportAlert.close(result: true)
-                } label: {
-                    Text("lc.common.ok".loc)
-                }
-                
-                Button("lc.common.cancel".loc, role: .cancel) {
-                    certificateImportAlert.close(result: false)
-                }
-            } message: {
-                Text("lc.settings.importCertificateDesc".loc)
             }
             .alert("lc.settings.removeCertificate".loc, isPresented: $certificateRemoveAlert.show) {
                 Button(role: .destructive) {
@@ -859,29 +673,8 @@ struct LCSettingsView: View {
             } message: {
                 Text("lc.settings.importCertFromBuiltinSideStoreDesc".loc)
             }
-            .betterFileImporter(isPresented: $certificateImportFileAlert.show, types: [.p12], multiple: false, callback: { fileUrls in
-                certificateImportFileAlert.close(result: fileUrls[0])
-            }, onDismiss: {
-                certificateImportFileAlert.close(result: nil)
-            })
-            .textFieldAlert(
-                isPresented: $certificateImportPasswordAlert.show,
-                title: "lc.settings.importCertificateInputPassword".loc,
-                text: $certificateImportPasswordAlert.initVal,
-                placeholder: "",
-                action: { newText in
-                    certificateImportPasswordAlert.close(result: newText)
-                },
-                actionCancel: {_ in
-                    certificateImportPasswordAlert.close(result: nil)
-                    certificateImportPasswordAlert.show = false
-                }
-            )
         }
         .onAppear {
-            if !certificateDataFound {
-                Task { await importEmbeddedCertificate() }
-            }
             if !isViewAppeared {
                 guard sharedModel.selectedTab == .settings, let link = sharedModel.deepLink else { return }
                 sharedModel.deepLink = nil
@@ -927,7 +720,7 @@ struct LCSettingsView: View {
 
     /// `iconSize` is per-symbol on purpose. Point size sets the em, not the drawn
     /// shape, and how much of that em a symbol inks varies by design — an enclosed
-    /// glyph like `j.circle` or a thin one like `app.grid` reads far smaller than a
+    /// glyph like `info.circle` or a thin one like `app.grid` reads far smaller than a
     /// `.fill` symbol at the same size. The default suits most of the set; the
     /// densest symbols pass a smaller value rather than everything sharing one size
     /// and half the rows looking undersized.
@@ -960,6 +753,26 @@ struct LCSettingsView: View {
                 )
             Text(title)
         }
+    }
+
+    /// The red mark iOS puts on a Settings row that needs the user, as it
+    /// badges General while an update waits.
+    private var attentionMark: some View {
+        Image(systemName: "exclamationmark.circle.fill")
+            .font(.system(size: 20))
+            .symbolRenderingMode(.palette)
+            .foregroundStyle(.white, .red)
+            .accessibilityLabel("lc.flek.certificate.notImported".loc)
+    }
+
+    @ViewBuilder private var generalPage: some View {
+        FlekGeneralView(
+            managesCertificate: sharedModel.multiLCStatus != 2,
+            onRemoveCertificate: { clearCertificate() },
+            jitPage: { jitPage }
+        )
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { ToolbarItem(placement: .principal) { Text("lc.flek.cat.general".loc).font(.headline) } }
     }
 
     @ViewBuilder private var launchBehaviorPage: some View {
@@ -1088,30 +901,9 @@ struct LCSettingsView: View {
     }
 
     @ViewBuilder private var jitPage: some View {
+        // JIT alone: the certificate that JIT-less takes, with its removal and
+        // its diagnosis, is on General.
         Form {
-                if sharedModel.multiLCStatus != 2 {
-                    Section {
-                        if !certificateDataFound {
-                            Button("lc.settings.importCertificate".loc) {
-                                Task { await importCertificate() }
-                            }
-                        } else {
-                            Button("lc.settings.removeCertificate".loc) {
-                                Task { await removeCertificate() }
-                            }
-                        }
-                        
-                        NavigationLink {
-                            LCJITLessDiagnoseView()
-                        } label: {
-                            Text("lc.settings.jitlessDiagnose".loc)
-                        }
-                    } header: {
-                        Text("lc.settings.jitLess".loc)
-                    } footer: {
-                        Text("lc.settings.jitLessDesc".loc)
-                    }
-                }
                 Section {
                     if JITEnabler == .SideJITServer || JITEnabler == .JITStreamerEBLegacy {
                         HStack {
@@ -1130,21 +922,43 @@ struct LCSettingsView: View {
                         }
                     }
                     Picker(selection: $JITEnabler) {
+                        // StikJIT does not load before iOS 17.4.
+                        if #available(iOS 17.4, *) {
+                            Text(JITEnablerType.StikJITHeadless.displayName).tag(JITEnablerType.StikJITHeadless)
+                        }
                         Text("SideJITServer/JITStreamer 2.0").tag(JITEnablerType.SideJITServer)
                         Text("StikDebug").tag(JITEnablerType.StikJIT)
                         Text("StikDebug (Another FlekDeck)").tag(JITEnablerType.StikJITLC)
-                        Text("SideStore").tag(JITEnablerType.SideStore)
-                        Text("JitStreamer-EB (Relaunch)").tag(JITEnablerType.JITStreamerEBLegacy)
+                        // Not offered any more: SideStore, whose link does not
+                        // enable JIT on its own, and JitStreamer-EB, which is
+                        // no longer maintained. One chosen earlier stays
+                        // listed, as the menu needs a row for the selection.
+                        if JITEnabler.isNoLongerOffered {
+                            Text(JITEnabler.displayName).tag(JITEnabler)
+                        }
                     } label: {
                         Text("lc.settings.jitEnabler".loc)
                     }
+                    // StikDebug is set up outside FlekDeck, which can only
+                    // explain how.
+                    if JITEnabler == .StikJIT {
+                        NavigationLink {
+                            FlekStikDebugGuideView()
+                        } label: {
+                            Label("lc.flek.jit.stikdebug.help".loc, systemImage: "questionmark.circle")
+                        }
+                    }
                     
-                } header: {
-                    Text("JIT")
                 } footer: {
-                    Text("lc.settings.JitDesc".loc)
+                    // FlekJIT is what a copy starts on, and the one enabler
+                    // that takes Premium, so under it the rest of the menu is
+                    // said to be free.
+                    Text((JITEnabler == .StikJITHeadless ? "lc.flek.jit.enablerFooter" : "lc.settings.JitDesc").loc)
                 }
-                
+                // The pairing file is the primary FlekDeck's, as it is upstream.
+                if JITEnabler == .StikJITHeadless, sharedModel.multiLCStatus == 0 {
+                    FlekBuiltInJITSection()
+                }
                 
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -1287,77 +1101,6 @@ struct LCSettingsView: View {
         LCUtils.appGroupUserDefault.removeObject(forKey: "symbolOffsetCache")
     }
     
-    func importCertificate() async {
-        guard let doImport = await certificateImportAlert.open(), doImport else {
-            return
-        }
-        guard let certificateURL = await certificateImportFileAlert.open() else {
-            return
-        }
-        guard let certificatePassword = await certificateImportPasswordAlert.open() else {
-            return
-        }
-        let certificateData : Data
-        do {
-            certificateData = try Data(contentsOf: certificateURL)
-        } catch {
-            errorInfo = error.localizedDescription
-            errorShow = true
-            return
-        }
-        
-        guard let _ = LCUtils.getCertTeamId(withKeyData: certificateData, password: certificatePassword) else {
-            errorInfo = "lc.settings.invalidCertError".loc
-            errorShow = true
-            return
-        }
-        
-        LCUtils.appGroupUserDefault.set(certificateData, forKey: "LCCertificateData")
-        LCUtils.appGroupUserDefault.set(certificatePassword, forKey: "LCCertificatePassword")
-        LCUtils.appGroupUserDefault.set(NSDate.now, forKey: "LCCertificateUpdateDate")
-        certificateDataFound = true
-
-        UserDefaults.standard.set(LCSharedUtils.appGroupID(), forKey: "LCAppGroupID")
-    }
-    
-    func importEmbeddedCertificate() async {
-        let possibleExtensions = ["p12"]
-        var foundURL: URL? = nil
-        for ext in possibleExtensions {
-            if let url = Bundle.main.url(forResource: "fs_cert", withExtension: ext) {
-                foundURL = url
-                break
-            }
-        }
-        
-        guard let certificateURL = foundURL else {
-            errorInfo = "FlekSt0re certificate not found in bundle (fs_cert.*). Make sure it's added to Copy Bundle Resources."
-            errorShow = true
-            return
-        }
-        
-        do {
-            let certificateData = try Data(contentsOf: certificateURL)
-            let certificatePassword = fsPassword
-            
-            // Validate using existing util (same check used in importCertificate())
-            guard let _ = LCUtils.getCertTeamId(withKeyData: certificateData, password: certificatePassword) else {
-                errorInfo = "lc.settings.invalidCertError".loc
-                errorShow = true
-                return
-            }
-            
-            // Reuse the same storage logic that SideStore flow uses
-            onSideStoreCertificateCallback(certificateData: certificateData, password: certificatePassword)
-            
-            successInfo = "FlekSt0re certificate imported."
-            successShow = true
-        } catch {
-            errorInfo = "Failed to read FlekSt0re certificate: \(error.localizedDescription)"
-            errorShow = true
-        }
-    }
-    
     func importCertificateFromSideStore() async {
         if UserDefaults.sideStoreExist() {
             if let ans = await certificateImportFromBuiltInSideStoreAlert.open(), ans {
@@ -1432,18 +1175,14 @@ struct LCSettingsView: View {
         LCUtils.appGroupUserDefault.set(certificateData, forKey: "LCCertificateData")
         LCUtils.appGroupUserDefault.set(password, forKey: "LCCertificatePassword")
         LCUtils.appGroupUserDefault.set(NSDate.now, forKey: "LCCertificateUpdateDate")
-        certificateDataFound = true
     }
     
-    func removeCertificate() async {
-        guard let doRemove = await certificateRemoveAlert.open(), doRemove else {
-            return
-        }
-        
+    /// Forgets the stored certificate. General asks first, in words of its own
+    /// that depend on the certificate.
+    func clearCertificate() {
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificateData")
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificatePassword")
         LCUtils.appGroupUserDefault.set(nil, forKey: "LCCertificateUpdateDate")
-        certificateDataFound = false
         
         UserDefaults.standard.set(nil, forKey: "LCAppGroupID")
     }
@@ -1487,51 +1226,6 @@ struct LCSettingsView: View {
                 onSideStoreCertificateCallback(certificateData: certData, password: password)
                 
             }
-        }
-    }
-    
-    private func loadEncryptedUDIDFromPlist() {
-        if let dict = Bundle.main.infoDictionary,
-           let value = dict["encryptedUdid"] as? String,
-           !value.isEmpty {
-            encryptedUDID = value
-        }
-    }
-
-    private func hydrateSubscriptionStateFromStorage() {
-        udid = deviceUDID.isEmpty ? fsDeviceUDID : deviceUDID
-        hasSubscription = subscriptionStatusStored
-        subscriptionEndDate = subscriptionEndDateStored.isEmpty ? nil : subscriptionEndDateStored
-    }
-    
-    private func checkSubscription() async {
-        guard !encryptedUDID.isEmpty else { return }
-        if isSubscriptionLoading { return }
-        isSubscriptionLoading = true
-        defer { isSubscriptionLoading = false }
-        
-        guard let url = URL(
-            string: "https://nestapi.flekstore.com/device-service/get-status/\(encryptedUDID)"
-        ) else { return }
-        
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            
-            let response = try JSONDecoder().decode(DeviceStatusResponse.self, from: data)
-            
-            // Save to AppStorage
-            deviceUDID = response.udid
-            udid = response.udid
-            
-            subscriptionStatusStored = response.status
-            subscriptionEndDateStored = response.endDate
-            
-            hasSubscription = response.status
-            subscriptionEndDate = response.endDate
-            
-        } catch {
-            errorInfo = error.localizedDescription
-            errorShow = true
         }
     }
 }

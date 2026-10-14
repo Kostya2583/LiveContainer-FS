@@ -104,6 +104,10 @@ struct LCTabView: View {
         .task {
             setupInitialRepositoriesIfNeeded()
             Task { await MultiRepoSearchModel.prefetchAllRepos() }
+            Task { await FlekUDIDProfile.collectUDID() }
+            // Mobile Data that the FlekJIT shortcut switched off for a launch
+            // which never got as far as switching it back on.
+            FlekMobileDataShortcut.shared.turnMobileDataBackOn()
             await verifyAccess()
         }
         .onReceive(pub) { out in
@@ -134,6 +138,11 @@ struct LCTabView: View {
             Task {
                 await verifyAccess()
             }
+            // The UDID profile is installed in Settings, with FlekDeck in the
+            // background: back here is when to ask what it reported.
+            Task {
+                await FlekUDIDProfile.collectUDID()
+            }
         }
         .onOpenURL { url in
             dispatchURL(url: url)
@@ -144,6 +153,10 @@ struct LCTabView: View {
     }
     
     func dispatchURL(url: URL) {
+        // The FlekJIT shortcut's way back, which is not a link to act on.
+        if FlekMobileDataShortcut.shared.handle(url) {
+            return
+        }
         if isBlocked || didFailBlockedStatusCheck || !hasCheckedBlockedStatus {
             sharedModel.pendingOpenURL = url
             return
@@ -167,6 +180,11 @@ struct LCTabView: View {
                 sharedModel.selectedTab = .apps
             case "certificate":
                 sharedModel.selectedTab = .settings
+            case "udid":
+                // The UDID profile's way back: the server that took the device's
+                // answer redirects here with the UDID.
+                FlekUDIDProfile.importUDID(from: url)
+                return
             case "source":
                 sharedModel.selectedTab = .sources
             default:
@@ -365,11 +383,12 @@ struct LCTabView: View {
         return
         #endif
 
+        // Without a FlekSt0re device ID there is nothing to ask the server about:
+        // the build was not signed by FlekSt0re for this device. It opens as it
+        // is, and General can only offer Premium, which is looked up by one.
         guard let resolvedEncryptedUDID = resolveEncryptedUDID() else {
             await MainActor.run {
-                accessVerificationFailureMessage = "User UDID is empty. Please contact FlekSt0re tech support."
-                didFailBlockedStatusCheck = true
-                hasCheckedBlockedStatus = true
+                applyAccessGranted()
             }
             return
         }
@@ -406,6 +425,7 @@ struct LCTabView: View {
         switch await AccessVerificationService.fetchStatus(encryptedUDID: resolvedEncryptedUDID) {
         case .answered(let response):
             AccessVerdictStore.save(response, for: resolvedEncryptedUDID)
+            FlekPremium.keep(response)
             await MainActor.run {
                 if response.isBanned {
                     applyBan(reason: response.banReason, message: response.message)
@@ -435,6 +455,7 @@ struct LCTabView: View {
                 return
             }
             AccessVerdictStore.save(response, for: encryptedUDID)
+            FlekPremium.keep(response)
 
             await MainActor.run {
                 if response.isBanned {

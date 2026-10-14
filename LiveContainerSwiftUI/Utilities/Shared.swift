@@ -20,6 +20,7 @@ struct LCPath {
     public static let dataPath = docPath.appendingPathComponent("Data/Application")
     public static let appGroupPath = docPath.appendingPathComponent("Data/AppGroup")
     public static let tweakPath = docPath.appendingPathComponent("Tweaks")
+    public static let pairingFilePath = docPath.appendingPathComponent("SideStore/Documents/ALTPairingFile.mobiledevicepairing")
     
     public static let lcGroupDocPath = {
         let fm = FileManager()
@@ -104,6 +105,9 @@ struct LCPath {
         if !fm.fileExists(atPath: LCPath.lcGroupTweakPath.path) {
             try fm.createDirectory(at: LCPath.lcGroupTweakPath, withIntermediateDirectories: true)
         }
+        if !fm.fileExists(atPath: LCPath.pairingFilePath.path) {
+            try fm.createDirectory(at: LCPath.pairingFilePath.deletingLastPathComponent(), withIntermediateDirectories: true)
+        }
     }
 }
 
@@ -124,6 +128,23 @@ class SharedModel: ObservableObject {
     // 2 = current liveContainer is not the primary one
     @Published var multiLCStatus = 0
     @Published var isJITModalOpen = false
+
+    /// Whether a signing certificate is stored, whichever way it came: taken
+    /// from the app bundle at launch, picked in Files, or handed back by
+    /// SideStore or a flekdeck://certificate link. It follows the stored
+    /// password itself rather than each of those reporting in, so a new way
+    /// of importing one cannot forget to.
+    @Published private(set) var isCertificateImported = LCSharedUtils.certificatePassword() != nil
+
+    /// Whether this copy of FlekDeck should be asking for a certificate. One
+    /// that is not the primary signs with the primary's and has no way to
+    /// import its own, so it has nothing to ask for.
+    var needsCertificate: Bool {
+        multiLCStatus != 2 && !isCertificateImported
+    }
+
+    private var certificateObservation: NSKeyValueObservation?
+    private var foregroundObserver: NSObjectProtocol?
     
     @Published var enableMultipleWindow = false
 
@@ -163,8 +184,58 @@ class SharedModel: ObservableObject {
         }
     }
     
+    /// Re-reads whether a certificate is stored, publishing only a change.
+    func refreshCertificateStatus() {
+        let imported = LCSharedUtils.certificatePassword() != nil
+        if imported != isCertificateImported {
+            isCertificateImported = imported
+        }
+    }
+
     init() {
         updateMultiLCStatus()
+        // Every import and removal writes the password through this defaults
+        // object, so watching it catches each one as it happens. Published on
+        // the next turn of the main queue: a write can come from inside a view
+        // update, where publishing is not allowed.
+        certificateObservation = LCUtils.appGroupUserDefault.observe(\.LCCertificatePassword) { [weak self] _, _ in
+            DispatchQueue.main.async { self?.refreshCertificateStatus() }
+        }
+        // Another FlekDeck sharing the app group can import or remove one
+        // while this one is in the background.
+        foregroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.refreshCertificateStatus()
+        }
+    }
+}
+
+extension UserDefaults {
+    /// The stored certificate password, declared only so that it can be
+    /// observed: key-value observing reaches a defaults key through a
+    /// property of exactly the key's name.
+    @objc dynamic var LCCertificatePassword: String? {
+        string(forKey: "LCCertificatePassword")
+    }
+}
+
+extension Bundle {
+    /// The per-device ID FlekSt0re's signer writes into the Info.plist of each
+    /// build it signs. A build it did not sign carries the key empty: nil.
+    var flekStoreDeviceID: String? {
+        let value = (infoDictionary?["encryptedUdid"] as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return value?.isEmpty == false ? value : nil
+    }
+}
+
+extension String {
+    /// Whether this is shaped like an iOS device's UDID: eight hex digits, a
+    /// hyphen and sixteen more on devices since the iPhone XS, forty hex
+    /// digits on older ones. What is left in a half-cleared field is not.
+    var isDeviceUDID: Bool {
+        range(of: "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{16}|[0-9A-Fa-f]{40})$", options: .regularExpression) != nil
     }
 }
 
@@ -257,6 +328,7 @@ extension UTType {
     static let deb = UTType(filenameExtension: "deb")!
     static let lcFramework = UTType(filenameExtension: "framework", conformingTo: .package)!
     static let p12 = UTType(filenameExtension: "p12")!
+    static let mobileProvision = UTType(filenameExtension: "mobileprovision")!
 }
 
 extension Color {

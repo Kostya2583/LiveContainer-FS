@@ -650,7 +650,7 @@ static UIDeviceOrientation LCDeviceOrientationForInterface(UIInterfaceOrientatio
     
     // init extension
     NSError* error = nil;
-    _extension = [NSExtension extensionWithIdentifier:LCUtils.liveProcessBundleIdentifier error:&error];
+    _extension = [NSExtension extensionWithIdentifier:LCSharedUtils.liveProcessBundleIdentifier error:&error];
     if(error) {
         [delegate appSceneVC:self didInitializeWithError:error];
         return nil;
@@ -688,6 +688,21 @@ static UIDeviceOrientation LCDeviceOrientationForInterface(UIInterfaceOrientatio
     // so that it never looks for a private app among the shared ones.
     bool isSharedApp = false;
     NSBundle *bundle = [LCSharedUtils findBundleWithBundleId:bundleId isSharedAppOut:&isSharedApp];
+    
+    // With built-in JIT a guest enables JIT for itself, through a helper that
+    // reads the pairing file and reaches this device over a VPN. Neither can
+    // read this app's container, so the folder the pairing file is in is handed
+    // over before the guest starts. And where the VPN is FlekDeck's own, it is
+    // turned on for a guest that needs JIT; the helper keeps trying while it
+    // comes up, so nothing here waits for it.
+    if([NSUserDefaults.lcSharedDefaults integerForKey:@"LCJITEnablerType"] == 7) { // JITEnablerType.StikJITHeadless
+        [LCUtils issueBuiltInJITSandboxExtension];
+        NSDictionary *guestInfo = [NSDictionary dictionaryWithContentsOfFile:[bundle.bundlePath stringByAppendingPathComponent:@"LCAppInfo.plist"]];
+        if([guestInfo[@"isJITNeeded"] boolValue]) {
+            [LCSharedUtils startBuiltInVPNWithCompletionHandler:nil];
+        }
+    }
+    
     BOOL withoutCopying = !isSharedApp && ![bundleId isEqualToString:@"builtinSideStore"] &&
         [NSUserDefaults.standardUserDefaults boolForKey:@"LCOpenPrivateAppsWithoutCopying"];
     if (withoutCopying) {

@@ -164,6 +164,16 @@ enum AccessVerdictStore {
         }
         return false
     }
+
+    /// The time to measure an end date against: the clock, or the latest it was
+    /// seen at where it has since been wound back. Anything else that lasts
+    /// until a date can be stretched the same way the grace window can.
+    static func trustedNow(asOf now: Date = Date()) -> Date {
+        guard hasClockRolledBack(asOf: now) else {
+            return now
+        }
+        return Date(timeIntervalSince1970: defaults.double(forKey: Key.clockHighWaterMark))
+    }
 }
 
 enum AccessVerificationService {

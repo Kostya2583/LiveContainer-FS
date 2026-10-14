@@ -26,7 +26,16 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
         if let hostEncryptedUdid = Bundle.main.infoDictionary?["encryptedUdid"] as? String,
            !hostEncryptedUdid.isEmpty {
             LCUtils.appGroupUserDefault.set(hostEncryptedUdid, forKey: "LCHostEncryptedUdid")
+        } else {
+            // A build FlekSt0re did not sign has none to hand on, and must not hand
+            // on one an earlier FlekSt0re install left behind. The app group
+            // outlives the app while anything else shares it, and a signing tool
+            // can give every app it signs with one certificate the same group.
+            LCUtils.appGroupUserDefault.removeObject(forKey: "LCHostEncryptedUdid")
         }
+        // The same goes for how long Premium lasts, which guests are told too.
+        FlekPremium.publish()
+        FlekBuiltInJIT.adoptWhereNothingIsChosen()
 
         LCPath.clearStaleShareInbox()
 

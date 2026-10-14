@@ -117,6 +117,25 @@ class LCAppModel: ObservableObject, Hashable {
             appInfo.jitLaunchScriptJs = jitLaunchScriptJs
         }
     }
+    /// The script as an external JIT enabler takes it: its contents,
+    /// base64-encoded. One of the scripts that ship in StikJIT.framework is
+    /// stored as its path inside the bundle, which only built-in JIT reads, so
+    /// it is read out here.
+    var jitLaunchScriptJsResolved: String? {
+        get {
+            var script = jitLaunchScriptJs
+            // A 32-bit app offers no choice of script, and where TXM is present
+            // its translation layer needs the universal one.
+            if (script ?? "").isEmpty, appInfo.is32bit, LCUtils.isTXMScriptRequired() {
+                script = "/Frameworks/StikJIT.framework/universal.js"
+            }
+            guard let script, script.hasPrefix("/") else {
+                return script
+            }
+            let url = URL(fileURLWithPath: Bundle.main.bundlePath.appending(script))
+            return (try? Data(contentsOf: url))?.base64EncodedString()
+        }
+    }
     
     @Published var uiSelected32BitEmulator : String {
         didSet {
@@ -414,6 +433,21 @@ class LCAppModel: ObservableObject, Hashable {
         }
         try await signApp(force: false)
         
+        var jitNeeded = appInfo.isJITNeeded || appInfo.is32bit
+        if let forceJIT {
+            jitNeeded = forceJIT
+        }
+#if targetEnvironment(simulator)
+        jitNeeded = false
+#else
+        if jitNeeded {
+            // Asked before the app is recorded below as the one to start: a
+            // guest started without a working JIT setup fails as it launches,
+            // which the user only learns the next time FlekDeck opens.
+            try await FlekJITSetup.ensureReady()
+        }
+#endif
+        
         if let bundleIdOverride {
             UserDefaults.standard.set(bundleIdOverride, forKey: "selected")
         } else {
@@ -424,13 +458,6 @@ class LCAppModel: ObservableObject, Hashable {
         }
         UserDefaults.standard.set(uiSelectedContainer?.folderName, forKey: "selectedContainer")
         
-        var jitNeeded = appInfo.isJITNeeded || appInfo.is32bit
-        if let forceJIT {
-            jitNeeded = forceJIT
-        }
-#if targetEnvironment(simulator)
-        jitNeeded = false
-#endif
         if jitNeeded {
             if multitask, #available(iOS 17.4, *) {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -444,7 +471,7 @@ class LCAppModel: ObservableObject, Hashable {
                             return
                         }
                         Task {
-                            if let scriptData = self.jitLaunchScriptJs, !scriptData.isEmpty {
+                            if let scriptData = self.jitLaunchScriptJsResolved, !scriptData.isEmpty {
                                 await self.delegate?.jitLaunch(withPID: pidNumber.intValue, withScript: scriptData, appName: self.appInfo.displayName())
                             } else {
                                 await self.delegate?.jitLaunch(withPID: pidNumber.intValue, withScript: nil, appName: self.appInfo.displayName())
@@ -455,7 +482,7 @@ class LCAppModel: ObservableObject, Hashable {
                 }
             } else {
                 // Non-multitask JIT flow remains unchanged
-                if let scriptData = jitLaunchScriptJs, !scriptData.isEmpty {
+                if let scriptData = jitLaunchScriptJsResolved, !scriptData.isEmpty {
                     await delegate?.jitLaunch(withScript: scriptData, appName: self.appInfo.displayName(), classicMode: classicMode)
                 } else {
                     await delegate?.jitLaunch(appName: self.appInfo.displayName(), classicMode: classicMode)

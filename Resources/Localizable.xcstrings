@@ -15944,13 +15944,24 @@
         }
       }
     },
+    "lc.flek.cat.general" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "General"
+          }
+        }
+      }
+    },
     "lc.flek.cat.jit" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "JIT & JIT-Less"
+            "value" : "JIT"
           }
         }
       }
@@ -15984,6 +15995,490 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Signing & Installation"
+          }
+        }
+      }
+    },
+    "lc.flek.certificate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate"
+          }
+        }
+      }
+    },
+    "lc.flek.certificate.imported" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imported"
+          }
+        }
+      }
+    },
+    "lc.flek.certificate.notImported" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Imported"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.chooseP12" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose .p12 file"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.chooseProfile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose .mobileprovision file"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.clear" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.appMismatch.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate doesn’t match the FlekDeck installed on this device. Please select the certificate FlekDeck was signed with."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.appMismatch.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate mismatch"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.certExpired.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate has expired. Please select a valid certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.certExpired.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate expired"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.certNotDevelopment.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate isn’t a Development certificate. Please select a Development certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.certNotDevelopment.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wrong certificate type"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.certUnreadable.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The password is incorrect, or this file isn’t a valid .p12 certificate. Please check the password or select a valid certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.certUnreadable.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t open certificate"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.fileUnreadable.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This file couldn’t be opened. Please select it again."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.fileUnreadable.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t open file"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileExpired.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This provisioning profile has expired. Please select a valid profile."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileExpired.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Provisioning profile expired"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileInvalid.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This file isn’t a valid provisioning profile. Please select a valid profile."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileInvalid.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid provisioning profile"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileMismatch.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate doesn’t match the selected provisioning profile."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileMismatch.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate mismatch"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileNotDevelopment.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This provisioning profile isn’t a Development profile. Please select a Development profile."
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.error.profileNotDevelopment.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wrong profile type"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.flekstore.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go to flekstore.com"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.flekstore.desc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a ready-to-use FlekDeck installation with a compatible **Development certificate already configured.**"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.flekstore.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Up with FlekSt0re"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.import" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.password" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter .p12 password"
+          }
+        }
+      }
+    },
+    "lc.flek.certImport.warning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your .p12 certificate and .mobileprovision profile **must be Development type** and belong to the same Apple Developer team as the FlekDeck app installed on this device."
+          }
+        }
+      }
+    },
+    "lc.flek.certRemove.flekStoreNote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is the certificate FlekSt0re set up for FlekDeck. It will be set up again the next time FlekDeck opens, unless you import another certificate first."
+          }
+        }
+      }
+    },
+    "lc.flek.certRemove.validTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Valid Certificate?"
+          }
+        }
+      }
+    },
+    "lc.flek.certRemove.validWarning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate is still valid until %@. Without it, you won’t be able to install or launch apps until you import another certificate or set up JIT."
+          }
+        }
+      }
+    },
+    "lc.flek.certStatus.expired" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expired %@"
+          }
+        }
+      }
+    },
+    "lc.flek.certStatus.expires" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expires %@"
+          }
+        }
+      }
+    },
+    "lc.flek.certStatus.invalid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate is no longer valid and can’t be used to launch apps. Remove it and import a new Development certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.certStatus.invalidFlekStore" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate is no longer valid and can’t be used to launch apps. Reinstall FlekDeck from FlekSt0re to get a new one."
+          }
+        }
+      }
+    },
+    "lc.flek.certStatus.invalidNoRemoval" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This certificate is no longer valid and can’t be used to launch apps."
+          }
+        }
+      }
+    },
+    "lc.flek.certStatus.ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added and ready to use. Apps can be launched without a JIT connection."
+          }
+        }
+      }
+    },
+    "lc.flek.certStatus.revoked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revoked"
+          }
+        }
+      }
+    },
+    "lc.flek.certUnavailable.lead" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This installation of FlekDeck is signed with a certificate that isn’t Development type."
+          }
+        }
+      }
+    },
+    "lc.flek.certUnavailable.options" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To launch apps with your current installation, you can **set up JIT instead**. Alternatively, you can reinstall FlekDeck using a compatible Development certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.certUnavailable.reason" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due to how certificate mode works on iOS, FlekDeck can only import and use a certificate for launching apps when FlekDeck itself is signed with a compatible Development certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.certUnavailable.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate Import Unavailable"
           }
         }
       }
@@ -16208,6 +16703,61 @@
         }
       }
     },
+    "lc.flek.general.udid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UDID"
+          }
+        }
+      }
+    },
+    "lc.flek.general.udid.add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        }
+      }
+    },
+    "lc.flek.general.udid.addTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Device UDID"
+          }
+        }
+      }
+    },
+    "lc.flek.general.udid.copy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy UDID"
+          }
+        }
+      }
+    },
+    "lc.flek.general.udid.unknown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown"
+          }
+        }
+      }
+    },
     "lc.flek.haptics.light" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16384,6 +16934,1821 @@
         }
       }
     },
+    "lc.flek.jit.apps.empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No apps installed yet."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.apps.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An app with JIT shows a bolt on its icon."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.apps.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps with JIT"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.blocker.entitlement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This installation of FlekDeck is signed without get-task-allow, so iOS won’t let JIT be enabled for it. Reinstall it signed with a Development certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.blocker.os" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekJIT needs iOS 17.4 or later."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.blocker.simulator" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekJIT isn’t available in the Simulator."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.blocker.unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This build of FlekDeck doesn’t include FlekJIT."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.check" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.check.mobileData" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT can’t be turned on over mobile data. Join Wi-Fi or turn on Airplane Mode, then check again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.check.mobileData.other" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT can’t be turned on over mobile data. Join Wi-Fi, or connect LocalDevVPN and then turn on Airplane Mode."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.check.offline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The VPN can’t start without a connection. Turn Airplane Mode off for a moment and check again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.create" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.enablerFooter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekJIT is the easiest and needs Premium. The other options are free."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT lets emulators and some other apps run at full speed. Developer Mode has to be on in the Settings app. Apps with JIT can’t be started over mobile data: use Wi-Fi or Airplane Mode."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.get" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.getPremium" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get Premium"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.header" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekJIT Set Up"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.import" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.address %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open it on your computer:\n%@"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.get" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get FlekPair"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.importManually" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Manually"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.importNote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For a pairing file you brought over yourself, with AirDrop for example."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.other" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other Options"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.other.note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These make the same file. In idevice_pair, choose Remote pairing."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.step1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On a Mac or Windows PC, get FlekPair."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.step2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect this device with a cable and click Send to FlekDeck. Tap Trust here if asked."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.step3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap Refresh below. FlekDeck collects the file."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.importHelp.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing File from a Computer"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.addAgain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Again"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optional. Lets apps with JIT start on mobile data."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About Mobile Data Shortcut"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Shortcut"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The shortcut is called FlekJIT and only turns Mobile Data off and on. Shortcuts appears for a moment each time it runs."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.setUpHeader" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How to Set It Up"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.step1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap Add Shortcut below and choose Shortcuts in the list that opens."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.step2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Shortcuts, tap Add Shortcut, then come back to FlekDeck."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.step3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on Mobile Data Shortcut. Shortcuts opens once to check that it works."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.who" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only needed if you open apps with JIT without Wi-Fi. On Wi-Fi nothing changes."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.why" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps with JIT can’t start while this device is on mobile data, so without Wi-Fi you’d have to turn on Airplane Mode each time. This shortcut turns Mobile Data off while JIT starts and back on right after. Calls and messages keep working."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.help.whyHeader" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why Use It"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.missing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The FlekJIT shortcut didn’t answer. Add it again, then turn this on."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mobile Data Shortcut"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.more" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekJIT"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.mobileData" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, which can’t be started over mobile data. Join Wi-Fi or turn on Airplane Mode, then try again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.mobileData.other" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, which can’t be started over mobile data. Join Wi-Fi, or connect LocalDevVPN and then turn on Airplane Mode."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.mobileData.other.waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, which can’t be started over mobile data. Join Wi-Fi, or connect LocalDevVPN and then turn on Airplane Mode, and it starts by itself."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.mobileData.waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, which can’t be started over mobile data. Join Wi-Fi or turn on Airplane Mode, and it starts by itself."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.offline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, and the VPN it needs can’t start without a connection. Turn Airplane Mode off for a moment and try again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.offline.waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, and the VPN it needs can’t start without a connection. Turn Airplane Mode off for a moment."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.setUp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, but JIT isn’t set up. Set it up in Settings › JIT."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT Isn’t Ready"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.notReady.vpn" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app is set to launch with JIT, but the VPN isn’t connected. Turn it on in Settings › JIT, or connect LocalDevVPN."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.offer.premium.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The easy way: right here, with no other apps."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.offer.premium.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Up with Premium"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.offer.stikdebug.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free. Takes two more apps and a computer."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.offer.stikdebug.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use StikDebug Instead"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.activity.code %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Code %@"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.activity.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.activity.waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings › Privacy & Security › Developer Mode"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.copied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copied. You can paste it in Settings."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.create" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create on This Device"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.create.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No computer needed. Works while Premium is active."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.create.caption.missing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not included in this build."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.create.caption.os" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs iOS 27 or later."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.details" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pairing file on the server is empty. Send it again with FlekPair."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.notAFile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The server answered with something other than a pairing file. Check the connection and try again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.nothingNew" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No new pairing file has been sent for this device. Send one with FlekPair on a computer, then refresh."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.nothingSent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No pairing file has been sent for this device yet. Send it with FlekPair on a computer, then refresh."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.otherDevice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pairing file on the server is for another device."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.refused %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The server couldn’t hand the file over (error %lld). Try again later."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.unknownDevice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekDeck doesn’t know this device’s UDID, so it can’t look for the file. Import it manually instead."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fetch.unreachable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The server couldn’t be reached. Check the connection and try again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi has to be on. The code also comes as a notification while you’re in Settings."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fromComputer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get from a Computer"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.fromComputer.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With FlekPair, on a Mac or PC."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.localNetwork" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekDeck needs Local Network access for this. Turn it on in Settings › Privacy & Security › Local Network."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.notification" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing Code"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.notification.body %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your FlekDeck pairing code is %@"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.notification.copied %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your FlekDeck pairing code is %@. It’s copied, ready to paste."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.openSettings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.received" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing File Received"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.retry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That didn’t work. Try again in Settings."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.step1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings › Privacy & Security › Developer Mode."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.step2 %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scroll down and tap Pair with %@."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.step3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter this device’s passcode when Settings asks for it."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.step4" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Then enter the code that appears here, or paste it."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pair.waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The code appears once the passcode is in."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pairingFile.remove" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.pairingFile.wrongKind" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekJIT can’t use this kind of pairing file. Make a new one with FlekPair."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.premium.needed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app launches with FlekJIT, which works only while Premium is active. Get Premium, or switch to StikDebug, which is free, in Settings › JIT."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.premium.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium Needed"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.premium.unconfirmed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium could not be checked. Connect to the internet and try again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.refresh" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.replace" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replace"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.resetImage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Developer Disk Image"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.resetImage.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The developer disk image was removed. It is downloaded again when it’s next needed."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.setUp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Up"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step.checkingImage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking developer files…"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step.downloading %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloading developer files… %lld%%"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step.mounting %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installing developer files… %lld%%"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step.reaching" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting to this device…"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step.verifying" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finishing…"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step1.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lets FlekDeck turn JIT on for this device."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step1.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imported"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step1.done.created" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Created on this device"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step1.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step2.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stays on this device and sends nothing out. Turns on by itself when needed."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step2.external.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This copy of FlekDeck can’t provide the VPN. Connect LocalDevVPN before starting an app with JIT."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step2.external.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect LocalDevVPN"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step2.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Up VPN"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step3.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Makes sure JIT can be turned on. Takes a moment the first time."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step3.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check That It Works"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step4.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn JIT on for the apps that need it."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step4.caption.count %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps with JIT: %lld"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.step4.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Apps"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.appSettings.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On FlekDeck’s home screen, touch and hold the app’s icon and tap **Settings**."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.appSettings.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the App’s Settings"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.back.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When StikDebug shows **JIT request completed**, switch back to FlekDeck. The app is running with JIT."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.back.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go Back to FlekDeck"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.chapter.connect" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect StikDebug"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.chapter.help" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If You Get Stuck"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.chapter.ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get Ready"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.chapter.use" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use It in FlekDeck"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.connect.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open **LocalDevVPN** and tap **Connect**. Allow the VPN if iOS asks."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.connect.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect LocalDevVPN"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.details" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More Details"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.discord" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "StikDebug Discord"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.enabler.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In FlekDeck, open **Settings** › **JIT** and set **JIT Enabler** to **StikDebug**."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.enabler.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose StikDebug"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.getVPN" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get LocalDevVPN"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.github" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "StikDebug on GitHub"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.help" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Need Help?"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.import.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In **StikDebug**, open **Settings** and tap **Import Pairing File**, then choose the file."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.import.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import the Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.importFails.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make sure this device is on a Wi-Fi network and LocalDevVPN shows **Connected**: another VPN turns it off. In LocalDevVPN’s settings, **Tunnel IP** should be 10.7.0.0 and **Device IP** 10.7.0.1. Then import the file again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.importFails.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If the Import Fails"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.install.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open **FlekSt0re**, search for **StikDebug** and install it."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.install.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install StikDebug"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.intro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "StikDebug is a free app that turns JIT on for the apps in FlekDeck. It needs iOS 17.4 or later, and a computer for the first setup."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.launchWithJIT.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scroll down to **Launch with JIT** and turn it on."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.launchWithJIT.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn On Launch with JIT"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.listed.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekDeck should now appear on StikDebug’s **Apps** tab. If it doesn’t, close StikDebug and open it again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.listed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check That FlekDeck Is Listed"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.more.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This guide can’t cover every case. StikDebug’s community can help with the rest."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.more.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More Help"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.pairing.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On a Mac or PC, install **iloader** from iloader.app and connect this device with a cable. Click **Manage Pairing File**, then **Export** and confirm. Send the file to this device: with AirDrop from a Mac, or through iCloud Drive or a message to yourself from a PC."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.pairing.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make a Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.script.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It appears right below. On this device, apps need one for JIT to work. **universal.js** suits most; UTM, DolphiniOS, Flycast and ARMSX2 need **legacy.js**."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.script.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a JIT Launch Script"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.start.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make sure LocalDevVPN is connected, then start the app. FlekDeck switches to StikDebug, which asks to enable JIT. Tap **Enable JIT**, or **Enable and Run Script**."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.start.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start the App"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.stops.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check that LocalDevVPN is connected and this device is on Wi-Fi: JIT can’t start over mobile data. Away from Wi-Fi, connect LocalDevVPN and then turn on Airplane Mode. After an iOS update the pairing file expires: make a new one and import it again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.stops.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If JIT Stops Working"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "StikDebug Setup"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.vpn.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It’s free on the App Store."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.vpn.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install LocalDevVPN"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.unreachableHint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Is the VPN connected?"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.vpn.didNotStart" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The VPN didn’t connect. Check VPN in the Settings app, then try again."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.vpn.remove" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove VPN"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.vpn.server" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This device"
+          }
+        }
+      }
+    },
     "lc.flek.layoutGrid" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16494,6 +18859,259 @@
         }
       }
     },
+    "lc.flek.premium.active" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.checking" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking…"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.ended %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ended %@"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.installProfile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install Profile"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.agreement %@ %@ %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By subscribing, you agree to our %@, %@ and %@."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.jit.detail %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable JIT right on your %@ with Built‑in FlekJIT."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.jit.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT. Without a computer."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.period" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/ month"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.plan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monthly membership"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.price" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "$2.99"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.privacy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy Policy"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.refund" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refund Policy"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.renews" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renews automatically. Cancel anytime."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.subscribe" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscribe"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.terms" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terms of Service"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.trainer.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get full access in FlekSt0re-modified apps."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.trainer.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every Trainer feature."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.udidAdded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device UDID added. You can subscribe now."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.promptMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium Access is linked to your device’s UDID.\nTo import your UDID into FlekDeck, you need to install a special configuration profile."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.refresh" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium Access"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.unlock" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock the full power of FlekDeck."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.validTill %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valid till %@"
+          }
+        }
+      }
+    },
     "lc.flek.retry" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16538,6 +19156,336 @@
         }
       }
     },
+    "lc.flek.setup.certificate.desc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Launch apps anytime without a JIT connection."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.certificate.desc.required" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needed to launch apps on this version of iOS."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.certificate.point1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Works offline"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.certificate.point2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No JIT required to launch apps"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.certificate.point3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT can still be used when needed"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.certificate.unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unavailable for this FlekDeck installation"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.certificate.why" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why is this unavailable?"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.desc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To install and launch apps, you need to add a signing certificate or set up JIT. Choose the option that works for you."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.desc.required" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To install and launch apps, you need to add a signing certificate. JIT comes on top of it, for the apps that need it."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.desc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Launch apps through a JIT connection without importing a certificate."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.desc.extra" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For apps that need JIT, such as emulators."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.external %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Through %@"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.extra.point1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comes on top of a certificate, not in place of one"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.extra.point2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lets emulators and the like run at full speed"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.extra.point3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turned on app by app"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.needsCertificate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps launch only with a signing certificate on this version of iOS. JIT comes on top of it."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.noApps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No apps chosen yet"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.noApps.note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT is set up. Choose the apps to use it for."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.point1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No certificate required"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.point2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supports apps that require JIT"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.point3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requires JIT when launching apps"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.premium" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs Premium"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.premium.note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekJIT works only while Premium is active."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.progress %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of 3 steps done"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.progress.note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish the steps to launch apps with JIT."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.ready.note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT is set up. It turns on by itself when one of these apps starts."
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Up JIT"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.jit.unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unavailable for this FlekDeck installation"
+          }
+        }
+      }
+    },
+    "lc.flek.setup.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setup FlekDeck"
+          }
+        }
+      }
+    },
     "lc.flek.showBetaWarning" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16567,6 +19515,226 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Multitask Haptics"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.download" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download Profile"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.downloadAgain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download Again"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.failedMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The UDID profile isn’t available right now. Please try again later."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.failedTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile unavailable"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.importedMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your device’s UDID is now in FlekDeck:\n\n%@\n\nYou’ll also find it at the top of Settings."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.importedTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UDID imported"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.intro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To automatically get your device UDID, install a temporary configuration profile. It’s safe and only used to retrieve your UDID."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.securityDelay.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If **Stolen Device Protection** is on and your iPhone is away from a familiar location such as home or work, iOS may ask you to wait up to an hour before installing the profile. When the delay ends, come back here to download a new profile, and install it within the hour."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.securityDelay.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Security Delay"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step1.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap **Download Profile** below. When iOS asks for permission to download a configuration profile, tap **Allow**, then close the page."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step1.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download the profile"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step2.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the **Settings** app and tap **Profile Downloaded** near the top of the screen.\n\nIf you don’t see it, go to:\n**Settings → General → VPN & Device Management**"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step2.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step3.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the downloaded profile and tap **Install** in the top-right corner."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step3.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install the profile"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step4.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter your device passcode if requested, then tap **Install** again to confirm."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step4.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm installation"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step5.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After installation, open FlekDeck again. Your UDID will be imported automatically."
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.step5.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Return to FlekDeck"
+          }
+        }
+      }
+    },
+    "lc.flek.udidProfile.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install Profile to Get UDID"
           }
         }
       }

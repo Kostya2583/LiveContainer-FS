@@ -11,6 +11,8 @@
 
 #include <dlfcn.h>
 #include <execinfo.h>
+#include <notify.h>
+#import <Network/Network.h>
 #include <signal.h>
 #include <sys/mman.h>
 #include <stdlib.h>
@@ -108,9 +110,242 @@ static BOOL checkJITEnabled() {
 #endif
 }
 
-static uint64_t rnd64(uint64_t v, uint64_t r) {
-    r--;
-    return (v + r) & ~r;
+/// Says in the app itself, over whatever it shows, that the connection which
+/// was switched off for JIT to start, by Airplane Mode or with Mobile Data,
+/// can go back on. A notification would not do: FlekDeck is what is in front,
+/// and one of its own is not shown then.
+static void LCShowJITNotice(int attempt) {
+    UIWindow *window = nil;
+    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+        if (![scene isKindOfClass:UIWindowScene.class]) continue;
+        for (UIWindow *candidate in ((UIWindowScene *)scene).windows) {
+            if (candidate.isHidden) continue;
+            if (!window || candidate.isKeyWindow) window = candidate;
+        }
+        if (window.isKeyWindow) break;
+    }
+    if (!window) {
+        // The app has not put its window up yet.
+        if (attempt < 20) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                LCShowJITNotice(attempt + 1);
+            });
+        }
+        return;
+    }
+
+    UIVisualEffectView *notice = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
+    notice.userInteractionEnabled = NO;
+    notice.layer.cornerRadius = 18;
+    notice.layer.cornerCurve = kCACornerCurveContinuous;
+    notice.clipsToBounds = YES;
+    notice.translatesAutoresizingMaskIntoConstraints = NO;
+    UILabel *label = [UILabel new];
+    label.text = @"JIT is on. You can go back online.";
+    label.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
+    label.textColor = UIColor.whiteColor;
+    label.textAlignment = NSTextAlignmentCenter;
+    label.numberOfLines = 0;
+    label.translatesAutoresizingMaskIntoConstraints = NO;
+    [notice.contentView addSubview:label];
+    [window addSubview:notice];
+    [NSLayoutConstraint activateConstraints:@[
+        [label.topAnchor constraintEqualToAnchor:notice.contentView.topAnchor constant:10],
+        [label.bottomAnchor constraintEqualToAnchor:notice.contentView.bottomAnchor constant:-10],
+        [label.leadingAnchor constraintEqualToAnchor:notice.contentView.leadingAnchor constant:16],
+        [label.trailingAnchor constraintEqualToAnchor:notice.contentView.trailingAnchor constant:-16],
+        [notice.topAnchor constraintEqualToAnchor:window.safeAreaLayoutGuide.topAnchor constant:8],
+        [notice.centerXAnchor constraintEqualToAnchor:window.centerXAnchor],
+        [notice.widthAnchor constraintLessThanOrEqualToAnchor:window.widthAnchor constant:-32],
+    ]];
+    notice.alpha = 0;
+    [UIView animateWithDuration:0.25 animations:^{
+        notice.alpha = 1;
+    }];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 6 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        [UIView animateWithDuration:0.3 animations:^{
+            notice.alpha = 0;
+        } completion:^(BOOL finished) {
+            [notice removeFromSuperview];
+        }];
+    });
+}
+
+/// Runs the user's FlekJIT shortcut with "on", which switches Mobile Data
+/// back on: the app list had it switched off for this launch, as JIT cannot be
+/// started over mobile data (FlekMobileDataShortcut). An app runs a shortcut
+/// only by opening the Shortcuts app, which comes to the front for a moment
+/// and hands back through a link of FlekDeck's own, one that the launched app
+/// is not shown.
+static void LCTurnMobileDataBackOn(int attempt) {
+    UIApplication *app = UIApplication.sharedApplication;
+    if (!app || app.applicationState != UIApplicationStateActive) {
+        // Another app cannot be opened from behind, nor before this one is
+        // up. Left at that, FlekDeck does it the next time it opens.
+        if (attempt < 60) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                LCTurnMobileDataBackOn(attempt + 1);
+            });
+        }
+        return;
+    }
+    NSUserDefaults *shared = NSUserDefaults.lcSharedDefaults;
+    if ([shared doubleForKey:@"FlekJITMobileDataOff"] <= 0) {
+        return;
+    }
+    NSString *back = [lcAppUrlScheme stringByAppendingString:@"://jit-mobile-data"];
+    NSURLComponents *link = [NSURLComponents new];
+    link.scheme = @"shortcuts";
+    link.host = @"x-callback-url";
+    link.path = @"/run-shortcut";
+    link.queryItems = @[
+        [NSURLQueryItem queryItemWithName:@"name" value:@"FlekJIT"],
+        [NSURLQueryItem queryItemWithName:@"input" value:@"text"],
+        [NSURLQueryItem queryItemWithName:@"text" value:@"on"],
+        [NSURLQueryItem queryItemWithName:@"x-success" value:[back stringByAppendingString:@"/success"]],
+        [NSURLQueryItem queryItemWithName:@"x-cancel" value:[back stringByAppendingString:@"/cancel"]],
+        [NSURLQueryItem queryItemWithName:@"x-error" value:[back stringByAppendingString:@"/error"]],
+    ];
+    // Asked once: a shortcut that has gone missing would otherwise be asked
+    // for at every launch.
+    [shared removeObjectForKey:@"FlekJITMobileDataOff"];
+    [app openURL:link.URL options:@{} completionHandler:nil];
+}
+
+/// Waits for the helper to say that the debugger has let go of this app,
+/// which with TXM is some time after JIT came on, as the app prepares its
+/// memory through it first. Only then is the connection it came over done
+/// with. JIT cannot be started over mobile data, so away from Wi-Fi it is
+/// started with Mobile Data off or in Airplane Mode: where the FlekJIT
+/// shortcut switched Mobile Data off, it is switched back on, and where the
+/// user did either, on a device that is on nothing they are told.
+static void LCWatchForJITHelperDone(void) {
+    static int token;
+    NSString *name = [NSString stringWithFormat:@"com.flekdeck.jit.done.%d", getpid()];
+    // On the main queue, which is served once the app is running.
+    notify_register_dispatch(name.UTF8String, &token, dispatch_get_main_queue(), ^(int fired) {
+        notify_cancel(fired);
+        if ([NSUserDefaults.lcSharedDefaults doubleForKey:@"FlekJITMobileDataOff"] > 0) {
+            // In a window FlekDeck is what is in front, and does it there.
+            if (!isLiveProcess) {
+                LCTurnMobileDataBackOn(0);
+            }
+            return;
+        }
+        nw_path_monitor_t monitor = nw_path_monitor_create();
+        nw_path_monitor_set_queue(monitor, dispatch_get_main_queue());
+        __block BOOL answered = NO;
+        nw_path_monitor_set_update_handler(monitor, ^(nw_path_t path) {
+            if (answered) return;
+            answered = YES;
+            nw_path_monitor_cancel(monitor);
+            if (nw_path_uses_interface_type(path, nw_interface_type_wifi) ||
+                nw_path_uses_interface_type(path, nw_interface_type_wired) ||
+                nw_path_uses_interface_type(path, nw_interface_type_cellular)) {
+                return;
+            }
+            LCShowJITNotice(0);
+        });
+        nw_path_monitor_start(monitor);
+    });
+}
+
+static NSString *enableJITWithStikJIT(NSString *docPath) {
+    // Built-in JIT is a Premium feature: the app says how long Premium lasts,
+    // or that it has just confirmed it for this launch. The app asks the same
+    // before a launch from the home screen, but not every launch starts
+    // there — a link opened in another guest leads straight here. Ahead of
+    // everything else, so that a launch that is refused sets nothing up and
+    // is told why, whatever else it lacks.
+    {
+        NSUserDefaults *shared = NSUserDefaults.lcSharedDefaults;
+        NSTimeInterval clock = NSDate.date.timeIntervalSince1970;
+        // The latest the clock has been seen at stands in for one wound back.
+        NSTimeInterval now = MAX(clock, [shared doubleForKey:@"FSAccessClockHighWaterMark"]);
+        BOOL justConfirmed = fabs(clock - [shared doubleForKey:@"FlekPremiumConfirmedAt"]) < 60;
+        if (!justConfirmed && [shared doubleForKey:@"FlekPremiumUntil"] <= now) {
+            return @"FlekJIT needs Premium. Open FlekDeck to renew Premium, or choose StikDebug in Settings › JIT, which is free.";
+        }
+    }
+
+    __block NSError *error;
+    NSExtension *ext = [NSExtension extensionWithIdentifier:LCSharedUtils.liveProcessBundleIdentifier error:&error];
+    if (!ext) {
+        return [@"StikJIT was required, but LiveProcess is missing.\n" stringByAppendingString:error.localizedDescription];
+    }
+    
+    // FIXME:
+    // 1. can't move these items to app group as it's part of SideStore and I don't like duplicating...
+    // 2. can't use file bookmark here as fileproviderd keeps rejecting for some reason
+    NSString *key = @"LCStikJITSandboxExtension";
+    NSString *sandboxExtension = [NSUserDefaults.lcSharedDefaults stringForKey:key];
+    if (!sandboxExtension || sandbox_extension_consume(sandboxExtension.UTF8String) < 1 ||
+        ![NSFileManager.defaultManager fileExistsAtPath:[sandboxExtension componentsSeparatedByString:@";"].lastObject]) {
+        if ([lcAppUrlScheme isEqualToString:LCSharedUtils.lcUnorderedUrlSchemes.firstObject]) {
+            NSURL *sandboxURL = [NSURL fileURLWithPath:[docPath stringByAppendingPathComponent:@"SideStore/Documents"]];
+            NSURL *ddiPath = [sandboxURL URLByAppendingPathComponent:@"DMG"];
+            if (![NSFileManager.defaultManager createDirectoryAtURL:ddiPath withIntermediateDirectories:YES attributes:nil error:nil]) {
+                return @"Failed to create SideStore/Documents/DMG folder?";
+            }
+            char *sandboxExtStr = sandbox_extension_issue_file(APP_SANDBOX_READ_WRITE, sandboxURL.fileSystemRepresentation, 0);
+            if (!sandboxExtStr) {
+                return @"Failed in sandbox_extension_issue_file";
+            }
+            sandboxExtension = @(sandboxExtStr);
+            [NSUserDefaults.lcSharedDefaults setValue:sandboxExtension forKey:key];
+        } else {
+            return @"Failed to resolve pairing file/DDI sandbox token? Please launch using primary FlekDeck first and try again.";
+        }
+    }
+    
+    // The helper reaches this device through a VPN. Where that is FlekDeck's own
+    // it is turned on as the guest launches: by the app for a window, and here
+    // for a single-process launch, where this is the app.
+    if (!isLiveProcess) {
+        __block BOOL answered = NO;
+        [LCSharedUtils startBuiltInVPNWithCompletionHandler:^(BOOL requested) {
+            answered = YES;
+        }];
+        // The answer comes on the main queue, which only a running loop serves.
+        for (int i = 0; i < 60 && !answered; i++) {
+            CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true);
+        }
+    }
+    // Either way the tunnel takes a moment to come up, so the helper is told
+    // when one was just asked for and that an unanswered first try is no failure.
+    NSDate *vpnRequested = [NSUserDefaults.lcSharedDefaults objectForKey:@"LCBuiltInVPNStartRequested"];
+    BOOL waitForVPN = [vpnRequested isKindOfClass:NSDate.class] && fabs(vpnRequested.timeIntervalSinceNow) < 20;
+
+    NSExtensionItem *item = [NSExtensionItem new];
+    item.userInfo = @{
+        @"customPayloadDylib": @"@rpath/StikJITHeadless.framework/StikJITHeadless",
+        @"customPayloadEntry": @"StikJITHeadlessMain",
+        //@"callbackScheme": lcAppUrlScheme,
+        @"sandboxExtension": sandboxExtension,
+        @"script": guestAppInfo[@"jitLaunchScriptJs"] ?: @"",
+        @"waitForVPN": @(waitForVPN),
+        @"pid": @(getpid())
+    };
+    LCWatchForJITHelperDone();
+    ext.requestCancellationBlock = ^(NSUUID *uuid, NSError *jitError) {
+        error = jitError;
+    };
+    ext.requestInterruptionBlock = ^(NSUUID *uuid) {
+        error = [NSError errorWithDomain:@"StikJIT" code:1 userInfo:@{NSLocalizedDescriptionKey: @"LiveProcess hosting StikJIT has crashed"}];
+    };
+    [ext beginExtensionRequestWithInputItems:@[item] completion:^(NSUUID *uuid) {
+        CFRunLoopStop(CFRunLoopGetMain());
+    }];
+    CFRunLoopRun();
+    while (!error && !checkJITEnabled()) {
+        usleep(1000*100);
+    }
+    // Where TXM is absent the helper attaches, detaches and exits within one
+    // turn of the loop above, and its exit is reported as an error too.
+    if (checkJITEnabled()) {
+        return nil;
+    }
+    return error ? [@"FlekJIT failed: " stringByAppendingString:error.localizedDescription] : nil;
 }
 
 void overwriteMainCFBundle(void) {
@@ -307,7 +542,7 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
     if (!LCSharedUtils.certificatePassword && !isSideStore) {
 #if !TARGET_OS_SIMULATOR
         if(@available(iOS 26.0 ,*))  {
-            return @"JITLess mode is required since iOS 26. Please set it up in settings. \nPlease go to FlekDeck settings -> tap \"Import Flekstore certificate\" / \"Import Certificate\"";
+            return @"JITLess mode is required since iOS 26. Please set it up in settings. \nPlease go to FlekDeck Settings -> General -> Import Certificate";
         }
 #endif
         // First of all, let's check if we have JIT
@@ -440,6 +675,11 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
 
     // If JIT is enabled, bypass library validation so we can load arbitrary binaries
     bool isJitEnabled = checkJITEnabled();
+    if (!isJitEnabled && [guestAppInfo[@"isJITNeeded"] boolValue] && [NSUserDefaults.lcSharedDefaults integerForKey:@"LCJITEnablerType"] == 7) { // JITEnablerTypeStikJITHeadless
+        NSString *errorString = enableJITWithStikJIT(docPath);
+        if (errorString) return errorString;
+        isJitEnabled = YES;
+    }
     if (isJitEnabled) {
         init_bypassDyldLibValidation();
     }
@@ -646,7 +886,7 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
             selected32bitLayerBundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@/Applications/%@", appGroupFolder.path, selected32BitLayer]];
         }
         if(!selected32bitLayerBundle) {
-            appError = @"The specified 32-bit emulator app is not found";
+            appError = @"Cannot find the selected 32-bit emulator app. Is it available as Shared App?";
             NSLog(@"[LCBootstrap] %@", appError);
             *path = oldPath;
             return appError;
@@ -688,7 +928,7 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
         return appError;
     }
     
-    if([guestAppInfo[@"dontInjectTweakLoader"] boolValue] && ![guestAppInfo[@"dontLoadTweakLoader"] boolValue]) {
+    if((is32bit || [guestAppInfo[@"dontInjectTweakLoader"] boolValue]) && ![guestAppInfo[@"dontLoadTweakLoader"] boolValue]) {
         tweakLoaderLoaded = true;
         if([guestAppInfo[@"hideLiveContainer"] boolValue]) {
             dlopen([lcMainBundle.bundlePath stringByAppendingPathComponent:@"Frameworks/TweakLoader.dylib"].UTF8String, RTLD_LAZY|RTLD_GLOBAL);
