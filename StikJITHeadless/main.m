@@ -20,8 +20,16 @@
 + (NSString *)enableJITWith:(int)pid timeout:(NSTimeInterval)timeout pairingFile:(NSURL *)pairing ddiPath:(NSURL *)ddi scriptJs:(NSString *)script;
 @end
 
+/// Tells FlekDeck that this is done with its connection, JIT on or not: with
+/// the app in a window, FlekDeck is what switches Mobile Data back on where
+/// its shortcut had switched it off for the launch.
+static void StikJITSayOver(void) {
+    notify_post("com.flekdeck.jit.over");
+}
+
 static int StikJITExitWithError(NSString *error) {
     NSLog(@"Cancelling with error: %@", error);
+    StikJITSayOver();
     NSExtensionContext *context = [NSClassFromString(@"LiveProcessHandler") extensionContext];
     [context cancelRequestWithError:[NSError errorWithDomain:@"StikJIT" code:1 userInfo:@{NSLocalizedDescriptionKey: error}]];
     return 1;
@@ -61,6 +69,7 @@ int StikJITHeadlessMain(void) {
         // after JIT came on: from here the app needs no connection, and says
         // so where the user is waiting to switch one back on.
         notify_post([NSString stringWithFormat:@"com.flekdeck.jit.done.%d", pid].UTF8String);
+        StikJITSayOver();
         return 0;
     }
     if ([error containsString:@"Timed out connecting to"]) {

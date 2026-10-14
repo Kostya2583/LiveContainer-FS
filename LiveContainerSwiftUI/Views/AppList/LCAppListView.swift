@@ -76,6 +76,15 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     @State private var waitingLaunch: (() async -> Void)?
     @State private var connectionWatch: FlekJITSetup.ConnectionWatch?
     @State private var isRetryingLaunch = false
+    /// The FlekJIT shortcut has been run for the launch that waits, which it
+    /// is once: with Mobile Data still on after it, the user is asked.
+    @State private var hasRunShortcutForLaunch = false
+    /// While the shortcut runs, with the Shortcuts app in front.
+    @State private var isRunningShortcut = false
+    /// The shortcut has just run: how many times the next asking goes over
+    /// it with nothing said meanwhile, as what the shortcut switched takes a
+    /// moment to take. Zero where it has not.
+    @State private var quietTriesAfterShortcut = 0
     @State var errorInfo = ""
     /// The failed install the user tapped, driving the failed-install alert.
     @State private var failedInstallItem: InstallItem?
@@ -564,7 +573,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 // Up for as long as the launch waits, and taken down by it:
                 // the button is for not waiting.
                 Button("lc.common.cancel".loc, role: .cancel) {
-                    stopWaitingForConnection()
+                    abandonWaitingLaunch()
                 }
             }
         } message: {
@@ -1297,9 +1306,24 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                     retryWaitingLaunch()
                 }
             }
+            // Over mobile data the FlekJIT shortcut switches Mobile Data off,
+            // where the user has added it, and the launch goes on from there.
+            // The user is asked only if that leads nowhere.
+            if notReady.isOverMobileData, FlekMobileDataShortcut.shared.isOn, !hasRunShortcutForLaunch {
+                hasRunShortcutForLaunch = true
+                isRunningShortcut = true
+                FlekMobileDataShortcut.shared.turnMobileDataOff { outcome in
+                    isRunningShortcut = false
+                    // One that did not run to its end has most likely switched
+                    // nothing, which a look or two shows.
+                    quietTriesAfterShortcut = outcome == .done ? 6 : 2
+                    retryWaitingLaunch()
+                }
+                return
+            }
             presentJITNotReady(title: notReady.title, message: message)
         } else {
-            stopWaitingForConnection()
+            abandonWaitingLaunch()
             presentJITNotReady(title: notReady.title, message: notReady.message)
         }
     }
@@ -1332,29 +1356,60 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     private func stopWaitingForConnection() {
         waitingLaunch = nil
         connectionWatch = nil
+        hasRunShortcutForLaunch = false
+    }
+
+    /// The launch that waited is not going to be started: Mobile Data that
+    /// the shortcut switched off for it goes back on.
+    private func abandonWaitingLaunch() {
+        stopWaitingForConnection()
+        FlekMobileDataShortcut.shared.turnMobileDataBackOn()
     }
 
     /// The connection has changed, or FlekDeck is back in front, with a
     /// launch waiting: asks again whether JIT can be started, a few times
     /// over, as what a change of connection opens takes a moment to open.
     private func retryWaitingLaunch() {
-        guard waitingLaunch != nil, !isRetryingLaunch, UIApplication.shared.applicationState == .active else {
+        guard waitingLaunch != nil, !isRetryingLaunch, !isRunningShortcut,
+              UIApplication.shared.applicationState == .active else {
             return
         }
         isRetryingLaunch = true
+        let afterShortcut = quietTriesAfterShortcut > 0
+        let tries = afterShortcut ? quietTriesAfterShortcut : 4
+        quietTriesAfterShortcut = 0
         Task {
             defer { isRetryingLaunch = false }
-            for attempt in 0..<4 {
+            for attempt in 0..<tries {
                 if attempt > 0 {
                     try? await Task.sleep(nanoseconds: 800_000_000)
                 }
                 guard let launch = waitingLaunch else { return }
                 do {
                     try await FlekJITSetup.ensureReady()
+                    // Off mobile data, and the device not answering yet: what
+                    // the shortcut switched is still taking.
+                    if afterShortcut, attempt < tries - 1, !(await FlekBuiltInJIT.isDeviceReachable()) {
+                        continue
+                    }
                 } catch let notReady as FlekJITSetup.NotReady {
                     guard let message = notReady.messageWhileWaiting else {
                         // Something else is in the way now.
                         showJITNotReady(notReady, retry: launch)
+                        return
+                    }
+                    if afterShortcut {
+                        guard attempt == tries - 1 else { continue }
+                        // After all that the shortcut has not got the device
+                        // off mobile data, and the user is asked, as without
+                        // it. Mobile Data it did switch off, for a launch that
+                        // now waits on something else, goes back on.
+                        if notReady.isOverMobileData {
+                            FlekMobileDataShortcut.shared.forget()
+                        } else {
+                            FlekMobileDataShortcut.shared.turnMobileDataBackOn()
+                        }
+                        presentJITNotReady(title: notReady.title, message: message)
                         return
                     }
                     if message != jitNotReadyShown {

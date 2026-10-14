@@ -17242,6 +17242,83 @@
         }
       }
     },
+    "lc.flek.jit.mobileData.add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.add.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Shortcuts in the list that opens, then tap Add Shortcut."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.add.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add the FlekJIT Shortcut"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.addAgain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Again"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turns Mobile Data off while JIT starts, then back on."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.missing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The FlekJIT shortcut didn’t answer. Add it again, then turn this on."
+          }
+        }
+      }
+    },
+    "lc.flek.jit.mobileData.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mobile Data Shortcut"
+          }
+        }
+      }
+    },
     "lc.flek.jit.more" : {
       "extractionState" : "manual",
       "localizations" : {

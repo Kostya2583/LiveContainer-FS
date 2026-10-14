@@ -105,6 +105,9 @@ struct LCTabView: View {
             setupInitialRepositoriesIfNeeded()
             Task { await MultiRepoSearchModel.prefetchAllRepos() }
             Task { await FlekUDIDProfile.collectUDID() }
+            // Mobile Data that the FlekJIT shortcut switched off for a launch
+            // which never got as far as switching it back on.
+            FlekMobileDataShortcut.shared.turnMobileDataBackOn()
             await verifyAccess()
         }
         .onReceive(pub) { out in
@@ -150,6 +153,10 @@ struct LCTabView: View {
     }
     
     func dispatchURL(url: URL) {
+        // The FlekJIT shortcut's way back, which is not a link to act on.
+        if FlekMobileDataShortcut.shared.handle(url) {
+            return
+        }
         if isBlocked || didFailBlockedStatusCheck || !hasCheckedBlockedStatus {
             sharedModel.pendingOpenURL = url
             return

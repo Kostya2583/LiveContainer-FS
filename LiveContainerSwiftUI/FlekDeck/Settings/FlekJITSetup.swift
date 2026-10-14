@@ -125,11 +125,12 @@ enum FlekBuiltInJIT {
 
     /// What the device is connected through, which decides whether JIT can be
     /// started. iOS takes the connection built-in JIT makes through the VPN
-    /// while the device is on Wi-Fi or on nothing at all, as in Airplane Mode,
-    /// and never while it is on mobile data, which it takes the VPN to be
-    /// part of. And a VPN cannot start on nothing, though one that is on
-    /// stays on. So away from Wi-Fi the order is: the VPN on, then Airplane
-    /// Mode. Found on a device with iOS 27, and what StikJIT's guide says.
+    /// while the device is on Wi-Fi or on nothing at all, as in Airplane Mode
+    /// or with Mobile Data switched off, and never while it is on mobile
+    /// data, which it takes the VPN to be part of. And a VPN cannot start on
+    /// nothing, though one that is on stays on. So away from Wi-Fi the order
+    /// is: the VPN on, then Airplane Mode on or Mobile Data off. Found on a
+    /// device with iOS 27, and what StikJIT's guide says of Airplane Mode.
     enum Connection {
         case wifi
         case mobileData
@@ -194,6 +195,10 @@ enum FlekJITSetup {
         /// connection has changed, which is then all that is missing. Nil
         /// where something else is.
         var messageWhileWaiting: String?
+        /// The device is on mobile data with FlekDeck's own VPN on, so that
+        /// Mobile Data off is all that is missing, which the FlekJIT shortcut
+        /// can see to (FlekMobileDataShortcut).
+        var isOverMobileData = false
         var errorDescription: String? { message }
     }
 
@@ -345,7 +350,9 @@ enum FlekJITSetup {
                 // Mode is all that is still needed. Not answering for another
                 // reason is left to the launch, as it was.
                 if !(await FlekBuiltInJIT.isDeviceReachable()), await FlekBuiltInJIT.connection() == .mobileData {
-                    throw connectionNotReady("lc.flek.jit.notReady.mobileData")
+                    var notReady = connectionNotReady("lc.flek.jit.notReady.mobileData")
+                    notReady.isOverMobileData = true
+                    throw notReady
                 }
                 return
             }

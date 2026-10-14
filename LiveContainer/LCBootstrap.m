@@ -110,9 +110,10 @@ static BOOL checkJITEnabled() {
 #endif
 }
 
-/// Says in the app itself, over whatever it shows, that Airplane Mode can go
-/// off again. A notification would not do: FlekDeck is what is in front, and
-/// one of its own is not shown then.
+/// Says in the app itself, over whatever it shows, that the connection which
+/// was switched off for JIT to start, by Airplane Mode or with Mobile Data,
+/// can go back on. A notification would not do: FlekDeck is what is in front,
+/// and one of its own is not shown then.
 static void LCShowJITNotice(int attempt) {
     UIWindow *window = nil;
     for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
@@ -140,7 +141,7 @@ static void LCShowJITNotice(int attempt) {
     notice.clipsToBounds = YES;
     notice.translatesAutoresizingMaskIntoConstraints = NO;
     UILabel *label = [UILabel new];
-    label.text = @"JIT is on. Airplane Mode can be turned off.";
+    label.text = @"JIT is on. You can go back online.";
     label.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
     label.textColor = UIColor.whiteColor;
     label.textAlignment = NSTextAlignmentCenter;
@@ -170,18 +171,67 @@ static void LCShowJITNotice(int attempt) {
     });
 }
 
+/// Runs the user's FlekJIT shortcut with "on", which switches Mobile Data
+/// back on: the app list had it switched off for this launch, as JIT cannot be
+/// started over mobile data (FlekMobileDataShortcut). An app runs a shortcut
+/// only by opening the Shortcuts app, which comes to the front for a moment
+/// and hands back through a link of FlekDeck's own, one that the launched app
+/// is not shown.
+static void LCTurnMobileDataBackOn(int attempt) {
+    UIApplication *app = UIApplication.sharedApplication;
+    if (!app || app.applicationState != UIApplicationStateActive) {
+        // Another app cannot be opened from behind, nor before this one is
+        // up. Left at that, FlekDeck does it the next time it opens.
+        if (attempt < 60) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                LCTurnMobileDataBackOn(attempt + 1);
+            });
+        }
+        return;
+    }
+    NSUserDefaults *shared = NSUserDefaults.lcSharedDefaults;
+    if ([shared doubleForKey:@"FlekJITMobileDataOff"] <= 0) {
+        return;
+    }
+    NSString *back = [lcAppUrlScheme stringByAppendingString:@"://jit-mobile-data"];
+    NSURLComponents *link = [NSURLComponents new];
+    link.scheme = @"shortcuts";
+    link.host = @"x-callback-url";
+    link.path = @"/run-shortcut";
+    link.queryItems = @[
+        [NSURLQueryItem queryItemWithName:@"name" value:@"FlekJIT"],
+        [NSURLQueryItem queryItemWithName:@"input" value:@"text"],
+        [NSURLQueryItem queryItemWithName:@"text" value:@"on"],
+        [NSURLQueryItem queryItemWithName:@"x-success" value:[back stringByAppendingString:@"/success"]],
+        [NSURLQueryItem queryItemWithName:@"x-cancel" value:[back stringByAppendingString:@"/cancel"]],
+        [NSURLQueryItem queryItemWithName:@"x-error" value:[back stringByAppendingString:@"/error"]],
+    ];
+    // Asked once: a shortcut that has gone missing would otherwise be asked
+    // for at every launch.
+    [shared removeObjectForKey:@"FlekJITMobileDataOff"];
+    [app openURL:link.URL options:@{} completionHandler:nil];
+}
+
 /// Waits for the helper to say that the debugger has let go of this app,
 /// which with TXM is some time after JIT came on, as the app prepares its
 /// memory through it first. Only then is the connection it came over done
-/// with, and only where the device is on nothing, as in Airplane Mode, is
-/// there anything to tell: JIT cannot be started over mobile data, so
-/// Airplane Mode is how it is started away from Wi-Fi.
+/// with. JIT cannot be started over mobile data, so away from Wi-Fi it is
+/// started with Mobile Data off or in Airplane Mode: where the FlekJIT
+/// shortcut switched Mobile Data off, it is switched back on, and where the
+/// user did either, on a device that is on nothing they are told.
 static void LCWatchForJITHelperDone(void) {
     static int token;
     NSString *name = [NSString stringWithFormat:@"com.flekdeck.jit.done.%d", getpid()];
     // On the main queue, which is served once the app is running.
     notify_register_dispatch(name.UTF8String, &token, dispatch_get_main_queue(), ^(int fired) {
         notify_cancel(fired);
+        if ([NSUserDefaults.lcSharedDefaults doubleForKey:@"FlekJITMobileDataOff"] > 0) {
+            // In a window FlekDeck is what is in front, and does it there.
+            if (!isLiveProcess) {
+                LCTurnMobileDataBackOn(0);
+            }
+            return;
+        }
         nw_path_monitor_t monitor = nw_path_monitor_create();
         nw_path_monitor_set_queue(monitor, dispatch_get_main_queue());
         __block BOOL answered = NO;

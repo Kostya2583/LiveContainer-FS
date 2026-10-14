@@ -91,6 +91,10 @@ struct FlekBuiltInJITSection: View {
                 vpnStep
                 readinessStep
                 appsStep
+                // Not a step: the setup is whole without it.
+                if FlekMobileDataShortcut.isOffered {
+                    FlekMobileDataShortcutRow()
+                }
             }
             DisclosureGroup("lc.flek.jit.more".loc) {
                 if pairingFileFound {
