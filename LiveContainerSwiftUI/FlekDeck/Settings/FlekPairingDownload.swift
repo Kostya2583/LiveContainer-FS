@@ -155,7 +155,7 @@ enum FlekPairingDownload {
             guard udid.isDeviceUDID else {
                 throw Failure.unknownDevice
             }
-            // Where Settings keeps it when it asks the same.
+            // Where General keeps it when it asks the same.
             shared.set(udid, forKey: "LCDeviceUDID")
             return udid
         case .unreachable:

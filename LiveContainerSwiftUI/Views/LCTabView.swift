@@ -385,7 +385,7 @@ struct LCTabView: View {
 
         // Without a FlekSt0re device ID there is nothing to ask the server about:
         // the build was not signed by FlekSt0re for this device. It opens as it
-        // is, and Settings leaves out the Premium row, which needs one.
+        // is, and General can only offer Premium, which is looked up by one.
         guard let resolvedEncryptedUDID = resolveEncryptedUDID() else {
             await MainActor.run {
                 applyAccessGranted()

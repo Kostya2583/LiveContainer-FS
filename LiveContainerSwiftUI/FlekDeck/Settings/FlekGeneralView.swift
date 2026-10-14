@@ -26,14 +26,15 @@
 //  for how many apps, or what is in its way. Either way it leads to the JIT
 //  page.
 //
-//  Once a certificate is imported the page opens with the device itself, in
-//  place of the setup card: which model it is and its UDID, and under them
-//  whether Premium is active for it. A build FlekSt0re signed learns the UDID
-//  and Premium from FlekSt0re's status service. One it did not sign cannot
-//  know the UDID by itself, and offers to add it: that downloads a profile
-//  reporting it, FlekUDIDProfile, and walks through installing that in
+//  The page opens with the device itself: which model it is and its UDID, and
+//  under them whether Premium is active for it. Settings has no other place
+//  for these. A build FlekSt0re signed learns the UDID and Premium from
+//  FlekSt0re's status service, and shows them from the start. One it did not
+//  sign cannot know the UDID by itself, and offers to add it: that downloads a
+//  profile reporting it, FlekUDIDProfile, and walks through installing that in
 //  FlekUDIDProfileView. Premium is FlekSt0re's to grant, so such a build has
-//  none to show and says where to get it.
+//  none to show and says where to get it. It shows the device once a
+//  certificate is imported: until then getting one is all its page is about.
 //
 
 import SwiftUI
@@ -81,6 +82,13 @@ struct FlekGeneralView<JITPage: View>: View {
     /// the card says only whether it works, naming no holder, and it stays.
     private var isFlekStoreBuild: Bool {
         Bundle.main.flekStoreDeviceID != nil
+    }
+
+    /// Whether the page shows the device and its Premium. A copy FlekSt0re
+    /// signed has them looked up for it, and shows them whatever else is set
+    /// up. Any other shows them once a certificate is imported.
+    private var showsDevice: Bool {
+        FlekPremium.deviceID != nil || !sharedModel.needsCertificate
     }
 
     /// The UDID, where FlekDeck knows it.
@@ -132,12 +140,11 @@ struct FlekGeneralView<JITPage: View>: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                // The device and its Premium wait for the certificate: until
-                // one is imported, getting it is all the page is about.
+                if showsDevice {
+                    deviceCard
+                }
                 if sharedModel.needsCertificate {
                     setupCard
-                } else {
-                    deviceCard
                 }
                 certificateCard
                 NavigationLink {
