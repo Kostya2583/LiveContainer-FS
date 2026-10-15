@@ -10,7 +10,9 @@
 import Foundation
 import CryptoKit
 
-final class RepoCatalogCache {
+/// Holds no state of its own beyond a name, so any thread may use it: each
+/// catalog is one file, written whole.
+final class RepoCatalogCache: @unchecked Sendable {
     static let shared = RepoCatalogCache()
 
     private let directoryName = "RepoCatalogCache"
@@ -21,6 +23,12 @@ final class RepoCatalogCache {
         guard let fileURL = cacheFileURL(for: url),
               let data = try? Data(contentsOf: fileURL) else { return nil }
         return try? JSONDecoder().decode([FSAppModel].self, from: data)
+    }
+
+    /// When the source's catalog was last written, nil where there is none.
+    func modificationDate(for url: String) -> Date? {
+        guard let fileURL = cacheFileURL(for: url) else { return nil }
+        return (try? FileManager.default.attributesOfItem(atPath: fileURL.path))?[.modificationDate] as? Date
     }
 
     func loadAllCached(repos: [AppRepository]) -> [String: [FSAppModel]] {

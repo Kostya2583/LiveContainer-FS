@@ -185,13 +185,15 @@ final class LCInstallQueue: ObservableObject {
     }
 
     func cancel(_ item: InstallItem) {
+        // An app being installed cannot be stopped halfway. Letting the queue
+        // go on meanwhile would install two at once, and this one would be
+        // installed all the same.
+        guard item.phase != .installing else { return }
         item.downloadHelper?.cancel()
         item.progressCancellable = nil
         item.downloadingCancellable = nil
-        let wasInstalling = item.phase == .installing
         item.phase = .cancelled
         items.removeAll { $0.id == item.id }
-        if wasInstalling { isInstalling = false }
         objectWillChange.send()
         startNextDownloads()
         processInstallQueue()

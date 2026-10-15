@@ -19156,6 +19156,28 @@
         }
       }
     },
+    "lc.flek.search.stillLoading %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Still loading %@."
+          }
+        }
+      }
+    },
+    "lc.flek.search.unanswered %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No answer from %@."
+          }
+        }
+      }
+    },
     "lc.flek.searchApps" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -19504,6 +19526,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Show Beta Warning"
+          }
+        }
+      }
+    },
+    "lc.flek.sourceAlreadyAdded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This source is already added."
           }
         }
       }

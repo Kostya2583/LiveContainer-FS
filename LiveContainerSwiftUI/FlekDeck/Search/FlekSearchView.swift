@@ -31,6 +31,9 @@ struct FlekSearchView: View {
     @FocusState private var fieldFocused: Bool
     @State private var bottomBarHeight: CGFloat = 66   // measured at runtime; sensible fallback
     @StateObject private var repoSearch = MultiRepoSearchModel()
+    /// Installing from a source of the user's own takes Premium, as in the
+    /// Installer; without it, this is what a result's download shows.
+    @State private var premiumShown = false
     @Environment(\.colorScheme) private var colorScheme
 
     private var results: [LCAppModel] {
@@ -59,6 +62,9 @@ struct FlekSearchView: View {
             }
             .onPreferenceChange(BottomBarHeightKey.self) { bottomBarHeight = $0 }
         }
+        .sheet(isPresented: $premiumShown) {
+            PremiumRequiredView()
+        }
         .onAppear {
             fieldFocused = true
             repoSearch.setup()
@@ -72,6 +78,7 @@ struct FlekSearchView: View {
                 repoSearch.cancelSearch()
                 return
             }
+            repoSearch.queryWillChange()
             debounceTask = Task {
                 try? await Task.sleep(nanoseconds: 350_000_000)
                 guard !Task.isCancelled else { return }
@@ -94,6 +101,13 @@ struct FlekSearchView: View {
                 Text("Nothing found")
                     .font(.system(size: 20))
                     .foregroundStyle(Color.white)
+                if let note = repoSearch.sourcesNote {
+                    Text(note)
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.white.opacity(0.6))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
             }
             Spacer()
         } else {
@@ -128,6 +142,10 @@ struct FlekSearchView: View {
                                             close()
                                         },
                                         onInstall: {
+                                            if !repoSection.isFlekstore && !FlekPremium.isActive {
+                                                premiumShown = true
+                                                return
+                                            }
                                             if repoSection.isFlekstore {
                                                 FlekstoreAppsListViewModel.recordDownload(appId: app.app_id)
                                             }
@@ -138,6 +156,15 @@ struct FlekSearchView: View {
                                 }
                             }
                         }
+                    }
+                    // Under everything found, as what is missing from it.
+                    if let note = repoSearch.sourcesNote {
+                        Text(note)
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.white.opacity(0.6))
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 4)
                     }
                     if repoSearch.isLoading {
                         ProgressView().frame(maxWidth: .infinity).padding()
@@ -280,6 +307,28 @@ class MultiRepoSearchModel: ObservableObject {
         }
     }
     @Published var isLoading = false
+    /// The sources that gave the current search no answer, by name. Their
+    /// apps are not among the results.
+    @Published private(set) var unansweredSources: [String] = []
+    /// The sources still downloading when the current search stopped waiting
+    /// on them, by name. Their results are added if they come while the same
+    /// search is shown.
+    @Published private(set) var stillLoadingSources: [String] = []
+
+    /// The lines under the results on the sources missing from them; nil
+    /// where none is.
+    var sourcesNote: String? {
+        var lines: [String] = []
+        if !stillLoadingSources.isEmpty {
+            lines.append(String(format: "lc.flek.search.stillLoading %@".loc,
+                                ListFormatter.localizedString(byJoining: stillLoadingSources)))
+        }
+        if !unansweredSources.isEmpty {
+            lines.append(String(format: "lc.flek.search.unanswered %@".loc,
+                                ListFormatter.localizedString(byJoining: unansweredSources)))
+        }
+        return lines.isEmpty ? nil : lines.joined(separator: "\n")
+    }
 
     /// When the current batch of results was published. Result rows animate in
     /// only when they belong to a fresh batch, so rows the lazy stack rebuilds
@@ -293,40 +342,90 @@ class MultiRepoSearchModel: ObservableObject {
 
     /// Cap on matches kept per repo section — bounds both the filtering work and
     /// the rendered rows for very broad (short) queries so results stay responsive.
-    static let maxResultsPerRepo = 50
+    nonisolated static let maxResultsPerRepo = 50
     /// Minimum characters before a repo search runs. 1 = no gate (the per-repo cap
     /// already bounds broad queries); raise to 2–3 to suppress 1‑character searches.
     static let minQueryLength = 1
 
     private var repos: [AppRepository] = []
     private var cachedApps: [String: [FSAppModel]] = [:] // keyed by sourceURL
+    /// When each catalog in memory was written to disk, to tell when the
+    /// refresh at launch has written a newer one since.
+    private var cachedDates: [String: Date] = [:]
     private var flekstoreVM = FlekstoreAppsListViewModel()
     private var searchTask: Task<Void, Never>?
     private var debounceTask: Task<Void, Never>?
+    /// The disk read setup() starts, which a search right after waits for
+    /// rather than reading the same catalogs a second time.
+    private var initialRead: Task<Void, Never>?
+    /// Counts searches, for telling whether a late arrival belongs to the
+    /// search still shown.
+    private var searchGeneration = 0
+    /// FlekSt0re's search still running after the search stopped waiting on
+    /// it, stopped once another search begins.
+    private var lateFlekstoreSearch: Task<[FSAppModel]?, Never>?
+
+    // The current search's results, published together.
+    private var flekSection: RepoSection?
+    private var customSections: [RepoSection] = []
+    private var unanswered: [String] = []
+    private var stillLoading: [String] = []
 
     /// How long typing settles before a query is sent.
     private static let debounceDelay: UInt64 = 300_000_000
 
+    /// How long a search waits on any one source, FlekSt0re's server search
+    /// included, before it goes on without it.
+    nonisolated static let sourceWaitLimit: TimeInterval = 10
+
+    /// The name a late or silent FlekSt0re goes by in the note.
+    private static let flekstoreName = "FlekSt0re"
+
     func setup() {
-        repos = FlekInstallerView.loadRepos()
-        cachedApps = RepoCatalogCache.shared.loadAllCached(repos: repos)
+        reloadRepos()
+        // Read off the main thread, as the page opens: a big catalog takes a
+        // moment to read.
+        let urls = customRepos.map(\.sourceURL)
+        initialRead = Task {
+            let fromDisk = await Self.readCached(urls)
+            for (url, catalog) in fromDisk where cachedApps[url] == nil {
+                cachedApps[url] = catalog.apps
+                cachedDates[url] = catalog.date
+            }
+        }
         flekstoreVM.repository = .flekstore
         Task { await flekstoreVM.refreshSubscriptionStatus() }
     }
 
+    /// The sources as they are now, each once: they can be added and removed
+    /// while this model lives, in the Installer's sources sheet.
+    private func reloadRepos() {
+        var seen = Set<String>()
+        repos = FlekInstallerView.loadRepos().filter { seen.insert($0.sourceURL).inserted }
+        let kept = Set(repos.map(\.sourceURL))
+        cachedApps = cachedApps.filter { kept.contains($0.key) }
+        cachedDates = cachedDates.filter { kept.contains($0.key) }
+    }
+
+    private var customRepos: [AppRepository] {
+        repos.filter { !FlekInstallerView.isFlekstore($0) }
+    }
+
     func search(_ query: String) {
-        searchTask?.cancel()
+        supersede()
 
         guard query.count >= Self.minQueryLength else {
             sections = []
+            unansweredSources = []
+            stillLoadingSources = []
             isLoading = false
             return
         }
 
         isLoading = true
-
+        let generation = searchGeneration
         searchTask = Task {
-            await performSearch(query)
+            await performSearch(query, generation: generation)
         }
     }
 
@@ -341,12 +440,20 @@ class MultiRepoSearchModel: ObservableObject {
             cancelSearch()
             return
         }
-        isLoading = true
+        queryWillChange()
         debounceTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: Self.debounceDelay)
             guard !Task.isCancelled else { return }
             self?.search(trimmed)
         }
+    }
+
+    /// A new query is on its way: the search under way stops, so that it
+    /// cannot say it is done, or add late results, in the meantime. What is
+    /// shown stays until the new query's results replace it.
+    func queryWillChange() {
+        supersede()
+        isLoading = true
     }
 
     /// Run the query now, skipping the debounce (the keyboard's Search key).
@@ -362,9 +469,18 @@ class MultiRepoSearchModel: ObservableObject {
 
     func cancelSearch() {
         debounceTask?.cancel()
-        searchTask?.cancel()
+        supersede()
         sections = []
+        unansweredSources = []
+        stillLoadingSources = []
         isLoading = false
+    }
+
+    private func supersede() {
+        searchTask?.cancel()
+        searchGeneration &+= 1
+        lateFlekstoreSearch?.cancel()
+        lateFlekstoreSearch = nil
     }
 
     /// Fetches all custom-repo catalogs and writes them to disk cache.
@@ -378,99 +494,265 @@ class MultiRepoSearchModel: ObservableObject {
         }
         lastPrefetchDate = Date()
 
-        let repos = FlekInstallerView.loadRepos()
-        let cache = RepoCatalogCache.shared
+        // Through the loader, which keeps what comes and notes what fails: a
+        // search started meanwhile waits on these same downloads, and skips a
+        // source that has just failed here.
+        var seen = Set<String>()
+        let urls = FlekInstallerView.loadRepos()
+            .filter { !FlekInstallerView.isFlekstore($0) }
+            .map(\.sourceURL)
+            .filter { seen.insert($0).inserted }
         await withTaskGroup(of: Void.self) { group in
-            for repo in repos where !FlekInstallerView.isFlekstore(repo) {
-                let url = repo.sourceURL
-                group.addTask { @MainActor in
-                    let vm = FlekstoreAppsListViewModel()
-                    vm.repository = .custom(url: url)
-                    await vm.fetchApps()
-                    if !vm.apps.isEmpty {
-                        cache.store(apps: vm.apps, for: url)
-                    }
+            for url in urls {
+                group.addTask {
+                    _ = await RepoCatalogLoader.shared.catalog(for: url)
                 }
             }
         }
     }
 
-    private func performSearch(_ query: String) async {
-        // Reload disk cache (may have been updated by background pre-fetch)
-        let cache = RepoCatalogCache.shared
-        for repo in repos where !FlekInstallerView.isFlekstore(repo) {
-            if cachedApps[repo.sourceURL] == nil,
-               let apps = cache.cachedApps(for: repo.sourceURL) {
-                cachedApps[repo.sourceURL] = apps
-            }
-        }
+    /// A catalog read from the disk cache, with when it was written.
+    private struct CachedCatalog: Sendable {
+        let apps: [FSAppModel]
+        let date: Date
+    }
 
-        // Fetch any custom repos that still aren't cached
-        let uncachedRepos = repos.filter { !FlekInstallerView.isFlekstore($0) && cachedApps[$0.sourceURL] == nil }
-        if !uncachedRepos.isEmpty {
-            await withTaskGroup(of: (String, [FSAppModel]).self) { group in
-                for repo in uncachedRepos {
-                    let url = repo.sourceURL
-                    group.addTask { @MainActor in
-                        let vm = FlekstoreAppsListViewModel()
-                        vm.repository = .custom(url: url)
-                        await vm.fetchApps()
-                        return (url, vm.apps)
-                    }
-                }
-                for await (url, apps) in group {
-                    if !apps.isEmpty {
-                        cachedApps[url] = apps
-                        cache.store(apps: apps, for: url)
-                    }
-                }
-            }
-        }
+    /// How a source that is not in memory came to a search.
+    private enum SourceArrival: Sendable {
+        case fromDisk(CachedCatalog)
+        case loaded(RepoCatalogLoader.Arrival)
+    }
 
-        guard !Task.isCancelled else { return }
+    /// What answers a search, as it arrives.
+    private enum SearchArrival: Sendable {
+        case flekstore(RepoCatalogLoader.Arrival)
+        case source(id: String, name: String, iconUrl: String, SourceArrival)
+    }
 
-        // Filter + rank + cap OFF the main thread. A broad/short query otherwise
-        // scans the entire catalog of every repo on the main actor and stalls the UI.
-        let inputs = repos
-            .filter { !FlekInstallerView.isFlekstore($0) }
-            .map { RepoFilterInput(id: $0.sourceURL, name: $0.name, iconUrl: $0.iconUrl,
-                                   apps: cachedApps[$0.sourceURL] ?? []) }
-        let customSections = await Task.detached(priority: .userInitiated) {
-            Self.filterRepos(inputs, query: query)
-        }.value
-
-        guard !Task.isCancelled else { return }
-
+    /// Shows what can be shown at once — every source in memory, with
+    /// FlekSt0re's slot held at the top while its server search runs — and
+    /// adds the rest as they arrive. No source holds up the others: each is
+    /// waited on for `sourceWaitLimit` at most. One still coming after that is
+    /// said to be loading, and added if it comes while this search is shown;
+    /// one that failed, now or a short while ago, is said to have given no
+    /// answer.
+    private func performSearch(_ query: String, generation: Int) async {
+        reloadRepos()
+        let flekRepo = repos.first(where: { FlekInstallerView.isFlekstore($0) })
+        let sources = customRepos
         // Reserve FlekStore's slot at the top with a loading placeholder so its
         // late-arriving server results fill in place instead of pushing the custom
         // sections down (which reshuffles the list mid-scroll).
-        let flekRepo = repos.first(where: { FlekInstallerView.isFlekstore($0) })
-        if let flekRepo {
-            let placeholder = RepoSection(id: flekRepo.sourceURL, name: "FlekSt0re",
-                                          iconUrl: flekRepo.iconUrl, isFlekstore: true,
-                                          apps: [], isLoading: true)
-            sections = [placeholder] + customSections
-        } else {
-            sections = customSections
+        flekSection = flekRepo.map {
+            RepoSection(id: $0.sourceURL, name: Self.flekstoreName, iconUrl: $0.iconUrl,
+                        isFlekstore: true, apps: [], isLoading: true)
         }
+        customSections = []
+        unanswered = []
+        stillLoading = []
 
-        // FlekStore: server-side search (requires API call)
-        flekstoreVM.searchQuery = query
-        await flekstoreVM.resetAndFetchApps()
+        await withTaskGroup(of: SearchArrival.self) { group in
+            // FlekSt0re's server search first, as it takes the longest.
+            if flekRepo != nil {
+                group.addTask { @MainActor [weak self] in
+                    .flekstore(await self?.searchFlekstore(query) ?? .failed)
+                }
+            }
+            // Catalogs setup() is still reading are not read a second time.
+            await initialRead?.value
+            guard !Task.isCancelled else { return }
 
-        guard !Task.isCancelled else { return }
+            // Which sources are shown at once and which are still to come,
+            // decided once: those in memory, unless the refresh at launch has
+            // written a newer catalog since.
+            let newerOnDisk = Set(sources.map(\.sourceURL).filter { url in
+                guard let held = cachedDates[url],
+                      let written = RepoCatalogCache.shared.modificationDate(for: url) else {
+                    return false
+                }
+                return written.timeIntervalSince(held) > 30
+            })
+            let ready = sources.filter { cachedApps[$0.sourceURL] != nil && !newerOnDisk.contains($0.sourceURL) }
+            let readyIDs = Set(ready.map(\.sourceURL))
+            let coming = sources.filter { !readyIDs.contains($0.sourceURL) }
 
-        var finalSections = customSections
-        if let flekRepo, !flekstoreVM.apps.isEmpty {
-            let capped = Array(flekstoreVM.apps.prefix(Self.maxResultsPerRepo))
-            finalSections.insert(RepoSection(id: flekRepo.sourceURL, name: "FlekSt0re",
-                                             iconUrl: flekRepo.iconUrl, isFlekstore: true, apps: capped), at: 0)
+            customSections = await Self.filtered(ready.compactMap { repo in
+                cachedApps[repo.sourceURL].map {
+                    RepoFilterInput(id: repo.sourceURL, name: repo.name, iconUrl: repo.iconUrl, apps: $0)
+                }
+            }, query: query)
+            guard !Task.isCancelled else { return }
+            publish()
+
+            // The rest, side by side, each section added below the others as it
+            // arrives rather than in its place, so that nothing shown moves.
+            for repo in coming {
+                let id = repo.sourceURL, name = repo.name, iconUrl = repo.iconUrl
+                group.addTask {
+                    .source(id: id, name: name, iconUrl: iconUrl, await Self.resolve(id))
+                }
+            }
+            for await arrival in group {
+                // A newer search has taken over; this one only waits out its own.
+                guard !Task.isCancelled else { continue }
+                await take(arrival, query: query, generation: generation)
+                if !Task.isCancelled {
+                    publish()
+                }
+            }
         }
 
         if !Task.isCancelled {
-            sections = finalSections
             isLoading = false
         }
+    }
+
+    private func take(_ arrival: SearchArrival, query: String, generation: Int) async {
+        switch arrival {
+        case .flekstore(.arrived(let apps)):
+            setFlekstore(apps)
+        case .flekstore(.failed):
+            flekSection = nil
+            unanswered.insert(Self.flekstoreName, at: 0)
+        case .flekstore(.tooSlow(let search)):
+            flekSection = nil
+            stillLoading.insert(Self.flekstoreName, at: 0)
+            watchLateFlekstore(search, generation: generation)
+        case .source(let id, let name, let iconUrl, .fromDisk(let catalog)):
+            cachedApps[id] = catalog.apps
+            cachedDates[id] = catalog.date
+            customSections += await Self.filtered([RepoFilterInput(id: id, name: name, iconUrl: iconUrl,
+                                                                   apps: catalog.apps)], query: query)
+        case .source(let id, let name, let iconUrl, .loaded(.arrived(let apps))):
+            cachedApps[id] = apps
+            cachedDates[id] = Date()
+            customSections += await Self.filtered([RepoFilterInput(id: id, name: name, iconUrl: iconUrl,
+                                                                   apps: apps)], query: query)
+        case .source(_, let name, _, .loaded(.failed)):
+            unanswered.append(name)
+        case .source(let id, let name, let iconUrl, .loaded(.tooSlow(let download))):
+            stillLoading.append(name)
+            watchLateSource(download, id: id, name: name, iconUrl: iconUrl, query: query, generation: generation)
+        }
+    }
+
+    private func publish() {
+        sections = (flekSection.map { [$0] } ?? []) + customSections
+        unansweredSources = unanswered
+        stillLoadingSources = stillLoading
+    }
+
+    /// FlekSt0re's results in its slot, or no slot where it has none.
+    private func setFlekstore(_ apps: [FSAppModel]) {
+        guard !apps.isEmpty, let flekRepo = repos.first(where: { FlekInstallerView.isFlekstore($0) }) else {
+            flekSection = nil
+            return
+        }
+        flekSection = RepoSection(id: flekRepo.sourceURL, name: Self.flekstoreName, iconUrl: flekRepo.iconUrl,
+                                  isFlekstore: true, apps: Array(apps.prefix(Self.maxResultsPerRepo)))
+    }
+
+    /// FlekSt0re's answer after the search stopped waiting on it, put in its
+    /// slot if the same search is still shown.
+    private func watchLateFlekstore(_ search: Task<[FSAppModel]?, Never>, generation: Int) {
+        lateFlekstoreSearch = search
+        Task { [weak self] in
+            let apps = await search.value
+            guard let self, generation == self.searchGeneration else { return }
+            self.stillLoading.removeAll { $0 == Self.flekstoreName }
+            if let apps {
+                self.setFlekstore(apps)
+            } else {
+                self.unanswered.insert(Self.flekstoreName, at: 0)
+            }
+            self.publish()
+        }
+    }
+
+    /// A source's catalog after the search stopped waiting on it, its results
+    /// added if the same search is still shown. It is kept either way.
+    private func watchLateSource(_ download: Task<[FSAppModel]?, Never>, id: String, name: String,
+                                 iconUrl: String, query: String, generation: Int) {
+        Task { [weak self] in
+            let apps = await download.value
+            guard let self, generation == self.searchGeneration else { return }
+            self.stillLoading.removeAll { $0 == name }
+            if let apps {
+                self.cachedApps[id] = apps
+                self.cachedDates[id] = Date()
+                let added = await Self.filtered([RepoFilterInput(id: id, name: name, iconUrl: iconUrl, apps: apps)],
+                                                query: query)
+                guard generation == self.searchGeneration else { return }
+                self.customSections += added
+            } else {
+                self.unanswered.append(name)
+            }
+            self.publish()
+        }
+    }
+
+    /// FlekSt0re's server search, waited on for `sourceWaitLimit` at most. One
+    /// still running after that goes on, and is what its results come by. A
+    /// cancelled search stops it.
+    private func searchFlekstore(_ query: String) async -> RepoCatalogLoader.Arrival {
+        let flekstore = flekstoreVM
+        let search = Task { @MainActor () -> [FSAppModel]? in
+            flekstore.searchQuery = query
+            await flekstore.resetAndFetchApps()
+            // A failed or stopped search leaves nothing to show.
+            guard !Task.isCancelled, flekstore.errorMessage == nil else { return nil }
+            return Array(flekstore.apps.prefix(Self.maxResultsPerRepo))
+        }
+        let answer = FirstAnswer<RepoCatalogLoader.Arrival>()
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                answer.deliver { continuation.resume(returning: $0) }
+                Task {
+                    let apps = await search.value
+                    answer.give(apps.map { .arrived($0) } ?? .failed)
+                }
+                Task {
+                    try? await Task.sleep(nanoseconds: UInt64(Self.sourceWaitLimit * 1_000_000_000))
+                    answer.give(.tooSlow(search))
+                }
+            }
+        } onCancel: {
+            search.cancel()
+            answer.give(.failed)
+        }
+    }
+
+    /// A source that is not shown at once: its copy on disk where it has one,
+    /// read off the main thread, or else downloaded, waited on for
+    /// `sourceWaitLimit` at most.
+    nonisolated private static func resolve(_ url: String) async -> SourceArrival {
+        if let catalog = await readCached([url])[url] {
+            return .fromDisk(catalog)
+        }
+        return .loaded(await RepoCatalogLoader.catalog(for: url, within: sourceWaitLimit))
+    }
+
+    /// The disk cache's catalogs for these sources, read off the main thread.
+    nonisolated private static func readCached(_ urls: [String]) async -> [String: CachedCatalog] {
+        await Task.detached(priority: .userInitiated) {
+            let cache = RepoCatalogCache.shared
+            var found: [String: CachedCatalog] = [:]
+            for url in urls {
+                if let apps = cache.cachedApps(for: url) {
+                    found[url] = CachedCatalog(apps: apps, date: cache.modificationDate(for: url) ?? Date())
+                }
+            }
+            return found
+        }.value
+    }
+
+    /// Filter + rank + cap OFF the main thread. A broad/short query otherwise
+    /// scans the entire catalog of every repo on the main actor and stalls the UI.
+    nonisolated private static func filtered(_ inputs: [RepoFilterInput], query: String) async -> [RepoSection] {
+        guard !inputs.isEmpty else { return [] }
+        return await Task.detached(priority: .userInitiated) {
+            filterRepos(inputs, query: query)
+        }.value
     }
 
     /// Sendable snapshot handed to the off-main filter (no actor-isolated state).

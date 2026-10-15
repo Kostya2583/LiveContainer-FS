@@ -255,14 +255,15 @@ class FlekstoreAppsListViewModel: ObservableObject {
                     currentPage += 1
                 }
 
-            // Custom repository
-            case .custom:
-                let (responseData, _) = try await URLSession.shared.data(from: baseURL)
-                data = responseData
-
+            // Custom repository: through the loader, which search and the
+            // refresh at launch share, so that a source is downloaded once
+            // whoever asks, and read off the main thread.
+            case .custom(let url):
+                guard let mappedApps = await RepoCatalogLoader.shared.catalog(for: url) else {
+                    throw URLError(.cannotLoadFromNetwork)
+                }
+                // A newer load may have started meanwhile.
                 guard generation == loadGeneration else { return }
-
-                let mappedApps = try decodeCustomRepo(data)
 
                 apps = mappedApps
                 canLoadMore = false
@@ -285,6 +286,11 @@ class FlekstoreAppsListViewModel: ObservableObject {
     /// source shows its list instantly instead of reloading from scratch.
     private var memoryCache: [String: [FSAppModel]] = [:]
 
+    /// Whether the source's last-shown list is held in memory.
+    func hasMemoryCache(for source: RepositorySource) -> Bool {
+        memoryCache[repoCacheKey(source)] != nil
+    }
+
     private func repoCacheKey(_ source: RepositorySource) -> String {
         switch source {
         case .flekstore: return "__flekstore__"
@@ -302,6 +308,12 @@ class FlekstoreAppsListViewModel: ObservableObject {
             memoryCache[repoCacheKey(repository)] = apps
         }
 
+        // A load still under way is the source being left's: it must not land
+        // on the new one, nor keep it from loading.
+        loadGeneration &+= 1
+        isLoading = false
+        errorMessage = nil
+
         repository = source
         searchQuery = ""
         selectedCategoryID = nil
@@ -310,7 +322,10 @@ class FlekstoreAppsListViewModel: ObservableObject {
 
         if let preloaded = memoryCache[repoCacheKey(source)] ?? diskPreloaded, !preloaded.isEmpty {
             apps = preloaded
-            isLoading = false
+            // A kept list can run to several pages: none is asked for until the
+            // refresh has said where the first one ends, or a page already
+            // shown would be added again.
+            canLoadMore = false
             await silentRefresh(expecting: source)
         } else {
             apps = []
@@ -322,6 +337,8 @@ class FlekstoreAppsListViewModel: ObservableObject {
     /// so the visible cached apps don't flash to an empty loading state.
     private func silentRefresh(expecting source: RepositorySource) async {
         guard let baseURL = currentEndpoint() else { return }
+        // A category picked, a search or another source meanwhile supersedes it.
+        let generation = loadGeneration
         do {
             switch source {
             case .flekstore:
@@ -333,7 +350,7 @@ class FlekstoreAppsListViewModel: ObservableObject {
                 ]
                 guard let url = components?.url else { return }
                 let (data, _) = try await URLSession.shared.data(from: url)
-                guard repository == source else { return }   // user switched again
+                guard generation == loadGeneration, repository == source else { return }   // user switched again
                 let decoded = try JSONDecoder().decode([FSAppModel].self, from: data)
                 let filtered = isAdult ? decoded : decoded.filter { $0.app_isAdult != 1 }
                 apps = filtered
@@ -342,13 +359,12 @@ class FlekstoreAppsListViewModel: ObservableObject {
                 if !filtered.isEmpty { memoryCache[repoCacheKey(source)] = filtered }
 
             case .custom(let url):
-                let (data, _) = try await URLSession.shared.data(from: baseURL)
-                guard repository == source else { return }
-                let mapped = try decodeCustomRepo(data)
+                // The loader keeps the catalog on disk itself.
+                guard let mapped = await RepoCatalogLoader.shared.catalog(for: url),
+                      generation == loadGeneration, repository == source else { return }
                 apps = mapped
                 canLoadMore = false
                 memoryCache[repoCacheKey(source)] = mapped
-                RepoCatalogCache.shared.store(apps: mapped, for: url)
             }
         } catch {
             // Keep the cached list on failure.
@@ -363,7 +379,7 @@ class FlekstoreAppsListViewModel: ObservableObject {
     
     
     //since alt store doesnt provide data if app is adult or not make them all non adult by default
-    private func decodeCustomRepo(_ data: Data) throws -> [FSAppModel] {
+    nonisolated static func decodeCustomRepo(_ data: Data) throws -> [FSAppModel] {
         let response = try JSONDecoder().decode(RepoResponse.self, from: data)
 
         return response.apps.enumerated().compactMap { index, app in
