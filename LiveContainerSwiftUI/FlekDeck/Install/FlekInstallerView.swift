@@ -43,7 +43,6 @@ struct FlekInstallerView: View {
     @State private var repos: [AppRepository] = []
     @State private var selectedRepoID: UUID?
     @State private var showSources = false
-    @State private var showPremium = false
     /// The app whose page is open, if any.
     @State private var detailTarget: DetailTarget?
     @State private var searchActive = false
@@ -270,14 +269,10 @@ struct FlekInstallerView: View {
                 Task { await switchTo(repo) }
             }
         }
-        .sheet(isPresented: $showPremium) {
-            PremiumRequiredView()
-        }
         .sheet(item: $detailTarget) { target in
             FlekAppDetailSheet(
                 app: target.app,
                 isFlekstore: target.isFlekstore,
-                requiresPremium: requiresPremium(fromFlekstore: target.isFlekstore),
                 accent: Self.flekBlue,
                 onInstall: { overrides in
                     enqueueInstall(target.app, fromFlekstore: target.isFlekstore, overrides: overrides)
@@ -1022,32 +1017,14 @@ struct FlekInstallerView: View {
     }
 
     private func install(_ app: FSAppModel) {
-        guard !requiresPremium(fromFlekstore: viewModel.repository == .flekstore) else {
-            showPremium = true
-            return
-        }
         enqueueInstall(app, fromFlekstore: viewModel.repository == .flekstore)
     }
 
     private func installSearchResult(_ app: FSAppModel, fromFlekstore: Bool) {
-        guard !requiresPremium(fromFlekstore: fromFlekstore) else {
-            showPremium = true
-            return
-        }
         enqueueInstall(app, fromFlekstore: fromFlekstore)
     }
 
-    /// Sources other than FlekSt0re are behind the subscription.
-    private func requiresPremium(fromFlekstore: Bool) -> Bool {
-        !fromFlekstore && !FlekPremium.isActive
-    }
-
     /// Queues the download + install and counts the FlekSt0re download.
-    ///
-    /// The premium gate belongs to the caller: the rows check it here and show
-    /// the paywall from this view, while the detail sheet has to show its own —
-    /// this view is already presenting that sheet and cannot stack a second one
-    /// on top of it.
     private func enqueueInstall(_ app: FSAppModel, fromFlekstore: Bool,
                                 overrides: FlekInstallOverrides? = nil) {
         LCInstallQueue.shared.enqueue(

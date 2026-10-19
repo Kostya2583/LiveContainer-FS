@@ -31,9 +31,6 @@ struct FlekSearchView: View {
     @FocusState private var fieldFocused: Bool
     @State private var bottomBarHeight: CGFloat = 66   // measured at runtime; sensible fallback
     @StateObject private var repoSearch = MultiRepoSearchModel()
-    /// Installing from a source of the user's own takes Premium, as in the
-    /// Installer; without it, this is what a result's download shows.
-    @State private var premiumShown = false
     @Environment(\.colorScheme) private var colorScheme
 
     private var results: [LCAppModel] {
@@ -61,9 +58,6 @@ struct FlekSearchView: View {
                     )
             }
             .onPreferenceChange(BottomBarHeightKey.self) { bottomBarHeight = $0 }
-        }
-        .sheet(isPresented: $premiumShown) {
-            PremiumRequiredView()
         }
         .onAppear {
             fieldFocused = true
@@ -142,10 +136,6 @@ struct FlekSearchView: View {
                                             close()
                                         },
                                         onInstall: {
-                                            if !repoSection.isFlekstore && !FlekPremium.isActive {
-                                                premiumShown = true
-                                                return
-                                            }
                                             if repoSection.isFlekstore {
                                                 FlekstoreAppsListViewModel.recordDownload(appId: app.app_id)
                                             }
