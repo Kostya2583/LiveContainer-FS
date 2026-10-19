@@ -28,6 +28,8 @@ enum FlekPremium {
         static let endDate = "FSSubscriptionEndDate"
         static let checkedAt = "FSSubscriptionCheckedAt"
         static let deviceID = "FSEncryptedUDID"
+        /// The end of Premium the user has looked at in General.
+        static let endSeen = "FlekPremiumEndSeen"
         // In the app group, for a guest. LCBootstrap reads them by these names.
         static let until = "FlekPremiumUntil"
         static let confirmedAt = "FlekPremiumConfirmedAt"
@@ -69,6 +71,59 @@ enum FlekPremium {
         }
         let end = defaults.string(forKey: Key.endDate) ?? ""
         return DateFormatter.deviceServiceFormatter.date(from: end) ?? .distantFuture
+    }
+
+    /// When Premium ended, as kept and as the server has said since that day
+    /// came: nil while it is active, where there was none to end, and while
+    /// the server has not been asked since. A subscription that renews is
+    /// extended on the server, which this copy hears of only when it asks.
+    private static var endedOn: String? {
+        guard let (end, date) = keptEndPassed,
+              UserDefaults.standard.double(forKey: Key.checkedAt) >= date.timeIntervalSince1970 else {
+            return nil
+        }
+        return end
+    }
+
+    /// The kept end of Premium where it has passed by the clock, as text and
+    /// as a date.
+    private static var keptEndPassed: (String, Date)? {
+        guard !isActive else {
+            return nil
+        }
+        let end = UserDefaults.standard.string(forKey: Key.endDate) ?? ""
+        guard let date = DateFormatter.deviceServiceFormatter.date(from: end), date <= AccessVerdictStore.trustedNow() else {
+            return nil
+        }
+        return (end, date)
+    }
+
+    /// Whether the kept end of Premium has passed with the server not asked
+    /// since, which a renewal may have moved on.
+    static var needsCheckAfterEnd: Bool {
+        guard deviceID != nil, let (_, date) = keptEndPassed else {
+            return false
+        }
+        return UserDefaults.standard.double(forKey: Key.checkedAt) < date.timeIntervalSince1970
+    }
+
+    /// Whether Premium has ended and the user has not opened General since,
+    /// which the Settings icon and General's row are marked for.
+    static var isEndUnseen: Bool {
+        guard let end = endedOn else {
+            return false
+        }
+        return UserDefaults.standard.string(forKey: Key.endSeen) != end
+    }
+
+    /// Notes that the user has seen how Premium stands, as General shows it.
+    /// An end looked at once is not marked again; one after Premium has been
+    /// bought again and run out is.
+    static func markEndSeen() {
+        guard let end = endedOn, UserDefaults.standard.string(forKey: Key.endSeen) != end else {
+            return
+        }
+        UserDefaults.standard.set(end, forKey: Key.endSeen)
     }
 
     /// Keeps an answer from the status service, whoever asked for it.

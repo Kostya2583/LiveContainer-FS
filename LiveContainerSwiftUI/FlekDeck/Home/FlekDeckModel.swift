@@ -52,10 +52,11 @@ enum FlekDefaultAppKind: String, CaseIterable, Identifiable {
 
     /// The number in the corner of this app's home screen icon, as iOS badges
     /// an app with something waiting; 0 draws none. Settings counts what it is
-    /// waiting on the user for, which so far is only a missing certificate.
+    /// waiting on the user for: a certificate missing or no longer working,
+    /// and an end of Premium not looked at yet.
     func badgeCount(in model: SharedModel) -> Int {
         switch self {
-        case .settings: return model.needsCertificate ? 1 : 0
+        case .settings: return model.settingsAttentionCount
         case .flekstore, .installer: return 0
         }
     }

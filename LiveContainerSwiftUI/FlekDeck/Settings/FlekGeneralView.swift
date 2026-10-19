@@ -6,7 +6,9 @@
 //  FlekDeck is given what it needs to install and launch apps: a signing
 //  certificate, or JIT instead. While no certificate is imported the page opens
 //  with a setup card, and the row leading here and the Settings icon on the
-//  home screen carry a red mark.
+//  home screen carry a red mark. They carry it too while the certificate is
+//  expired or revoked, until another is imported, and once Premium has ended,
+//  until this page has been opened.
 //
 //  Importing a certificate has a page of its own, FlekCertificateImportView.
 //  A FlekDeck that is not signed with a Development certificate cannot use one
@@ -187,6 +189,11 @@ struct FlekGeneralView<JITPage: View>: View {
         .onAppear {
             loadCertificate()
             loadJITStanding()
+            // An ended Premium is marked until it has been seen here, where
+            // the device card says so.
+            if showsDevice {
+                FlekPremium.markEndSeen()
+            }
         }
         .onChange(of: sharedModel.isCertificateImported) { _ in loadCertificate() }
         .task {
@@ -783,6 +790,10 @@ struct FlekGeneralView<JITPage: View>: View {
         let udid = response.udid.trimmingCharacters(in: .whitespacesAndNewlines)
         if udid.isDeviceUDID {
             deviceUDID = udid
+        }
+        // An end the answer has just confirmed is seen as it shows here.
+        if showsDevice {
+            FlekPremium.markEndSeen()
         }
     }
 

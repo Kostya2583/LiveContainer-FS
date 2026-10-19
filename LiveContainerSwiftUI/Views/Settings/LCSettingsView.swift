@@ -295,13 +295,15 @@ struct LCSettingsView: View {
             Form {
                 // MARK: - Categories
                 Section {
-                    // Where the certificate is imported. It carries the red mark
-                    // while none is — the same thing the Settings icon on the
-                    // home screen counts.
+                    // Where the certificate is imported and Premium shown. It
+                    // carries the red mark while there is no certificate, or one
+                    // that no longer works, and while an end of Premium has not
+                    // been looked at — what the Settings icon on the home screen
+                    // counts.
                     NavigationLink { generalPage } label: {
                         HStack(spacing: 0) {
                             categoryRow("lc.flek.cat.general".loc, "gear", .gray, iconSize: 20)
-                            if sharedModel.needsCertificate {
+                            if sharedModel.generalNeedsAttention {
                                 Spacer(minLength: 8)
                                 attentionMark
                             }
@@ -762,7 +764,18 @@ struct LCSettingsView: View {
             .font(.system(size: 20))
             .symbolRenderingMode(.palette)
             .foregroundStyle(.white, .red)
-            .accessibilityLabel("lc.flek.certificate.notImported".loc)
+            .accessibilityLabel(attentionReason)
+    }
+
+    /// What the mark is for, the certificate first.
+    private var attentionReason: String {
+        if sharedModel.needsCertificate {
+            return "lc.flek.certificate.notImported".loc
+        }
+        if sharedModel.isCertificateInvalid {
+            return "lc.flek.attention.certificateInvalid".loc
+        }
+        return "lc.flek.attention.premiumEnded".loc
     }
 
     @ViewBuilder private var generalPage: some View {

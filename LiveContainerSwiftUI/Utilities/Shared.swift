@@ -10,6 +10,7 @@ import UniformTypeIdentifiers
 import SafariServices
 import Security
 import Combine
+import CryptoKit
 
 struct LCPath {
     public static let docPath = {
@@ -143,8 +144,41 @@ class SharedModel: ObservableObject {
         multiLCStatus != 2 && !isCertificateImported
     }
 
+    /// Whether the stored certificate no longer signs: past its expiry, or
+    /// revoked as Apple last said. Marked until another is imported, as no
+    /// app can be signed till then. Not for a copy that signs with the
+    /// primary's, which has none of its own to replace.
+    @Published private(set) var isCertificateInvalid = false
+
+    /// Whether Premium has ended since the user last opened General, where
+    /// it says so. Looking once is enough: not renewing is the user's choice.
+    @Published private(set) var isPremiumEndUnseen = false
+
+    /// Whether General's row carries the red mark: a certificate to import
+    /// or replace, or an end of Premium not looked at yet.
+    var generalNeedsAttention: Bool {
+        needsCertificate || isCertificateInvalid || isPremiumEndUnseen
+    }
+
+    /// What the Settings icon on the home screen counts: the certificate,
+    /// and an end of Premium not looked at yet.
+    var settingsAttentionCount: Int {
+        (needsCertificate || isCertificateInvalid ? 1 : 0) + (isPremiumEndUnseen ? 1 : 0)
+    }
+
     private var certificateObservation: NSKeyValueObservation?
+    private var certificateDataObservation: NSKeyValueObservation?
+    private var premiumObservations: [NSKeyValueObservation] = []
     private var foregroundObserver: NSObjectProtocol?
+
+    // Apple's last word on whether the stored certificate is revoked, kept
+    // by the certificate's digest so that it holds with no network, and
+    // when and for which certificate it was last asked.
+    private static let revokedCertificateKey = "FlekCertificateRevokedDigest"
+    private static let revocationAskedForKey = "FlekCertificateRevocationAskedFor"
+    private static let revocationAskedAtKey = "FlekCertificateRevocationAskedAt"
+    /// How often Apple is asked again about the same certificate.
+    private static let revocationRecheckInterval: TimeInterval = 60 * 60
     
     @Published var enableMultipleWindow = false
 
@@ -190,6 +224,96 @@ class SharedModel: ObservableObject {
         if imported != isCertificateImported {
             isCertificateImported = imported
         }
+        refreshCertificateValidity()
+    }
+
+    /// Re-reads whether the stored certificate still signs. Its expiry is in
+    /// the file. Whether it is revoked is Apple's to say, and Apple is asked
+    /// at most once an hour for the same certificate; until it answers, the
+    /// answer kept from before stands.
+    func refreshCertificateValidity() {
+        guard multiLCStatus != 2, isCertificateImported,
+              let data = LCUtils.certificateData(),
+              let password = LCSharedUtils.certificatePassword() else {
+            publishCertificateInvalid(false)
+            return
+        }
+        let digest = Self.digest(of: data)
+        let expiry = LCUtils.getCertInfo(withKeyData: data, password: password)?["notAfter"] as? Date
+        let isExpired = expiry.map { $0 < Date() } ?? false
+        let defaults = UserDefaults.standard
+        publishCertificateInvalid(isExpired || defaults.string(forKey: Self.revokedCertificateKey) == digest)
+
+        let askedRecently = defaults.string(forKey: Self.revocationAskedForKey) == digest
+            && Date().timeIntervalSince1970 - defaults.double(forKey: Self.revocationAskedAtKey) < Self.revocationRecheckInterval
+        guard !isExpired, !askedRecently else {
+            return
+        }
+        defaults.set(digest, forKey: Self.revocationAskedForKey)
+        defaults.set(Date().timeIntervalSince1970, forKey: Self.revocationAskedAtKey)
+        // As ZSign's check reports it: 0 good, 1 revoked, anything else no
+        // answer.
+        _ = LCUtils.validateCertificate { [weak self] status, _, _, _ in
+            DispatchQueue.main.async {
+                // An answer about a certificate replaced meanwhile is dropped.
+                guard let self, LCUtils.certificateData().map(Self.digest(of:)) == digest else {
+                    return
+                }
+                switch status {
+                case 0:
+                    if defaults.string(forKey: Self.revokedCertificateKey) == digest {
+                        defaults.removeObject(forKey: Self.revokedCertificateKey)
+                    }
+                    self.publishCertificateInvalid(false)
+                case 1:
+                    defaults.set(digest, forKey: Self.revokedCertificateKey)
+                    self.publishCertificateInvalid(true)
+                default:
+                    break
+                }
+            }
+        }
+    }
+
+    /// Re-reads whether Premium has ended unseen, publishing only a change.
+    /// An end that has passed with the server not asked since is asked
+    /// about first, as a renewal may have moved it on; the answer comes back
+    /// through what is kept.
+    func refreshPremiumAttention() {
+        publishPremiumEndUnseen()
+        if FlekPremium.needsCheckAfterEnd, !isCheckingPremiumEnd {
+            isCheckingPremiumEnd = true
+            Task {
+                await FlekPremium.refresh()
+                // Not asked again at once for no answer: the next return to
+                // the foreground asks again.
+                await MainActor.run {
+                    self.isCheckingPremiumEnd = false
+                    self.publishPremiumEndUnseen()
+                }
+            }
+        }
+    }
+
+    private func publishPremiumEndUnseen() {
+        let unseen = FlekPremium.isEndUnseen
+        if unseen != isPremiumEndUnseen {
+            isPremiumEndUnseen = unseen
+        }
+    }
+
+    /// While the server is asked about an end of Premium, so that it is not
+    /// asked twice at once.
+    private var isCheckingPremiumEnd = false
+
+    private func publishCertificateInvalid(_ invalid: Bool) {
+        if invalid != isCertificateInvalid {
+            isCertificateInvalid = invalid
+        }
+    }
+
+    private static func digest(of data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
     init() {
@@ -201,12 +325,37 @@ class SharedModel: ObservableObject {
         certificateObservation = LCUtils.appGroupUserDefault.observe(\.LCCertificatePassword) { [weak self] _, _ in
             DispatchQueue.main.async { self?.refreshCertificateStatus() }
         }
+        // A certificate replaced under the same password changes only this.
+        certificateDataObservation = LCUtils.appGroupUserDefault.observe(\.LCCertificateData) { [weak self] _, _ in
+            DispatchQueue.main.async { self?.refreshCertificateValidity() }
+        }
+        // What is kept of Premium, from whichever check, and the user having
+        // looked at it.
+        premiumObservations = [
+            UserDefaults.standard.observe(\.FSSubscriptionStatus) { [weak self] _, _ in
+                DispatchQueue.main.async { self?.refreshPremiumAttention() }
+            },
+            UserDefaults.standard.observe(\.FSSubscriptionEndDate) { [weak self] _, _ in
+                DispatchQueue.main.async { self?.refreshPremiumAttention() }
+            },
+            UserDefaults.standard.observe(\.FlekPremiumEndSeen) { [weak self] _, _ in
+                DispatchQueue.main.async { self?.refreshPremiumAttention() }
+            },
+        ]
         // Another FlekDeck sharing the app group can import or remove one
-        // while this one is in the background.
+        // while this one is in the background, and a certificate or Premium
+        // can run out meanwhile.
         foregroundObserver = NotificationCenter.default.addObserver(
             forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main
         ) { [weak self] _ in
             self?.refreshCertificateStatus()
+            self?.refreshPremiumAttention()
+        }
+        // After launch rather than during it: reading the certificate loads
+        // the signing library.
+        DispatchQueue.main.async { [weak self] in
+            self?.refreshCertificateValidity()
+            self?.refreshPremiumAttention()
         }
     }
 }
@@ -214,9 +363,25 @@ class SharedModel: ObservableObject {
 extension UserDefaults {
     /// The stored certificate password, declared only so that it can be
     /// observed: key-value observing reaches a defaults key through a
-    /// property of exactly the key's name.
+    /// property of exactly the key's name. The same goes for the ones below.
     @objc dynamic var LCCertificatePassword: String? {
         string(forKey: "LCCertificatePassword")
+    }
+
+    @objc dynamic var LCCertificateData: Data? {
+        data(forKey: "LCCertificateData")
+    }
+
+    @objc dynamic var FSSubscriptionStatus: Bool {
+        bool(forKey: "FSSubscriptionStatus")
+    }
+
+    @objc dynamic var FSSubscriptionEndDate: String? {
+        string(forKey: "FSSubscriptionEndDate")
+    }
+
+    @objc dynamic var FlekPremiumEndSeen: String? {
+        string(forKey: "FlekPremiumEndSeen")
     }
 }
 

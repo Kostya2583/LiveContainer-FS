@@ -15911,6 +15911,28 @@
         }
       }
     },
+    "lc.flek.attention.certificateInvalid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certificate expired or revoked"
+          }
+        }
+      }
+    },
+    "lc.flek.attention.premiumEnded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium ended"
+          }
+        }
+      }
+    },
     "lc.flek.cancelInstall" : {
       "extractionState" : "manual",
       "localizations" : {
