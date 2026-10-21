@@ -553,28 +553,36 @@ class LCAppModel: ObservableObject, Hashable {
             }
         }
         
+        // The Tweaks folder the guest loads from (LCBootstrap): the app group's
+        // for a shared app, this FlekDeck's own for a private one.
+        let tweakRoot = appInfo.isShared ? LCPath.lcGroupTweakPath : LCPath.tweakPath
+        
         // sign its tweak
-        guard let tweakFolder = appInfo.tweakFolder else {
-            return
+        if let tweakFolder = appInfo.tweakFolder {
+            try await LCUtils.signTweaks(tweakFolderUrl: tweakRoot.appendingPathComponent(tweakFolder), force: force) { p in
+                Task{ await MainActor.run {
+                    self.isSigningInProgress = true
+                }}
+            }
         }
         
-        let tweakFolderUrl : URL
-        if(appInfo.isShared) {
-            tweakFolderUrl = LCPath.lcGroupTweakPath.appendingPathComponent(tweakFolder)
-        } else {
-            tweakFolderUrl = LCPath.tweakPath.appendingPathComponent(tweakFolder)
-        }
-        try await LCUtils.signTweaks(tweakFolderUrl: tweakFolderUrl, force: force) { p in
-            Task{ await MainActor.run {
-                self.isSigningInProgress = true
-            }}
-        }
-        
-        // sign global tweak
-        try await LCUtils.signTweaks(tweakFolderUrl: LCPath.tweakPath, force: force) { p in
-            Task{ await MainActor.run {
-                self.isSigningInProgress = true
-            }}
+        // sign global tweak. TweakLoader loads these into every app, whether or not
+        // it has a folder of its own; returning early for an app without one left a
+        // newly imported global tweak unsigned, and dlopen refused it ("code
+        // signature invalid"). A shared app's root may not exist yet.
+        if FileManager.default.fileExists(atPath: tweakRoot.path) {
+            do {
+                try await LCUtils.signTweaks(tweakFolderUrl: tweakRoot, force: force) { p in
+                    Task{ await MainActor.run {
+                        self.isSigningInProgress = true
+                    }}
+                }
+            } catch let error where !force {
+                // One global tweak that can't be signed must not keep every app
+                // from opening; it only fails to load, and TweakLoader says so in
+                // the app. Force Sign still reports it here.
+                NSLog("[LC] Global tweaks not signed: \(error.localizedDescription)")
+            }
         }
     }
 
