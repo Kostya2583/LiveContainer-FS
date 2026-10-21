@@ -315,6 +315,10 @@ struct LCJITLessDiagnoseView : View {
                     
                 }
                                 
+                // What else FlekDeck's signing gives it: the memory apps in
+                // Single Mode can use.
+                FlekMemoryLimitSection()
+
                 Section {
                     Button {
                         testJITLessMode()

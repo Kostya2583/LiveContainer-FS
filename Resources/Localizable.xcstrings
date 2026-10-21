@@ -18804,6 +18804,105 @@
         }
       }
     },
+    "lc.flek.memory.device" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device Memory"
+          }
+        }
+      }
+    },
+    "lc.flek.memory.help" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About Memory Limit"
+          }
+        }
+      }
+    },
+    "lc.flek.memory.help.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It comes with how FlekDeck was signed, and can’t be changed here. Apps in Parallel mode run in a process with a limit of its own."
+          }
+        }
+      }
+    },
+    "lc.flek.memory.help.increased" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekDeck was signed with Apple’s Increased Memory Limit, so apps in Single Mode can use more memory before iOS closes them."
+          }
+        }
+      }
+    },
+    "lc.flek.memory.help.standard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlekDeck was signed without it, so apps in Single Mode get the usual limit. Most apps run fine with it, but heavy games and emulators may close by themselves, or start over when you come back to them."
+          }
+        }
+      }
+    },
+    "lc.flek.memory.increased" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Increased"
+          }
+        }
+      }
+    },
+    "lc.flek.memory.limit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Single Mode Limit"
+          }
+        }
+      }
+    },
+    "lc.flek.memory.standard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard"
+          }
+        }
+      }
+    },
+    "lc.flek.memory.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Memory Limit"
+          }
+        }
+      }
+    },
     "lc.flek.multitaskBar" : {
       "extractionState" : "manual",
       "localizations" : {
