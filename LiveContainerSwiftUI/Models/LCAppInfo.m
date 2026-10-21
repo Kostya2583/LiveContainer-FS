@@ -645,6 +645,19 @@
     [self save];
 }
 
+- (bool)spoofLocation {
+    if(_info[@"spoofLocation"] != nil) {
+        return [_info[@"spoofLocation"] boolValue];
+    } else {
+        return NO;
+    }
+}
+
+- (void)setSpoofLocation:(bool)spoofLocation {
+    _info[@"spoofLocation"] = @(spoofLocation);
+    [self save];
+}
+
 - (LCOrientationLock)orientationLock {
     return (LCOrientationLock) [((NSNumber*) _info[@"LCOrientationLock"]) intValue];
 }

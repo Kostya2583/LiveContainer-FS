@@ -18804,6 +18804,28 @@
         }
       }
     },
+    "lc.flek.locationSpoofer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location Spoofer"
+          }
+        }
+      }
+    },
+    "lc.flek.locationSpoofer.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick the location this app sees from a button inside the app."
+          }
+        }
+      }
+    },
     "lc.flek.memory.device" : {
       "extractionState" : "manual",
       "localizations" : {

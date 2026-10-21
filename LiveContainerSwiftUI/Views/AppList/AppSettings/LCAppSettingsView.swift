@@ -40,6 +40,10 @@ struct LCAppSettingsView: View {
     
     @EnvironmentObject private var sharedModel : SharedModel
     
+    // FlekDeck ships the Location Spoofer in its Frameworks for devices only
+    // (xcconfigs/LiveContainer.xcconfig), and the tweak needs iOS 16.
+    private static let isLocationSpooferBundled = FileManager.default.fileExists(atPath: Bundle.main.bundleURL.appendingPathComponent("Frameworks/LocationSpoofer.dylib").path)
+    
     init(model: LCAppModel) {
         self.appInfo = model.appInfo
         self._model = ObservedObject(wrappedValue: model)
@@ -220,6 +224,18 @@ struct LCAppSettingsView: View {
                 
             }
 
+            if #available(iOS 16.0, *), Self.isLocationSpooferBundled {
+                Section {
+                    Toggle(isOn: $model.uiSpoofLocation) {
+                        Text("lc.flek.locationSpoofer".loc)
+                    }
+                    // TweakLoader is what loads it
+                    .disabled(model.uiDontInjectTweakLoader && model.uiDontLoadTweakLoader)
+                } footer: {
+                    Text("lc.flek.locationSpoofer.footer".loc)
+                }
+            }
+            
             Section {
                 Toggle(isOn: $model.uiIsLocked) {
                     Text("lc.appSettings.lockApp".loc)

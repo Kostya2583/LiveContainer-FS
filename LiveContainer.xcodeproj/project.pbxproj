@@ -355,10 +355,14 @@
 					CodeSignOnCopy,
 					RemoveHeadersOnCopy,
 				);
+				Frameworks/LocationSpoofer.dylib = (
+					CodeSignOnCopy,
+				);
 			};
 			buildPhase = 17413FC12D9C0BAE00F3F928 /* Embed Frameworks */;
 			membershipExceptions = (
 				Frameworks/CydiaSubstrate.framework,
+				Frameworks/LocationSpoofer.dylib,
 			);
 		};
 		176614FC2E2C851800B1F478 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */ = {

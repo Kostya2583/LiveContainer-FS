@@ -9,6 +9,6 @@
 
 PRODUCT_BUNDLE_IDENTIFIER = $(LIVECONTAINER_BUNDLE_IDENTIFIER)
 
-// StikJIT and the pairing library ship for devices only, so a Simulator build
-// embeds neither.
-EXCLUDED_SOURCE_FILE_NAMES[sdk=iphonesimulator*] = StikJIT.framework IdevicePairing.dylib
+// StikJIT, the pairing library and the Location Spoofer ship for devices only,
+// so a Simulator build embeds none of them.
+EXCLUDED_SOURCE_FILE_NAMES[sdk=iphonesimulator*] = StikJIT.framework IdevicePairing.dylib LocationSpoofer.dylib

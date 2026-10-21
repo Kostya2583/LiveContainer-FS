@@ -4,10 +4,18 @@
 #include <objc/runtime.h>
 #import "../LiveContainer/utils.h"
 
+// Set once FlekDeck's own Location Spoofer is loaded, so a copy of it among the
+// user's tweaks does not hook everything a second time.
+static BOOL locationSpooferLoaded = NO;
+
 static NSString *loadTweakAtURL(NSURL *url) {
     NSString *tweakPath = url.path;
     NSString *tweak = tweakPath.lastPathComponent;
     if (![tweakPath hasSuffix:@".dylib"] && ![tweakPath hasSuffix:@".framework"]) {
+        return nil;
+    }
+    if (locationSpooferLoaded && [tweak isEqualToString:@"LocationSpoofer.dylib"]) {
+        NSLog(@"Skipping %@, FlekDeck's own copy is already loaded", tweak);
         return nil;
     }
     if ([tweakPath hasSuffix:@".framework"]) {
@@ -76,19 +84,56 @@ static void showDlerrAlert(NSString *error) {
     objc_setAssociatedObject(alert, @"window", window, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
+static void showDlerrAlertIfNeeded(NSArray<NSString *> *errors) {
+    if (errors.count > 0) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSString *error = [errors componentsJoinedByString:@"\n"];
+            showDlerrAlert(error);
+        });
+    }
+}
+
+// FlekDeck's own Location Spoofer, turned on per app in its settings. It only
+// swizzles Objective-C methods, so unlike tweaks in general it still works when
+// TweakLoader comes in after the app's initializers.
+static NSString *loadLocationSpooferIfOn(void) {
+    if (![NSUserDefaults.guestAppInfo[@"spoofLocation"] boolValue]) {
+        return nil;
+    }
+    NSString *lcMainBundlePath = NSUserDefaults.lcMainBundle.bundlePath;
+    if (NSUserDefaults.isLiveProcess) {
+        lcMainBundlePath = lcMainBundlePath.stringByDeletingLastPathComponent.stringByDeletingLastPathComponent;
+    }
+    NSURL *url = [NSURL fileURLWithPath:[lcMainBundlePath stringByAppendingPathComponent:@"Frameworks/LocationSpoofer.dylib"]];
+    if (![NSFileManager.defaultManager fileExistsAtPath:url.path]) {
+        // A build without it has no toggle to turn it off with, so an alert on
+        // every launch would have no way out.
+        NSLog(@"Location Spoofer is on but missing from this build");
+        return nil;
+    }
+    NSString *error = loadTweakAtURL(url);
+    locationSpooferLoaded = error == nil;
+    return error;
+}
+
  __attribute__((constructor))
 static void TweakLoaderConstructor() {
     const char *tweakFolderC = getenv("LC_GLOBAL_TWEAKS_FOLDER");
     NSString *globalTweakFolder = @(tweakFolderC);
     unsetenv("LC_GLOBAL_TWEAKS_FOLDER");
     
+    NSMutableArray *errors = [NSMutableArray new];
+    NSString *locationSpooferError = loadLocationSpooferIfOn();
+    if (locationSpooferError) {
+        [errors addObject:locationSpooferError];
+    }
+    
     if([NSUserDefaults.guestAppInfo[@"dontInjectTweakLoader"] boolValue]) {
         // don't load any tweak since tweakloader is loaded after all initializers
         NSLog(@"Skip loading tweaks");
+        showDlerrAlertIfNeeded(errors);
         return;
     }
-    
-    NSMutableArray *errors = [NSMutableArray new];
     
     NSArray<NSURL *> *globalTweaks = [NSFileManager.defaultManager contentsOfDirectoryAtURL:[NSURL fileURLWithPath:globalTweakFolder]
     includingPropertiesForKeys:@[] options:0 error:nil];
@@ -96,6 +141,7 @@ static void TweakLoaderConstructor() {
     
     if([globalTweaks count] <= 1 && tweakFolderName.length == 0) {
         // nothing to load
+        showDlerrAlertIfNeeded(errors);
         return;
     }
 
@@ -140,10 +186,5 @@ static void TweakLoaderConstructor() {
         loadTweaksRecursively([NSURL fileURLWithPath:tweakFolder], errors);
     }
 
-    if (errors.count > 0) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            NSString *error = [errors componentsJoinedByString:@"\n"];
-            showDlerrAlert(error);
-        });
-    }
+    showDlerrAlertIfNeeded(errors);
 }

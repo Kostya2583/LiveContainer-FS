@@ -149,6 +149,12 @@ class LCAppModel: ObservableObject, Hashable {
         }
     }
     
+    @Published var uiSpoofLocation : Bool {
+        didSet {
+            appInfo.spoofLocation = uiSpoofLocation
+        }
+    }
+    
     @Published var uiRemark : String {
         didSet {
             appInfo.remark = uiRemark
@@ -301,6 +307,7 @@ class LCAppModel: ObservableObject, Hashable {
         self.jitLaunchScriptJs = appInfo.jitLaunchScriptJs
         self.uiSelected32BitEmulator = appInfo.selected32BitEmulator ?? ""
         self.uiSpoofSDKVersion = appInfo.spoofSDKVersion
+        self.uiSpoofLocation = appInfo.spoofLocation
         self.uiRemark = appInfo.remark ?? ""
         self.uiIs32bit = appInfo.is32bit
         self.uiIs32bitEmulator = appInfo.is32bitEmulator

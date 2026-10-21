@@ -43,6 +43,8 @@ typedef NS_ENUM(NSInteger, MultitaskSpecified){
 @property bool autoSaveDisabled;
 @property bool dontSign;
 @property bool spoofSDKVersion;
+// FlekDeck's bundled Location Spoofer, loaded by TweakLoader
+@property bool spoofLocation;
 @property (nonatomic, strong) NSString* jitLaunchScriptJs;
 @property (nonatomic, strong) NSString* selected32BitEmulator;
 @property NSDate* lastLaunched;
