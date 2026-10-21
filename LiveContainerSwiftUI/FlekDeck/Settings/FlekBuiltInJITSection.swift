@@ -223,7 +223,7 @@ struct FlekBuiltInJITSection: View {
     /// VPN app and a computer, with the guide to setting it up.
     @ViewBuilder
     private var premiumOffer: some View {
-        offer(systemImage: "crown",
+        offer(icon: .image("FlekPremium"),
               title: "lc.flek.jit.offer.premium.title".loc,
               caption: "lc.flek.jit.offer.premium.caption".loc) {
             if isCheckingPremium {
@@ -242,7 +242,7 @@ struct FlekBuiltInJITSection: View {
         NavigationLink {
             FlekStikDebugGuideView()
         } label: {
-            offer(systemImage: "wrench.and.screwdriver",
+            offer(icon: .symbol("wrench.and.screwdriver"),
                   title: "lc.flek.jit.offer.stikdebug.title".loc,
                   caption: "lc.flek.jit.offer.stikdebug.caption".loc) {
                 EmptyView()
@@ -250,19 +250,35 @@ struct FlekBuiltInJITSection: View {
         }
     }
 
-    /// One of the two ways offered, laid out as a step is, with a symbol where
+    /// What an offer shows where a step has its number.
+    private enum OfferIcon {
+        /// A system symbol, at the size of the number.
+        case symbol(String)
+        /// An image of FlekDeck's own, fitted to the space the number takes.
+        case image(String)
+    }
+
+    /// One of the two ways offered, laid out as a step is, with an icon where
     /// a step has its number.
-    private func offer<Control: View>(systemImage: String, title: String, caption: String,
+    private func offer<Control: View>(icon: OfferIcon, title: String, caption: String,
                                       @ViewBuilder control: () -> Control) -> some View {
         HStack(spacing: 12) {
-            ZStack {
-                // As wide as a step's number, whichever symbol it is.
-                Image(systemName: "1.circle")
-                    .hidden()
-                Image(systemName: systemImage)
-                    .foregroundStyle(.secondary)
-            }
-            .font(.title2)
+            // As wide as a step's number, whichever icon it is, so that the
+            // offers' titles line up.
+            Image(systemName: "1.circle")
+                .hidden()
+                .overlay {
+                    switch icon {
+                    case .symbol(let name):
+                        Image(systemName: name)
+                    case .image(let name):
+                        Image(name)
+                            .resizable()
+                            .scaledToFit()
+                    }
+                }
+                .font(.title2)
+                .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                 Text(caption)
