@@ -19,6 +19,10 @@ struct DeviceStatusResponse: Codable {
     /// the app offline. Absent from current responses; `AccessVerdictStore`
     /// falls back to its own default and clamps whatever arrives.
     let offlineGraceDays: Int?
+    /// The number FlekSt0re's database files the device under, which Premium
+    /// is paid for by: see FlekPremium.deviceNumber. Taken as a number or as
+    /// text, and nil where the answer has none.
+    let deviceNumber: Int?
 
     private enum CodingKeys: String, CodingKey {
         case status
@@ -28,6 +32,7 @@ struct DeviceStatusResponse: Codable {
         case banReason
         case message
         case offlineGraceDays
+        case deviceNumber = "deviceId"
     }
 
     init(from decoder: Decoder) throws {
@@ -39,5 +44,12 @@ struct DeviceStatusResponse: Codable {
         banReason = try container.decodeIfPresent(String.self, forKey: .banReason)
         message = try container.decodeIfPresent(String.self, forKey: .message)
         offlineGraceDays = try container.decodeIfPresent(Int.self, forKey: .offlineGraceDays)
+        if let number = try? container.decode(Int.self, forKey: .deviceNumber) {
+            deviceNumber = number > 0 ? number : nil
+        } else if let text = try? container.decode(String.self, forKey: .deviceNumber), let number = Int(text), number > 0 {
+            deviceNumber = number
+        } else {
+            deviceNumber = nil
+        }
     }
 }

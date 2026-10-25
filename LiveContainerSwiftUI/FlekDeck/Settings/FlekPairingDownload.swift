@@ -48,7 +48,7 @@ enum FlekPairingDownload {
     }
 
     /// Where FlekPair leaves the files, each under its device's UDID.
-    private static let server = "https://nestapitest.flekstore.com/pairing-files"
+    private static let server = "\(FlekStoreAPI.base)/pairing-files"
 
     /// What was taken last, by its digest.
     private static let takenKey = "FlekPairingDownloadTaken"

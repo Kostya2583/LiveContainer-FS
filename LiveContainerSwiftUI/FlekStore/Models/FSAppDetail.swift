@@ -2,7 +2,7 @@
 //  FSAppDetail.swift
 //  LiveContainerSwiftUI
 //
-//  The full app page from `GET https://nestapi.flekstore.com/app/{app_id}` —
+//  The full app page from `GET <FlekStoreAPI.base>/app/{app_id}` —
 //  developer, screenshots, description, size, downloads and release date. The
 //  catalog list endpoint returns none of this, so it is fetched on demand when
 //  a row is opened.

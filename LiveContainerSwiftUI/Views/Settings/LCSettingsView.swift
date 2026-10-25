@@ -94,7 +94,12 @@ struct LCSettingsView: View {
     @AppStorage("FlekPairWithoutCode") var pairWithoutCode = false
 #if DEBUG
     @AppStorage("FlekDebugPremium") var debugPremium = false
+    @State private var premiumOfferShown = false
 #endif
+    /// Diagnostics' Forget Device: asked which to forget, and what it did,
+    /// while the alert says so.
+    @State private var forgetDeviceAsked = false
+    @State private var forgottenDeviceNote: String?
     @AppStorage("BKNoWatchdogs") var disableLiveProcessWatchdog = false
     
     // Written from inside LiveProcess by LCHostIdentityInit. The extension has no
@@ -243,6 +248,13 @@ struct LCSettingsView: View {
     // other status is a step that refused.
     private var backgroundInstallIsProblem: Bool {
         !["", "Submitted", "Running", "Finished"].contains(backgroundInstallStatus)
+    }
+
+    // What FlekDeck knows this device by: the number FlekSt0re filed it under,
+    // and whether an ID for the UDID profile is kept to find it again by.
+    private var forgetDeviceStatus: String {
+        let device = FlekPremium.deviceNumber.map { "Device \($0)" } ?? "No device"
+        return device + (FlekUDIDProfile.hasKeptID ? " · ID kept" : " · No ID")
     }
 
     // Orange only when something is genuinely wrong: a parallel launch that produced
@@ -527,6 +539,55 @@ struct LCSettingsView: View {
                         } message: {
                             Text("\(backgroundInstallReport)\n\nCopied to clipboard.")
                         }
+
+                        // MARK: - Forget device
+                        // Back to a device FlekDeck has not filed, to try the UDID
+                        // profile and the restore at launch again. Keeping the ID
+                        // is what deleting FlekDeck does; forgetting it too is a
+                        // device FlekDeck has never been on.
+                        HStack(spacing: 12) {
+                            Image(systemName: "iphone.slash")
+                                .font(.system(size: 20))
+                                .foregroundColor(.white)
+                                .frame(width: 36, height: 36)
+                                .background(Color.orange)
+                                .cornerRadius(8)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Forget Device")
+                                    .font(.body)
+
+                                Text(forgetDeviceStatus)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                        }
+                        .padding(.vertical, 6)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            forgetDeviceAsked = true
+                        }
+                        .confirmationDialog("Forget Device", isPresented: $forgetDeviceAsked, titleVisibility: .visible) {
+                            Button("Forget Device") {
+                                FlekUDIDProfile.forgetDevice(andID: false)
+                                forgottenDeviceNote = "Its UDID, number and Premium are gone, and its ID is kept. Open FlekDeck again to find it by that ID, or install the profile again."
+                            }
+                            Button("Forget Device and Its ID", role: .destructive) {
+                                FlekUDIDProfile.forgetDevice(andID: true)
+                                forgottenDeviceNote = "Its UDID, number, Premium and ID are gone, as on a device FlekDeck has never been on."
+                            }
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text("FlekDeck forgets this device's UDID, number and Premium. With its ID kept, FlekDeck finds the device again when opened, as after being reinstalled.")
+                        }
+                        .alert("Device Forgotten",
+                               isPresented: Binding(get: { forgottenDeviceNote != nil }, set: { if !$0 { forgottenDeviceNote = nil } }),
+                               presenting: forgottenDeviceNote) { _ in
+                            Button("OK", role: .cancel) {}
+                        } message: { note in
+                            Text(note)
+                        }
                     } header: {
                         Text("Diagnostics")
                     }
@@ -583,6 +644,17 @@ struct LCSettingsView: View {
                         // reads it.
                         Toggle(isOn: $debugPremium) {
                             Text("Premium (Debug Builds Only)")
+                        }
+                        // The Premium sheet whatever Premium stands at, to try
+                        // the checkout on a device that has Premium already:
+                        // nothing else offers the sheet then.
+                        Button {
+                            premiumOfferShown = true
+                        } label: {
+                            Text("Show Premium Offer")
+                        }
+                        .sheet(isPresented: $premiumOfferShown) {
+                            FlekPremiumOfferView()
                         }
 #endif
                         // A page for Premium Access to open in place of FlekSt0re's

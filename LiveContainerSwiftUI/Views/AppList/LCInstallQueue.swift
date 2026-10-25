@@ -277,12 +277,10 @@ final class LCInstallQueue: ObservableObject {
     /// downloading / waiting / installing), and is re-enabled once the queue
     /// drains. Note this only suppresses the *automatic* idle lock — it can't
     /// stop a manual lock (power button) or keep work running once the app is
-    /// actually suspended in the background.
+    /// actually suspended in the background. The timer is shared with other
+    /// waits, so it goes through FlekKeepAwake rather than being set here.
     private func updateIdleTimer() {
-        let shouldStayAwake = items.contains { isActive($0) }
-        if UIApplication.shared.isIdleTimerDisabled != shouldStayAwake {
-            UIApplication.shared.isIdleTimerDisabled = shouldStayAwake
-        }
+        FlekKeepAwake.set(items.contains { isActive($0) }, for: .installs)
     }
 
     private func cleanupItem(_ item: InstallItem) {

@@ -34,9 +34,10 @@
 //  FlekSt0re's status service, and shows them from the start. One it did not
 //  sign cannot know the UDID by itself, and offers to add it: that downloads a
 //  profile reporting it, FlekUDIDProfile, and walks through installing that in
-//  FlekUDIDProfileView. Premium is FlekSt0re's to grant, so such a build has
-//  none to show and says where to get it. It shows the device once a
-//  certificate is imported: until then getting one is all its page is about.
+//  FlekUDIDProfileView. From then on it knows the device by FlekSt0re's number
+//  for it, and its Premium from the device's record. It shows the device once
+//  a certificate is imported: until then getting one is all its page is about.
+//  A build run from Xcode, which cannot import one, shows the device always.
 //
 
 import SwiftUI
@@ -51,13 +52,16 @@ struct FlekGeneralView<JITPage: View>: View {
     @ViewBuilder let jitPage: () -> JITPage
 
     @EnvironmentObject private var sharedModel: SharedModel
+    @Environment(\.scenePhase) private var scenePhase
     @State private var unavailableExplanationShown = false
     /// The imported certificate as the card shows it; nil while none is.
     @State private var certificate: FlekImportedCertificate?
     @State private var removalConfirmationShown = false
     /// Set to get the UDID with the profile.
     @State private var asksForUDID = false
-    @State private var statusUnreachableShown = false
+    /// What asking about the device found, where the user asked and it is
+    /// worth saying.
+    @State private var statusAlert: StatusAlert?
     @State private var premiumSheetShown = false
     /// While FlekSt0re's status service is asked about this device.
     @State private var isCheckingStatus = false
@@ -78,6 +82,9 @@ struct FlekGeneralView<JITPage: View>: View {
     /// of it. Whether it is active is FlekPremium's to say, from the same.
     @AppStorage("FSSubscriptionStatus") private var keptPremiumStatus = false
     @AppStorage("FSSubscriptionEndDate") private var keptPremiumEnd = ""
+    /// The PayPal subscription Premium comes from, empty for none: see
+    /// FlekPremium.subscriptionID.
+    @AppStorage("FlekPremiumSubscriptionID") private var keptSubscriptionID = ""
 
     /// Whether the Info.plist carries a FlekSt0re device ID, as the builds
     /// FlekSt0re signs do. Their certificate is one bought through FlekSt0re:
@@ -88,9 +95,15 @@ struct FlekGeneralView<JITPage: View>: View {
 
     /// Whether the page shows the device and its Premium. A copy FlekSt0re
     /// signed has them looked up for it, and shows them whatever else is set
-    /// up. Any other shows them once a certificate is imported.
+    /// up. Any other shows them once a certificate is imported. A build run
+    /// from Xcode shows them always, as it cannot import a certificate and
+    /// the UDID profile and Premium are tried out with it.
     private var showsDevice: Bool {
-        FlekPremium.deviceID != nil || !sharedModel.needsCertificate
+#if DEBUG
+        return true
+#else
+        return FlekPremium.deviceID != nil || !sharedModel.needsCertificate
+#endif
     }
 
     /// The UDID, where FlekDeck knows it.
@@ -209,6 +222,13 @@ struct FlekGeneralView<JITPage: View>: View {
             // UDID, or a Premium bought since.
             if knownUDID == nil || !FlekPremium.isActive {
                 await refreshDeviceStatus(isAsked: false)
+            }
+        }
+        // And again on coming back to FlekDeck, from paying on the website or
+        // on another device say, so that Premium shows without being asked for.
+        .onChange(of: scenePhase) { phase in
+            if phase == .active, knownUDID == nil || !FlekPremium.isActive {
+                Task { await refreshDeviceStatus(isAsked: false) }
             }
         }
         .alert(removalTitle, isPresented: $removalConfirmationShown) {
@@ -554,10 +574,27 @@ struct FlekGeneralView<JITPage: View>: View {
         .sheet(isPresented: $premiumSheetShown) {
             FlekPremiumOfferView()
         }
-        .alert("lc.flek.premium.title".loc, isPresented: $statusUnreachableShown) {
+        .alert("lc.flek.premium.title".loc,
+               isPresented: Binding(get: { statusAlert != nil }, set: { if !$0 { statusAlert = nil } }),
+               presenting: statusAlert) { _ in
             Button("lc.common.ok".loc, role: .cancel) {}
-        } message: {
-            Text("lc.flek.jit.premium.unconfirmed".loc)
+        } message: { alert in
+            Text(alert.message)
+        }
+    }
+
+    /// What asking about the device can find that is worth an alert.
+    private enum StatusAlert {
+        /// No answer came.
+        case unreachable
+        /// The answer has no Premium for the device, asked about Premium.
+        case noPremium
+
+        var message: String {
+            switch self {
+            case .unreachable: "lc.flek.jit.premium.unconfirmed".loc
+            case .noPremium: "lc.flek.premium.notFound".loc
+            }
         }
     }
 
@@ -606,11 +643,12 @@ struct FlekGeneralView<JITPage: View>: View {
     }
 
     /// How an unknown UDID is got. A build FlekSt0re signed asks the status
-    /// service, which knows the device it was signed for. Any other has it
+    /// service, which knows the device it was signed for, and one that has
+    /// been through the profile asks for the device's record. Any other has it
     /// reported by a profile, which the user installs.
     @ViewBuilder
     private var udidRetrieval: some View {
-        if FlekPremium.deviceID == nil {
+        if !FlekPremium.isDeviceKnown {
             Button("lc.flek.general.udid.add".loc) {
                 asksForUDID = true
             }
@@ -621,7 +659,7 @@ struct FlekGeneralView<JITPage: View>: View {
         } else if isCheckingStatus {
             ProgressView()
         } else {
-            refreshButton
+            refreshButton(reportsNoPremium: false)
         }
     }
 
@@ -645,10 +683,12 @@ struct FlekGeneralView<JITPage: View>: View {
         .accessibilityLabel("lc.flek.general.udid.copy".loc)
     }
 
-    private var refreshButton: some View {
+    /// Asks FlekSt0re about the device again. From the Premium row, an answer
+    /// with no Premium in it is said as well.
+    private func refreshButton(reportsNoPremium: Bool) -> some View {
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            Task { await refreshDeviceStatus(isAsked: true) }
+            Task { await refreshDeviceStatus(isAsked: true, reportsNoPremium: reportsNoPremium) }
         } label: {
             Image(systemName: "arrow.clockwise")
                 .font(.system(size: 18))
@@ -685,9 +725,10 @@ struct FlekGeneralView<JITPage: View>: View {
         return .none
     }
 
-    /// Premium for this device. Active, it says until when and can be asked
-    /// about again. Otherwise the row leads to how Premium is got, which is
-    /// also all there is to say on a build FlekSt0re did not sign.
+    /// Premium for this device, laid out the same whatever it is: where it
+    /// stands, the one thing to do about it under that, and asking about it
+    /// again. Premium paid for anywhere but FlekDeck's own checkout shows
+    /// only by being asked about.
     @ViewBuilder
     private var premiumRow: some View {
         switch premiumStanding {
@@ -709,37 +750,54 @@ struct FlekGeneralView<JITPage: View>: View {
                     Text(until.map { String(format: "lc.flek.premium.validTill %@".loc, $0) } ?? "lc.flek.premium.active".loc)
                 }
                 .foregroundStyle(.green)
-            } accessory: {
-                if FlekPremium.deviceID != nil {
-                    refreshButton
+                // Premium that renews by itself is stopped on PayPal's own
+                // page, which this leads to.
+                if !keptSubscriptionID.isEmpty {
+                    premiumLink("lc.flek.premium.manage".loc) {
+                        UIApplication.shared.open(FlekPremium.manageSubscriptionURL)
+                    }
                 }
+            } accessory: {
+                premiumRefresh
             }
         case .ended(let day):
-            premiumOffer {
+            premiumRowContent {
                 Text(String(format: "lc.flek.premium.ended %@".loc, day))
                     .foregroundStyle(.red)
+                premiumLink("lc.flek.premium.renew".loc) {
+                    premiumSheetShown = true
+                }
+            } accessory: {
+                premiumRefresh
             }
         case .none:
-            premiumOffer {
+            premiumRowContent {
                 Text("lc.flek.premium.unlock".loc)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                premiumLink("lc.flek.premium.get".loc) {
+                    premiumSheetShown = true
+                }
+            } accessory: {
+                premiumRefresh
             }
         }
     }
 
-    /// The row as the way to getting Premium.
-    private func premiumOffer<Status: View>(@ViewBuilder status: () -> Status) -> some View {
-        Button {
-            premiumSheetShown = true
-        } label: {
-            premiumRowContent(status: status) {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color(UIColor.tertiaryLabel))
-            }
+    /// The one thing the Premium row offers to do, under where it stands.
+    private func premiumLink(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(title, action: action)
+            .font(.system(size: 15))
+            .padding(.top, 2)
+    }
+
+    /// Asking about Premium again, which takes something to ask by: a copy
+    /// with no UDID yet has the device row's Add instead.
+    @ViewBuilder
+    private var premiumRefresh: some View {
+        if FlekPremium.isDeviceKnown {
+            refreshButton(reportsNoPremium: true)
         }
-        .buttonStyle(FlekCardPressStyle())
     }
 
     private func premiumRowContent<Status: View, Accessory: View>(
@@ -768,28 +826,23 @@ struct FlekGeneralView<JITPage: View>: View {
         .contentShape(Rectangle())
     }
 
-    /// Asks FlekSt0re's status service about this device, where there is an
-    /// ID to ask by, and keeps what it says: Premium, and the UDID of the
-    /// device this copy was signed for. A failure is only said where the user
-    /// asked.
-    private func refreshDeviceStatus(isAsked: Bool) async {
-        guard !isCheckingStatus, let deviceID = FlekPremium.deviceID else {
+    /// Asks FlekSt0re about this device, where there is anything to ask by,
+    /// and keeps what it says: Premium, and the device's UDID. A failure is
+    /// only said where the user asked, and an answer with no Premium in it
+    /// only where they asked about Premium.
+    private func refreshDeviceStatus(isAsked: Bool, reportsNoPremium: Bool = false) async {
+        guard !isCheckingStatus, FlekPremium.isDeviceKnown else {
             return
         }
         isCheckingStatus = true
         defer { isCheckingStatus = false }
-        guard case .answered(let response) = await AccessVerificationService.fetchStatus(encryptedUDID: deviceID) else {
-            if isAsked {
-                statusUnreachableShown = true
+        let answered = await FlekPremium.refresh() != nil
+        if isAsked {
+            if !answered {
+                statusAlert = .unreachable
+            } else if reportsNoPremium, !FlekPremium.isActive {
+                statusAlert = .noPremium
             }
-            return
-        }
-        // An answer is one for the access check as well.
-        AccessVerdictStore.save(response, for: deviceID)
-        FlekPremium.keep(response)
-        let udid = response.udid.trimmingCharacters(in: .whitespacesAndNewlines)
-        if udid.isDeviceUDID {
-            deviceUDID = udid
         }
         // An end the answer has just confirmed is seen as it shows here.
         if showsDevice {
@@ -813,7 +866,7 @@ struct FlekGeneralView<JITPage: View>: View {
         guard !end.isEmpty else {
             return nil
         }
-        if let date = DateFormatter.deviceServiceFormatter.date(from: end) {
+        if let date = DateFormatter.deviceServiceDate(from: end) {
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd"
             formatter.locale = Locale(identifier: "en_US_POSIX")

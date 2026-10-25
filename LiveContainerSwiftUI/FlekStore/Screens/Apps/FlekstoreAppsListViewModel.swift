@@ -79,7 +79,7 @@ class FlekstoreAppsListViewModel: ObservableObject {
     private func currentEndpoint() -> URL? {
         switch repository {
         case .flekstore:
-            return URL(string: "https://nestapitest.flekstore.com/app/with-link")
+            return URL(string: "\(FlekStoreAPI.base)/app/with-link")
 
         case .custom(let url):
             return URL(string: url)
@@ -420,7 +420,7 @@ class FlekstoreAppsListViewModel: ObservableObject {
         guard !encryptedUDID.isEmpty else { return }
 
         guard let url = URL(
-            string: "https://nestapi.flekstore.com/device-service/get-status/\(encryptedUDID)"
+            string: "\(FlekStoreAPI.base)/device-service/get-status/\(encryptedUDID)"
         ) else { return }
 
         do {
@@ -469,7 +469,7 @@ class FlekstoreAppsListViewModel: ObservableObject {
                               0xC3, 0xE1, 0x8E, 0x9E, 0xD5, 0xFE, 0xE7, 0xEF,
                               0xD3, 0x93, 0xF2, 0xF8]
             guard let t = String(bytes: e.map { $0 ^ k }, encoding: .utf8),
-                  let url = URL(string: "https://nestapi.flekstore.com/app/\(appId)/increase-downloads") else { return }
+                  let url = URL(string: "\(FlekStoreAPI.base)/app/\(appId)/increase-downloads") else { return }
             var req = URLRequest(url: url)
             req.httpMethod = "PATCH"
             req.setValue("Bearer \(t)", forHTTPHeaderField: "Authorization")

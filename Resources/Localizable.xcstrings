@@ -19046,6 +19046,17 @@
         }
       }
     },
+    "lc.flek.premium.get" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get Premium"
+          }
+        }
+      }
+    },
     "lc.flek.premium.installProfile" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -19057,6 +19068,50 @@
         }
       }
     },
+    "lc.flek.premium.manage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage Subscription"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.notFound" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Premium found for this device yet. A new payment can take a minute to show."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.active %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium is active until %@."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.activeNoEnd" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium is active."
+          }
+        }
+      }
+    },
     "lc.flek.premium.offer.agreement %@ %@ %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -19064,6 +19119,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "By subscribing, you agree to our %@, %@ and %@."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.cancelled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment cancelled."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.checkAgain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Already Paid? Check Again"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.checkPayment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check Payment"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.confirming" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirming your payment…"
           }
         }
       }
@@ -19086,6 +19185,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "JIT. Without a computer."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.noConnection" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t reach the server. Check your internet connection."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.notConfirmed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not confirmed yet. It can take a minute."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.openCheckout" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Checkout Again"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.opening" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opening checkout…"
           }
         }
       }
@@ -19211,6 +19354,17 @@
         }
       }
     },
+    "lc.flek.premium.offer.unreachable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t check the payment. Check your internet connection."
+          }
+        }
+      }
+    },
     "lc.flek.premium.promptMessage" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -19229,6 +19383,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Refresh"
+          }
+        }
+      }
+    },
+    "lc.flek.premium.renew" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renew"
           }
         }
       }

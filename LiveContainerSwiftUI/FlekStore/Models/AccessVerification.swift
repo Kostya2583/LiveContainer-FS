@@ -191,9 +191,18 @@ enum AccessVerificationService {
     }()
 
     static func fetchStatus(encryptedUDID: String) async -> AccessCheckResult {
-        guard let url = URL(
-            string: "https://nestapi.flekstore.com/device-service/get-status/\(encryptedUDID)"
-        ) else {
+        await fetchStatus(at: "\(FlekStoreAPI.base)/device-service/get-status/\(encryptedUDID)")
+    }
+
+    /// The same answer asked by the device's UDID, for a copy FlekSt0re did not
+    /// sign and so has no encrypted ID to ask by. A UDID the server does not
+    /// know is answered as one without Premium, and with no device number.
+    static func fetchStatus(udid: String) async -> AccessCheckResult {
+        await fetchStatus(at: "\(FlekStoreAPI.base)/device-service/get-status-by-udid/\(udid)")
+    }
+
+    private static func fetchStatus(at address: String) async -> AccessCheckResult {
+        guard let url = URL(string: address) else {
             return .serviceError
         }
 

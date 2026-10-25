@@ -38,7 +38,7 @@ final class FlekAppDetailModel: ObservableObject {
         failed = false
         defer { isLoading = false }
 
-        guard let url = URL(string: "https://nestapi.flekstore.com/app/\(appID)") else {
+        guard let url = URL(string: "\(FlekStoreAPI.base)/app/\(appID)") else {
             failed = true
             return
         }

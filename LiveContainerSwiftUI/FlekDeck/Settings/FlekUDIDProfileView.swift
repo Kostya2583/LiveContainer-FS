@@ -24,6 +24,8 @@ import SwiftUI
 enum FlekInAppSafari {
     /// The delegate of the page showing, which the page does not retain.
     private static var closeHandler: CloseHandler?
+    /// The page showing, while it is.
+    private static weak var page: SFSafariViewController?
 
     /// Opens `url`, then calls `onClose` once the user has closed it and it is
     /// off screen. Hands `url` to the system instead when there is nothing to
@@ -37,9 +39,25 @@ enum FlekInAppSafari {
         let handler = CloseHandler(onClose: onClose)
         safari.delegate = handler
         closeHandler = handler
+        page = safari
         whenSettled(presenter) {
             presenter.present(safari, animated: true)
         }
+    }
+
+    /// Closes the page showing as its Done button would, for a site that
+    /// sends the user back to FlekDeck itself, and says whether there was
+    /// one. Closed this way, it does not tell its delegate.
+    @discardableResult
+    static func close() -> Bool {
+        guard let page, let presenter = page.presentingViewController, let handler = closeHandler else {
+            return false
+        }
+        closeHandler = nil
+        page.dismiss(animated: true) {
+            handler.finish(after: presenter)
+        }
+        return true
     }
 
     /// The top of the key window's presentations, leaving out one on its way
@@ -74,10 +92,13 @@ enum FlekInAppSafari {
         }
 
         func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
-            let presenter = controller.presentingViewController
             FlekInAppSafari.closeHandler = nil
-            // The page is told before it leaves the screen; what comes next
-            // presents once it has.
+            finish(after: controller.presentingViewController)
+        }
+
+        /// Calls `onClose` once the page is off screen. The page is told it
+        /// is done before it leaves; what comes next presents once it has.
+        func finish(after presenter: UIViewController?) {
             DispatchQueue.main.async { [onClose] in
                 FlekInAppSafari.whenSettled(presenter, onClose)
             }

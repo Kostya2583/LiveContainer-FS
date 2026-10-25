@@ -105,6 +105,9 @@ struct LCTabView: View {
             setupInitialRepositoriesIfNeeded()
             Task { await MultiRepoSearchModel.prefetchAllRepos() }
             Task { await FlekUDIDProfile.collectUDID() }
+            // Installed afresh: the device again, by the ID the keychain kept.
+            Task { await FlekUDIDProfile.restoreDevice() }
+            Task { await FlekPremium.confirmPendingPurchase() }
             // Mobile Data that the FlekJIT shortcut switched off for a launch
             // which never got as far as switching it back on.
             FlekMobileDataShortcut.shared.turnMobileDataBackOn()
@@ -143,6 +146,11 @@ struct LCTabView: View {
             Task {
                 await FlekUDIDProfile.collectUDID()
             }
+            // Premium paid for and not shown yet, from a checkout left for
+            // another app, say.
+            Task {
+                await FlekPremium.confirmPendingPurchase()
+            }
         }
         .onOpenURL { url in
             dispatchURL(url: url)
@@ -180,10 +188,15 @@ struct LCTabView: View {
                 sharedModel.selectedTab = .apps
             case "certificate":
                 sharedModel.selectedTab = .settings
-            case "udid":
+            case "udid", "device-registered":
                 // The UDID profile's way back: the server that took the device's
-                // answer redirects here with the UDID.
-                FlekUDIDProfile.importUDID(from: url)
+                // answer redirects here, and the device is asked for. FlekSt0re's
+                // sends device-registered.
+                Task { await FlekUDIDProfile.handleReturn(from: url) }
+                return
+            case "premium":
+                // The checkout's way back, paid for or cancelled.
+                FlekPremium.handleCheckoutReturn(from: url)
                 return
             case "source":
                 sharedModel.selectedTab = .sources
