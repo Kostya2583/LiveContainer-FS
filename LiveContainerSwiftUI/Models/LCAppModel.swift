@@ -454,6 +454,11 @@ class LCAppModel: ObservableObject, Hashable {
             try await FlekJITSetup.ensureReady()
         }
 #endif
+        // Location Spoofer is a Premium feature, asked here for the same
+        // reason; the app is told how it went (FlekLocationSpoofer).
+        if appInfo.spoofLocation, FlekLocationSpoofer.isBundled {
+            try await FlekLocationSpoofer.ensurePremium()
+        }
         
         if let bundleIdOverride {
             UserDefaults.standard.set(bundleIdOverride, forKey: "selected")

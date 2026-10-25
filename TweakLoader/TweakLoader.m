@@ -111,6 +111,18 @@ static NSString *loadLocationSpooferIfOn(void) {
         NSLog(@"Location Spoofer is on but missing from this build");
         return nil;
     }
+    // A Premium feature, as FlekJIT is (enableJITWithStikJIT in LCBootstrap.m):
+    // FlekDeck says how long Premium lasts, or that it has just confirmed it
+    // for this launch. Not every launch starts in FlekDeck, where it is asked
+    // first: a link opened in another app leads straight here.
+    NSUserDefaults *shared = NSUserDefaults.lcSharedDefaults;
+    NSTimeInterval clock = NSDate.date.timeIntervalSince1970;
+    // The latest the clock has been seen at stands in for one wound back.
+    NSTimeInterval now = MAX(clock, [shared doubleForKey:@"FSAccessClockHighWaterMark"]);
+    BOOL justConfirmed = fabs(clock - [shared doubleForKey:@"FlekPremiumConfirmedAt"]) < 60;
+    if (!justConfirmed && [shared doubleForKey:@"FlekPremiumUntil"] <= now) {
+        return @"Location Spoofer needs Premium, so this app sees its real location. Open FlekDeck to renew Premium, or turn Location Spoofer off in the app's settings.";
+    }
     NSString *error = loadTweakAtURL(url);
     locationSpooferLoaded = error == nil;
     return error;

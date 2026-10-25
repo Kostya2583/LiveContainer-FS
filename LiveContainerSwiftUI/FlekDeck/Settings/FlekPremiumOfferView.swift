@@ -110,6 +110,15 @@ struct FlekPremiumOfferView: View {
                         feature(symbol: "slider.horizontal.3",
                                 title: "lc.flek.premium.offer.trainer.title".loc,
                                 detail: "lc.flek.premium.offer.trainer.detail".loc)
+                        // Offered only where an app can have it; the tweak
+                        // needs iOS 16.
+                        if #available(iOS 16.0, *), FlekLocationSpoofer.isBundled {
+                            Divider()
+                                .padding(.leading, 32 + 10)
+                            feature(symbol: "location.fill",
+                                    title: "lc.flek.premium.offer.location.title".loc,
+                                    detail: "lc.flek.premium.offer.location.detail".loc)
+                        }
                     }
                     // Set in on the left only: the rule between them runs to
                     // the edge the price's card ends at.

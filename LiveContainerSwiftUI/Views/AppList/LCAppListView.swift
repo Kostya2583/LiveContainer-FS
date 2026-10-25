@@ -71,6 +71,10 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     /// A warning to put up once the one that is up has gone: an alert keeps
     /// the text it came up with.
     @State private var jitNotReadyNext: (title: String, message: String)?
+    /// An app with Location Spoofer on was not started for want of Premium,
+    /// which the warning offers.
+    @State private var locationSpooferNeedsPremium = false
+    @State private var showsPremiumOffer = false
     /// A launch held back for what the device is connected through, to be
     /// started once that has changed. The warning stays up meanwhile.
     @State private var waitingLaunch: (() async -> Void)?
@@ -585,6 +589,17 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             }
         } message: {
             Text(jitNotReadyMessage ?? "")
+        }
+        .alert("lc.flek.jit.premium.title".loc, isPresented: $locationSpooferNeedsPremium) {
+            Button("lc.flek.premium.get".loc) {
+                showsPremiumOffer = true
+            }
+            Button("lc.common.cancel".loc, role: .cancel) {}
+        } message: {
+            Text(FlekLocationSpoofer.PremiumNeeded().localizedDescription)
+        }
+        .sheet(isPresented: $showsPremiumOffer) {
+            FlekPremiumOfferView()
         }
         // Back from Settings, where Airplane Mode has a switch as well.
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
@@ -1305,6 +1320,8 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             showJITNotReady(notReady) {
                 await launchHomeApp(app, parallel: parallel)
             }
+        } catch is FlekLocationSpoofer.PremiumNeeded {
+            locationSpooferNeedsPremium = true
         } catch {
             errorInfo = error.localizedDescription
             errorShow = true
@@ -2587,6 +2604,8 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             showJITNotReady(notReady) {
                 await launchAppWithBundleId(bundleId: bundleId, container: container, urlStr: urlStr, forceJIT: forceJIT)
             }
+        } catch is FlekLocationSpoofer.PremiumNeeded {
+            locationSpooferNeedsPremium = true
         } catch {
             errorInfo = error.localizedDescription
             errorShow = true

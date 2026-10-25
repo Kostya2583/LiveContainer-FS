@@ -18826,6 +18826,17 @@
         }
       }
     },
+    "lc.flek.locationSpoofer.premium.needed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app opens with Location Spoofer, which works only while Premium is active. Get Premium, or turn Location Spoofer off in the app's settings."
+          }
+        }
+      }
+    },
     "lc.flek.memory.device" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -19185,6 +19196,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "JIT. Without a computer."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.location.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick the location each app sees with Location Spoofer."
+          }
+        }
+      }
+    },
+    "lc.flek.premium.offer.location.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Any location, app by app."
           }
         }
       }

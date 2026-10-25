@@ -40,9 +40,10 @@ struct LCAppSettingsView: View {
     
     @EnvironmentObject private var sharedModel : SharedModel
     
-    // FlekDeck ships the Location Spoofer in its Frameworks for devices only
-    // (xcconfigs/LiveContainer.xcconfig), and the tweak needs iOS 16.
-    private static let isLocationSpooferBundled = FileManager.default.fileExists(atPath: Bundle.main.bundleURL.appendingPathComponent("Frameworks/LocationSpoofer.dylib").path)
+    // Location Spoofer is turned on with Premium only (FlekLocationSpoofer).
+    @State private var isPremium = FlekPremium.isActive
+    @State private var isCheckingPremium = false
+    @State private var showsPremiumOffer = false
     
     init(model: LCAppModel) {
         self.appInfo = model.appInfo
@@ -224,15 +225,43 @@ struct LCAppSettingsView: View {
                 
             }
 
-            if #available(iOS 16.0, *), Self.isLocationSpooferBundled {
+            // The tweak needs iOS 16.
+            if #available(iOS 16.0, *), FlekLocationSpoofer.isBundled {
                 Section {
-                    Toggle(isOn: $model.uiSpoofLocation) {
-                        Text("lc.flek.locationSpoofer".loc)
+                    Toggle(isOn: Binding(
+                        get: { model.uiSpoofLocation },
+                        set: { isOn in
+                            if isOn {
+                                turnOnLocationSpoofer()
+                            } else {
+                                model.uiSpoofLocation = false
+                            }
+                        }
+                    )) {
+                        HStack(spacing: 6) {
+                            Text("lc.flek.locationSpoofer".loc)
+                            if !isPremium {
+                                Image("FlekPremium")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 15)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
                     // TweakLoader is what loads it
-                    .disabled(model.uiDontInjectTweakLoader && model.uiDontLoadTweakLoader)
+                    .disabled((model.uiDontInjectTweakLoader && model.uiDontLoadTweakLoader) || isCheckingPremium)
                 } footer: {
                     Text("lc.flek.locationSpoofer.footer".loc)
+                }
+                .sheet(isPresented: $showsPremiumOffer, onDismiss: {
+                    isPremium = FlekPremium.isActive
+                    // Bought from here, to turn it on.
+                    if isPremium {
+                        model.uiSpoofLocation = true
+                    }
+                }) {
+                    FlekPremiumOfferView()
                 }
             }
             
@@ -680,6 +709,30 @@ struct LCAppSettingsView: View {
     
     func toggleHidden() async {
         await model.toggleHidden()
+    }
+    
+    /// Location Spoofer goes on with Premium only, and offers Premium where it
+    /// is not active.
+    func turnOnLocationSpoofer() {
+        guard !isCheckingPremium else {
+            return
+        }
+        isCheckingPremium = true
+        Task {
+            let answer = await FlekPremium.confirm()
+            isCheckingPremium = false
+            switch answer {
+            case .active:
+                isPremium = true
+                model.uiSpoofLocation = true
+            case .inactive:
+                isPremium = false
+                showsPremiumOffer = true
+            case .unconfirmed:
+                errorInfo = "lc.flek.jit.premium.unconfirmed".loc
+                errorShow = true
+            }
+        }
     }
     
     func forceResign() async {
