@@ -277,9 +277,8 @@ enum FlekPremium {
     // MARK: Buying
 
     /// FlekSign's checkout, which takes the device's number, and the monthly
-    /// membership's product there: FlekSign's development host for now, to
-    /// be changed for the real one.
-    private static let checkoutAddress = "https://dev7481.fleksign.com/api/paypal/checkout"
+    /// membership's product there.
+    private static let checkoutAddress = "https://fleksign.com/api/paypal/checkout"
     private static let checkoutProductID = "3"
 
     /// How long after the checkout was opened FlekDeck goes on asking after
