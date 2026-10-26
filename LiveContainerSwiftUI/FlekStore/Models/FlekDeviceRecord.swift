@@ -6,11 +6,11 @@
 //  profile's lookup gives: its UDID, and the services it has, Premium among
 //  them with the day it ends.
 //
-//  A copy FlekSt0re did not sign knows its device and Premium by this alone,
-//  as it has no device ID for the status service to be asked by. The record
-//  is answered for by number with nothing else asked, so anyone with the
-//  number can read it. The number a copy goes by is the one its own profile
-//  request was answered with, and nothing else sets it.
+//  A copy FlekSt0re did not sign reads it after the UDID profile's lookup,
+//  for the UDID its Premium is then asked about by. The record is answered
+//  for by number with nothing else asked, so anyone with the number can read
+//  it. The number a copy goes by is the one its own profile request was
+//  answered with, and nothing else sets it.
 //
 
 import Foundation
@@ -21,9 +21,6 @@ struct FlekDeviceRecord: Decodable {
     /// without Premium. The latest of the record's Premium entries, where it
     /// has more than one.
     let premiumEnd: String?
-    /// The PayPal subscription that Premium comes from, nil for Premium
-    /// granted or bought once.
-    let subscriptionID: String?
 
     private enum CodingKeys: String, CodingKey {
         case udid
@@ -36,20 +33,16 @@ struct FlekDeviceRecord: Decodable {
     private struct Service: Decodable {
         let name: String?
         let endDate: String?
-        /// "false" where there is none.
-        let subscriptionID: String?
 
         private enum CodingKeys: String, CodingKey {
             case name
             case endDate = "end_date"
-            case subscriptionID = "subscription_id"
         }
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             name = try? container.decode(String.self, forKey: .name)
             endDate = try? container.decode(String.self, forKey: .endDate)
-            subscriptionID = try? container.decode(String.self, forKey: .subscriptionID)
         }
     }
 
@@ -63,14 +56,9 @@ struct FlekDeviceRecord: Decodable {
         let services = (try? container.decode([Service].self, forKey: .service)) ?? []
         let latest = services
             .filter { $0.name == "premium" }
-            .compactMap { service in
-                service.endDate.flatMap(DateFormatter.deviceServiceDate(from:)).map { (service: service, end: $0) }
-            }
-            .max { $0.end < $1.end }
-        premiumEnd = latest.map { DateFormatter.deviceServiceFormatter.string(from: $0.end) }
-        subscriptionID = latest?.service.subscriptionID
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .flatMap { $0.isEmpty || $0 == "false" ? nil : $0 }
+            .compactMap { $0.endDate.flatMap(DateFormatter.deviceServiceDate(from:)) }
+            .max()
+        premiumEnd = latest.map { DateFormatter.deviceServiceFormatter.string(from: $0) }
     }
 
     /// The record of the device filed under `number`, or nil where there is

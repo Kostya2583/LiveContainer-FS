@@ -82,9 +82,6 @@ struct FlekGeneralView<JITPage: View>: View {
     /// of it. Whether it is active is FlekPremium's to say, from the same.
     @AppStorage("FSSubscriptionStatus") private var keptPremiumStatus = false
     @AppStorage("FSSubscriptionEndDate") private var keptPremiumEnd = ""
-    /// The PayPal subscription Premium comes from, empty for none: see
-    /// FlekPremium.subscriptionID.
-    @AppStorage("FlekPremiumSubscriptionID") private var keptSubscriptionID = ""
 
     /// Whether the Info.plist carries a FlekSt0re device ID, as the builds
     /// FlekSt0re signs do. Their certificate is one bought through FlekSt0re:
@@ -726,9 +723,9 @@ struct FlekGeneralView<JITPage: View>: View {
     }
 
     /// Premium for this device, laid out the same whatever it is: where it
-    /// stands, the one thing to do about it under that, and asking about it
-    /// again. Premium paid for anywhere but FlekDeck's own checkout shows
-    /// only by being asked about.
+    /// stands, how to get it under that where it is not active, and asking
+    /// about it again. Premium paid for anywhere but FlekDeck's own checkout
+    /// shows only by being asked about.
     @ViewBuilder
     private var premiumRow: some View {
         switch premiumStanding {
@@ -750,13 +747,6 @@ struct FlekGeneralView<JITPage: View>: View {
                     Text(until.map { String(format: "lc.flek.premium.validTill %@".loc, $0) } ?? "lc.flek.premium.active".loc)
                 }
                 .foregroundStyle(.green)
-                // Premium that renews by itself is stopped on PayPal's own
-                // page, which this leads to.
-                if !keptSubscriptionID.isEmpty {
-                    premiumLink("lc.flek.premium.manage".loc) {
-                        UIApplication.shared.open(FlekPremium.manageSubscriptionURL)
-                    }
-                }
             } accessory: {
                 premiumRefresh
             }

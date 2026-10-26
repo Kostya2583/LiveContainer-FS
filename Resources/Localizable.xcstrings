@@ -19079,17 +19079,6 @@
         }
       }
     },
-    "lc.flek.premium.manage" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Manage Subscription"
-          }
-        }
-      }
-    },
     "lc.flek.premium.notFound" : {
       "extractionState" : "manual",
       "localizations" : {

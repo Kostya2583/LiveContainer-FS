@@ -39,7 +39,6 @@ enum FlekPremium {
         static let deviceID = "FSEncryptedUDID"
         static let deviceNumber = "FSDeviceNumber"
         static let filedUDID = "FlekPremiumUDID"
-        static let subscriptionID = "FlekPremiumSubscriptionID"
         /// The end of Premium the user has looked at in General.
         static let endSeen = "FlekPremiumEndSeen"
         // A purchase under way: when the checkout was opened, and when
@@ -93,14 +92,6 @@ enum FlekPremium {
     /// UDID to ask by.
     static var isDeviceKnown: Bool {
         deviceID != nil || filedUDID != nil || deviceNumber != nil
-    }
-
-    /// The PayPal subscription the device's Premium comes from, as its record
-    /// last said: nil for Premium granted or bought once, and where FlekDeck
-    /// has no number to read the record by.
-    static var subscriptionID: String? {
-        let id = UserDefaults.standard.string(forKey: Key.subscriptionID) ?? ""
-        return id.isEmpty ? nil : id
     }
 
     /// Whether Premium is active by what is kept, with nothing asked.
@@ -208,15 +199,6 @@ enum FlekPremium {
         let end = record.premiumEnd.flatMap(DateFormatter.deviceServiceDate(from:))
         keep(status: end.map { AccessVerdictStore.trustedNow() < $0 } ?? false,
              endDate: record.premiumEnd ?? "")
-        keepSubscription(of: record)
-    }
-
-    private static func keepSubscription(of record: FlekDeviceRecord) {
-        if let id = record.subscriptionID {
-            UserDefaults.standard.set(id, forKey: Key.subscriptionID)
-        } else {
-            UserDefaults.standard.removeObject(forKey: Key.subscriptionID)
-        }
     }
 
     private static func keep(status: Bool, endDate: String) {
@@ -253,11 +235,6 @@ enum FlekPremium {
             AccessVerdictStore.save(response, for: deviceID)
             keep(response)
             keepUDID(response.udid)
-            // The status service says nothing of a subscription. The record
-            // does, where FlekDeck has the number to read it by.
-            if let deviceNumber, let record = await FlekDeviceRecord.fetch(number: deviceNumber) {
-                keepSubscription(of: record)
-            }
             return response.status
         }
         // Filed through the profile before FlekDeck kept the UDID for this:
@@ -272,10 +249,6 @@ enum FlekPremium {
             return nil
         }
         keep(response)
-        // This answer says nothing of a subscription either.
-        if let deviceNumber, let record = await FlekDeviceRecord.fetch(number: deviceNumber) {
-            keepSubscription(of: record)
-        }
         return response.status
     }
 
@@ -303,13 +276,11 @@ enum FlekPremium {
 
     // MARK: Buying
 
-    /// FlekSign's checkout, which takes the device's number, the monthly
-    /// membership's product there, and PayPal's page for managing automatic
-    /// payments, where a subscription is cancelled: all PayPal's sandbox for
-    /// now, and changed together for the real one.
+    /// FlekSign's checkout, which takes the device's number, and the monthly
+    /// membership's product there: FlekSign's development host for now, to
+    /// be changed for the real one.
     private static let checkoutAddress = "https://dev7481.fleksign.com/api/paypal/checkout"
     private static let checkoutProductID = "3"
-    static let manageSubscriptionURL = URL(string: "https://www.sandbox.paypal.com/myaccount/autopay/")!
 
     /// How long after the checkout was opened FlekDeck goes on asking after
     /// the purchase each time it is back: PayPal tells the server about a
@@ -437,7 +408,7 @@ enum FlekPremium {
     static func forgetDevice() {
         let defaults = UserDefaults.standard
         for key in [Key.status, Key.endDate, Key.checkedAt, Key.deviceID, Key.deviceNumber, Key.filedUDID,
-                    Key.subscriptionID, Key.endSeen, Key.purchaseStartedAt, Key.endBeforePurchase] {
+                    Key.endSeen, Key.purchaseStartedAt, Key.endBeforePurchase] {
             defaults.removeObject(forKey: key)
         }
         LCUtils.appGroupUserDefault.removeObject(forKey: Key.confirmedAt)
