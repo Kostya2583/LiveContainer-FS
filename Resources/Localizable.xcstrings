@@ -18815,6 +18815,50 @@
         }
       }
     },
+    "lc.flek.locationSpoofer.apps.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn it on for the apps that need it."
+          }
+        }
+      }
+    },
+    "lc.flek.locationSpoofer.apps.count %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps with Location Spoofer: %lld"
+          }
+        }
+      }
+    },
+    "lc.flek.locationSpoofer.apps.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An app with it on shows a button for picking its location."
+          }
+        }
+      }
+    },
+    "lc.flek.locationSpoofer.apps.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps with Location Spoofer"
+          }
+        }
+      }
+    },
     "lc.flek.locationSpoofer.footer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18833,6 +18877,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This app opens with Location Spoofer, which works only while Premium is active. Get Premium, or turn Location Spoofer off in the app's settings."
+          }
+        }
+      }
+    },
+    "lc.flek.locationSpoofer.section.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick the location each app sees from a button inside it."
           }
         }
       }

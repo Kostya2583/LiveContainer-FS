@@ -69,6 +69,10 @@ struct LCTweakFolderView : View {
 
     var body: some View {
         List {
+            // FlekDeck's own tweak, ahead of the user's. It needs iOS 16.
+            if isRoot, #available(iOS 16.0, *), FlekLocationSpoofer.isBundled {
+                FlekLocationSpooferSection()
+            }
             Section {
                 ForEach(tweakItems, id:\.self) { tweakItem in
                     HStack {

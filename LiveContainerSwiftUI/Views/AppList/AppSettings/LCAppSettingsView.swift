@@ -41,9 +41,7 @@ struct LCAppSettingsView: View {
     @EnvironmentObject private var sharedModel : SharedModel
     
     // Location Spoofer is turned on with Premium only (FlekLocationSpoofer).
-    @State private var isPremium = FlekPremium.isActive
-    @State private var isCheckingPremium = false
-    @State private var showsPremiumOffer = false
+    @StateObject private var spooferSwitch = FlekLocationSpooferSwitch()
     
     init(model: LCAppModel) {
         self.appInfo = model.appInfo
@@ -228,40 +226,22 @@ struct LCAppSettingsView: View {
             // The tweak needs iOS 16.
             if #available(iOS 16.0, *), FlekLocationSpoofer.isBundled {
                 Section {
-                    Toggle(isOn: Binding(
-                        get: { model.uiSpoofLocation },
-                        set: { isOn in
-                            if isOn {
-                                turnOnLocationSpoofer()
-                            } else {
-                                model.uiSpoofLocation = false
-                            }
-                        }
-                    )) {
+                    Toggle(isOn: spooferSwitch.binding(for: model)) {
                         HStack(spacing: 6) {
                             Text("lc.flek.locationSpoofer".loc)
-                            if !isPremium {
-                                Image("FlekPremium")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(height: 15)
-                                    .foregroundStyle(.secondary)
+                            if !spooferSwitch.isPremium {
+                                FlekPremiumCrown()
+                            }
+                            if spooferSwitch.isChecking {
+                                Spacer()
+                                ProgressView()
                             }
                         }
                     }
                     // TweakLoader is what loads it
-                    .disabled((model.uiDontInjectTweakLoader && model.uiDontLoadTweakLoader) || isCheckingPremium)
+                    .disabled((model.uiDontInjectTweakLoader && model.uiDontLoadTweakLoader) || spooferSwitch.isChecking)
                 } footer: {
                     Text("lc.flek.locationSpoofer.footer".loc)
-                }
-                .sheet(isPresented: $showsPremiumOffer, onDismiss: {
-                    isPremium = FlekPremium.isActive
-                    // Bought from here, to turn it on.
-                    if isPremium {
-                        model.uiSpoofLocation = true
-                    }
-                }) {
-                    FlekPremiumOfferView()
                 }
             }
             
@@ -451,6 +431,8 @@ struct LCAppSettingsView: View {
         }
         .navigationTitle(appInfo.displayName())
         .navigationBarTitleDisplayMode(.inline)
+        // On the form as a whole, not Location Spoofer's section
+        .flekLocationSpooferPrompts(spooferSwitch)
         .alert("lc.common.error".loc, isPresented: $errorShow) {
             Button("lc.common.ok".loc, action: {
             })
@@ -709,30 +691,6 @@ struct LCAppSettingsView: View {
     
     func toggleHidden() async {
         await model.toggleHidden()
-    }
-    
-    /// Location Spoofer goes on with Premium only, and offers Premium where it
-    /// is not active.
-    func turnOnLocationSpoofer() {
-        guard !isCheckingPremium else {
-            return
-        }
-        isCheckingPremium = true
-        Task {
-            let answer = await FlekPremium.confirm()
-            isCheckingPremium = false
-            switch answer {
-            case .active:
-                isPremium = true
-                model.uiSpoofLocation = true
-            case .inactive:
-                isPremium = false
-                showsPremiumOffer = true
-            case .unconfirmed:
-                errorInfo = "lc.flek.jit.premium.unconfirmed".loc
-                errorShow = true
-            }
-        }
     }
     
     func forceResign() async {

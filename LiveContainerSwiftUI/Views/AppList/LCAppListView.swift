@@ -592,7 +592,11 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
         }
         .alert("lc.flek.jit.premium.title".loc, isPresented: $locationSpooferNeedsPremium) {
             Button("lc.flek.premium.get".loc) {
-                showsPremiumOffer = true
+                // Once the alert has gone: asked for while it is still going,
+                // the sheet may not come up at all.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    showsPremiumOffer = true
+                }
             }
             Button("lc.common.cancel".loc, role: .cancel) {}
         } message: {
