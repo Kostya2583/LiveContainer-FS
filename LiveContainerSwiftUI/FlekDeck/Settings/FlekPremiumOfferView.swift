@@ -139,9 +139,14 @@ struct FlekPremiumOfferView: View {
                         .padding(.top, 18)
                         .flekUDIDRetrieval(isAsked: $asksForUDID)
 
+                    // Where to cancel, as nothing in FlekDeck does it. Long
+                    // enough to wrap on a narrow phone, so centred like the
+                    // line under it.
                     Text("lc.flek.premium.offer.renews".loc)
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 14)
                     Text(emphasizing: Self.agreement)
                         .font(.system(size: 13))
