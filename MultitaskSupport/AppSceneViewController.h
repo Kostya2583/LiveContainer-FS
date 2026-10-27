@@ -18,7 +18,9 @@
 /// killed with windows open leaves them behind.
 @interface LCWindowStaging : NSObject
 /// Settles the data containers those windows left staged, keeping whichever copy
-/// holds the later session, and drops the staged bundle and tweak copies. Also
+/// holds the later session — a few seconds later, so that a window opened
+/// meanwhile can take its copy over — and drops the staged bundle and tweak
+/// copies. Also
 /// clears the copies builds before the staging folder left among the shared
 /// apps, where they were listed as a second, shared copy of the app. Call once
 /// at launch, before the app list is read.

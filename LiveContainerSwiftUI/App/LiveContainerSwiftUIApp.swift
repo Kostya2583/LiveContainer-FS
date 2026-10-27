@@ -45,6 +45,7 @@ struct LiveContainerSwiftUIApp : SwiftUI.App {
         // left them among the shared apps, where they were listed as a second,
         // shared copy of the app.
         LCWindowStaging.recoverAfterLaunch()
+        MultitaskManager.beginFlushingGuestsWhenBackgrounded()
 
         let fm = FileManager()
         var tempAppDataFolderNames : [String] = []

@@ -388,6 +388,7 @@ class LCAppModel: ObservableObject, Hashable {
         }
         
         // find a free lc to run non-multitasking shared app. If none, ask user if they want to terminate all multitasking apps
+        var endsWindows = false
         if MultitaskManager.isMultitasking() && !multitask {
             if self.uiIsShared {
                 var freeScheme: String? = nil
@@ -428,6 +429,7 @@ class LCAppModel: ObservableObject, Hashable {
             guard let ans = await delegate?.showRunWhenMultitaskAlert(), ans else {
                 return
             }
+            endsWindows = true
         }
         
         await MainActor.run {
@@ -469,7 +471,18 @@ class LCAppModel: ObservableObject, Hashable {
             UserDefaults.standard.setValue(urlStr, forKey: "launchAppUrlScheme")
         }
         UserDefaults.standard.set(uiSelectedContainer?.folderName, forKey: "selectedContainer")
-        
+
+        if endsWindows {
+            // Running in single mode relaunches FlekDeck with SIGKILL, and the
+            // windows' processes go with it. Have them write out first, here
+            // rather than before signing and the checks above, which can take
+            // long enough for a window to change something again. A pause
+            // rather than a wait for each window, since a guest has no way to
+            // answer; writing out takes a fraction of this.
+            LCSharedUtils.requestGuestFlush()
+            try? await Task.sleep(nanoseconds: 500_000_000)
+        }
+
         if jitNeeded {
             if multitask, #available(iOS 17.4, *) {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in

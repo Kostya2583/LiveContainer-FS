@@ -10,6 +10,7 @@ bool performHookDyldApi(const char* functionName, uint32_t adrpOffset, void** or
 
 void NUDGuestHooksInit(void);
 void NUDGuestFlushOnTerminationInit(void);
+void NUDGuestFlushWhileRunningInit(void);
 void SecItemGuestHooksInit(void);
 void DyldHooksInit(bool hideLiveContainer, bool hookDlopen, uint32_t spoofSDKVersion);
 void NSFMGuestHooksInit(void);

@@ -12,6 +12,10 @@
 #import "../../litehook/src/litehook.h"
 #include "Tweaks.h"
 #include <signal.h>
+#include <notify.h>
+#include <dlfcn.h>
+#include <stdatomic.h>
+#import <objc/message.h>
 @import ObjectiveC;
 @import MachO;
 
@@ -101,6 +105,106 @@ void NUDGuestHooksInit(void) {
     
 }
 
+// Cookies are kept the same way preferences are: in memory, written out later.
+// Losing them loses a login outright for an app whose session is a cookie, as
+// Instagram's largely is. CFNetwork's own call for writing every cookie store
+// out, which takes no arguments; the NSHTTPCookieStorage method behind it is
+// the fallback should the function ever go.
+static void flushGuestCookies(void) {
+    static void (*flushCookieStores)(void);
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        flushCookieStores = dlsym(RTLD_DEFAULT, "_CFHTTPCookieStorageFlushCookieStores");
+    });
+    if(flushCookieStores) {
+        flushCookieStores();
+        return;
+    }
+    NSHTTPCookieStorage* storage = NSHTTPCookieStorage.sharedHTTPCookieStorage;
+    SEL saveCookies = NSSelectorFromString(@"_saveCookies");
+    if([storage respondsToSelector:saveCookies]) {
+        ((void (*)(id, SEL))objc_msgSend)(storage, saveCookies);
+    }
+}
+
+// Everything a guest keeps in memory and writes out on a timer: its preferences,
+// every suite and app group it opened, and its cookies.
+static void flushGuestState(void) {
+    [NSUserDefaults.standardUserDefaults synchronize];
+    // Everything else the guest opened — suites, app groups — which the call
+    // above does not reach. CFPreferences' own entry point for this: it takes
+    // the lock that guards its sources and works from a copy made under it,
+    // which reaching into `_sources` by hand would not.
+    Class CFXPreferencesClass = NSClassFromString(@"_CFXPreferences");
+    _CFXPreferences2* preferences = [CFXPreferencesClass copyDefaultPreferences];
+    if([preferences respondsToSelector:@selector(synchronizeEverything)]) {
+        [preferences synchronizeEverything];
+    }
+    flushGuestCookies();
+}
+
+/// Writes the guest's state out while it is still alive to do it.
+///
+/// Closing a window is the one death that warns the guest (see below). Others do
+/// not: swiping FlekDeck away, iOS reclaiming its memory in the background, or
+/// FlekDeck relaunching itself to run an app in single mode all take the
+/// windows' processes down with no signal at all, as does a window's own process
+/// crashing or running out of memory, and a guest in single mode is swiped away
+/// the same way. Whatever the guest had not written yet is gone. A login saved to
+/// the keychain while the preference that says "signed in" was lost is still a
+/// logout — many apps take a missing first-run flag for a fresh install and clear
+/// their keychain for it.
+///
+/// So the guest writes out:
+///   - when FlekDeck says it is leaving the foreground, which comes before every
+///     one of the host's own deaths. A Darwin notification, because the host's
+///     own background notifications are deliberately kept from the guest — see
+///     -[AppSceneViewController setBackgroundNotificationEnabled:] — so that
+///     video keeps playing;
+///   - when the guest itself leaves the foreground, whenever that reaches it;
+///   - ten seconds after its preferences or cookies change, for the deaths
+///     nothing announces. Changes arriving meanwhile join the same write, so an
+///     app that writes constantly is written out that often and no more.
+void NUDGuestFlushWhileRunningInit(void) {
+    static dispatch_queue_t flushQueue;
+    static atomic_bool flushQueued;
+    static atomic_bool laterFlushQueued;
+    flushQueue = dispatch_queue_create("com.kdt.livecontainer.guest-flush", DISPATCH_QUEUE_SERIAL);
+
+    void (^flushNow)(void) = ^{
+        if(atomic_exchange(&flushQueued, true)) return;
+        dispatch_async(flushQueue, ^{
+            atomic_store(&flushQueued, false);
+            flushGuestState();
+        });
+    };
+    void (^flushLater)(void) = ^{
+        if(atomic_exchange(&laterFlushQueued, true)) return;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)), flushQueue, ^{
+            atomic_store(&laterFlushQueued, false);
+            flushGuestState();
+        });
+    };
+
+    int token;
+    notify_register_dispatch(LCGuestFlushNotification, &token, flushQueue, ^(int t) {
+        flushNow();
+    });
+    NSNotificationCenter* center = NSNotificationCenter.defaultCenter;
+    for(NSString* name in @[@"UIApplicationWillResignActiveNotification",
+                            @"UIApplicationDidEnterBackgroundNotification"]) {
+        [center addObserverForName:name object:nil queue:nil usingBlock:^(NSNotification* note) {
+            flushNow();
+        }];
+    }
+    for(NSString* name in @[NSUserDefaultsDidChangeNotification,
+                            NSHTTPCookieManagerCookiesChangedNotification]) {
+        [center addObserverForName:name object:nil queue:nil usingBlock:^(NSNotification* note) {
+            flushLater();
+        }];
+    }
+}
+
 /// Writes the guest's preferences out before it is killed.
 ///
 /// A multitask guest is ended with SIGTERM, from `-[AppSceneViewController
@@ -122,9 +226,10 @@ void NUDGuestHooksInit(void) {
 /// so this stays what it was — an immediate death, now with the preferences
 /// written — rather than starting to run exit handlers that never ran before.
 ///
-/// Only the signalled death is covered. A guest killed outright with the host
-/// still loses whatever CFPreferences had not written.
+/// Only the signalled death is covered here. Deaths that come without one are
+/// what NUDGuestFlushWhileRunningInit is for.
 static dispatch_source_t terminationSource;
+
 void NUDGuestFlushOnTerminationInit(void) {
     signal(SIGTERM, SIG_IGN);
     terminationSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_SIGNAL, SIGTERM, 0,
@@ -143,16 +248,7 @@ void NUDGuestFlushOnTerminationInit(void) {
             _exit(0);
         });
 
-        [NSUserDefaults.standardUserDefaults synchronize];
-        // Everything else the guest opened — suites, app groups — which the call
-        // above does not reach. CFPreferences' own entry point for this: it takes
-        // the lock that guards its sources and works from a copy made under it,
-        // which reaching into `_sources` by hand would not.
-        Class CFXPreferencesClass = NSClassFromString(@"_CFXPreferences");
-        _CFXPreferences2* preferences = [CFXPreferencesClass copyDefaultPreferences];
-        if([preferences respondsToSelector:@selector(synchronizeEverything)]) {
-            [preferences synchronizeEverything];
-        }
+        flushGuestState();
         _exit(0);
     });
     dispatch_resume(terminationSource);

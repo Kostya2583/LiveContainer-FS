@@ -829,6 +829,9 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
         SecItemGuestHooksInit();
         NSFMGuestHooksInit();
         initDead10ccFix();
+        // Every other way a guest dies comes without a signal, in a window or in
+        // single mode, so what it keeps in memory is written out as it goes.
+        NUDGuestFlushWhileRunningInit();
     }
     // No-op outside LiveProcess, and once the appex carries the key itself.
     LCHostIdentityInit();
@@ -1150,6 +1153,13 @@ int LiveContainerMain(int argc, char *argv[]) {
         if(launchUrl) {
             lcLaunchURL = launchUrl;
             [lcUserDefaults removeObjectForKey:@"launchAppUrlScheme"];
+        }
+        // A window FlekDeck went away with may have left this app's container
+        // staged, with a later session than the one in Documents. The home
+        // screen is not opened on the way here, so it is put back now, before
+        // the app starts on the older one.
+        if(!isLiveProcess && !isSideStore && selectedContainer) {
+            [LCSharedUtils settleStagedContainer:selectedContainer];
         }
         NSString *appError = invokeAppMain(selectedApp, selectedContainer, argc, argv);
         if (appError) {

@@ -51,6 +51,9 @@
 //
 // So nothing here removes or copies a tree on the path the user is waiting on:
 // trees are cloned into place, displaced by a rename, and deleted later.
+//
+// The helpers that clone, discard and settle the copies are in LCSharedUtils.m,
+// where a single-mode launch, which never loads this file, can reach them.
 
 // Serial: two windows opening at once would otherwise race on the same staged
 // bundle, and each stage is short enough that serialising them costs nothing.
@@ -75,64 +78,43 @@ static NSCountedSet *LCStagedBundleUsers(void) {
     return users;
 }
 
-static NSURL *LCStagingTrashURL(NSURL *appGroupLC) {
-    return [appGroupLC URLByAppendingPathComponent:@".StagingTrash"];
+// How long a closed window's copy of its container waits before it is put back.
+// cfprefsd holds a guest's last preference changes in memory for a few seconds
+// after the guest has gone, tied to this folder, and writes them out later.
+// Putting the folder back in that time, and cloning a fresh one into its place
+// for a reopened window, left that pending record pointing into our Documents,
+// where a window may not read, and cfprefsd refused the new guest every read and
+// write of its preferences ("accessing preferences outside an application's
+// container requires user-preference-read or file-read-data sandbox access").
+// WhatsApp reopened two seconds after closing came up logged out; five seconds
+// after, it did not.
+static const int64_t LCStagedContainerPutBackDelay = 10 * NSEC_PER_SEC;
+
+// The window each staged data container belongs to: the one running in it, or
+// the one that closed last, for as long as its copy waits to be put back. A
+// window opened meanwhile takes the copy over where it is, and the closed
+// window's put-back then leaves it alone. Only touched on LCStagingQueue.
+static NSMutableDictionary<NSString *, NSUUID *> *LCStagedContainerOwners(void) {
+    static NSMutableDictionary *owners;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ owners = [NSMutableDictionary new]; });
+    return owners;
 }
 
-// Deleting a large tree is one unlink per file. Renaming it into the trash is a
-// single operation, which is all the caller has to wait for; the deletion
-// itself happens later, off any path the user can see.
-static BOOL LCDiscardTree(NSURL *url, NSURL *appGroupLC) {
-    NSFileManager *fm = NSFileManager.defaultManager;
-    if(![fm fileExistsAtPath:url.path]) {
-        return YES;
-    }
-    NSURL *trashDir = LCStagingTrashURL(appGroupLC);
-    [fm createDirectoryAtURL:trashDir withIntermediateDirectories:YES attributes:nil error:nil];
-    NSURL *grave = [trashDir URLByAppendingPathComponent:NSUUID.UUID.UUIDString];
-    if(rename(url.path.fileSystemRepresentation, grave.path.fileSystemRepresentation) == 0) {
-        return YES;
-    }
-    // Same-volume rename should not fail here, but never leave the caller with
-    // a path it believes is clear.
-    return [fm removeItemAtURL:url error:nil];
-}
-
-static void LCSweepStagingTrash(NSURL *appGroupLC) {
-    NSURL *trashDir = LCStagingTrashURL(appGroupLC);
-    dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
-        // Its own manager: NSFileManager.defaultManager is not safe to drive
-        // from an arbitrary queue while the rest of the app is using it.
-        NSFileManager *fm = [NSFileManager new];
-        NSArray<NSURL *> *graves = [fm contentsOfDirectoryAtURL:trashDir includingPropertiesForKeys:nil options:0 error:nil];
-        for(NSURL *grave in graves) {
-            [fm removeItemAtURL:grave error:nil];
+// Puts a staged container back LCStagedContainerPutBackDelay from now, unless a
+// window has taken it over by then. Call on LCStagingQueue, with owner just
+// recorded for it in LCStagedContainerOwners. LCReclaimStagedContainer
+// discards a copy nothing ran in.
+static void LCSchedulePutBack(NSString *dataUUID, NSUUID *owner, NSURL *stagedData, NSURL *localData, NSURL *appGroupLC) {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, LCStagedContainerPutBackDelay), LCStagingQueue(), ^{
+        NSMutableDictionary<NSString *, NSUUID *> *owners = LCStagedContainerOwners();
+        if(![owners[dataUUID] isEqual:owner]) {
+            return;
         }
+        [owners removeObjectForKey:dataUUID];
+        LCReclaimStagedContainer(stagedData, localData, appGroupLC);
+        LCSweepStagingTrash(appGroupLC);
     });
-}
-
-// clonefile gives an APFS copy-on-write clone of an entire tree in one call: no
-// file data is duplicated and no per-file copy work is done, so it costs a
-// fraction of NSFileManager's copy and almost no disk.
-static BOOL LCCloneTree(NSURL *src, NSURL *dst) {
-    if(clonefile(src.path.fileSystemRepresentation, dst.path.fileSystemRepresentation, 0) == 0) {
-        return YES;
-    }
-    // Not APFS, or the two ended up on different volumes. Correctness first.
-    // Logged because the copy is orders of magnitude slower: if staging is ever
-    // sluggish again, this line is the difference between "the clone stopped
-    // working" and "something else is at fault".
-    NSLog(@"[LC] staging: clonefile unavailable for %@ (%s), falling back to a full copy",
-          src.lastPathComponent, strerror(errno));
-    // Clear anything a half-finished clone may have left, or the copy would only
-    // fail again on a destination that already exists.
-    NSError *error = nil;
-    [NSFileManager.defaultManager removeItemAtURL:dst error:nil];
-    if([NSFileManager.defaultManager copyItemAtURL:src toURL:dst error:&error]) {
-        return YES;
-    }
-    NSLog(@"[LC] staging: failed to stage %@: %@", src.lastPathComponent, error);
-    return NO;
 }
 
 // Replace whatever is at dst with a clone of src.
@@ -149,164 +131,9 @@ static BOOL LCStageTree(NSURL *src, NSURL *dst, NSURL *appGroupLC) {
     return LCCloneTree(src, dst);
 }
 
-// Where this FlekDeck's windows stage their files, relative to the app group's
-// LiveContainer folder. LiveProcess is handed this path, and looks for a staged
-// app there and nowhere else.
-static NSString *LCStagingRelativePath(void) {
-    NSString *scheme = NSUserDefaults.lcAppUrlScheme;
-    return [@"Staging" stringByAppendingPathComponent:scheme.length > 0 ? scheme : @"flekdeck"];
-}
-
-static NSURL *LCStagingRootURL(NSURL *appGroupLC) {
-    return [appGroupLC URLByAppendingPathComponent:LCStagingRelativePath() isDirectory:YES];
-}
-
-// Timestamps that move when an app starts in a data container. The launcher
-// recreates the `tmp` symlink at the container's root on every start
-// (invokeAppMain in LCBootstrap.m), which moves both the link's own time and the
-// folder's. FlekDeck writing the container's settings file moves only the
-// folder's, so the link is the one to trust for a container in our Documents.
-typedef struct {
-    struct timespec tmpLink;   // {0, 0} when there is no link
-    struct timespec folder;
-} LCContainerStamp;
-
-// Both containers' stamps as they were when the copy was made, kept on the copy.
-typedef struct {
-    LCContainerStamp staged;
-    LCContainerStamp local;
-} LCStagingMark;
-
-static const char *const LCStagingMarkName = "com.flekdeck.staging-mark";
-
-static LCContainerStamp LCReadContainerStamp(NSURL *container) {
-    LCContainerStamp stamp = {{0, 0}, {0, 0}};
-    struct stat st;
-    NSString *tmpLink = [container.path stringByAppendingPathComponent:@"tmp"];
-    if(lstat(tmpLink.fileSystemRepresentation, &st) == 0) {
-        stamp.tmpLink = st.st_mtimespec;
-    }
-    if(stat(container.path.fileSystemRepresentation, &st) == 0) {
-        stamp.folder = st.st_mtimespec;
-    }
-    return stamp;
-}
-
-static BOOL LCTimespecEqual(struct timespec a, struct timespec b) {
-    return a.tv_sec == b.tv_sec && a.tv_nsec == b.tv_nsec;
-}
-
-static BOOL LCTimespecIsLater(struct timespec a, struct timespec b) {
-    return a.tv_sec != b.tv_sec ? a.tv_sec > b.tv_sec : a.tv_nsec > b.tv_nsec;
-}
-
-static void LCWriteStagingMark(NSURL *staged, NSURL *local) {
-    LCStagingMark mark = { LCReadContainerStamp(staged), LCReadContainerStamp(local) };
-    if(setxattr(staged.path.fileSystemRepresentation, LCStagingMarkName, &mark, sizeof(mark), 0, 0) != 0) {
-        NSLog(@"[LC] staging: could not mark %@: %s", staged.lastPathComponent, strerror(errno));
-    }
-}
-
-// Whether a staged copy of a data container holds a later session than the
-// container in our Documents, and so should replace it.
-//
-// A copy made by this build carries a mark with both containers' stamps from
-// when it was made, so the question is only which of them an app has started in
-// since. That compares each container with itself, which moving the device
-// clock in between cannot upset, and some games are played with the clock moved
-// back and forth. The copy wins if an app started in it and not in the one in
-// Documents. An app started in both means the one in Documents was opened in
-// single mode after the copy's window was lost with FlekDeck, so it is the later
-// of the two.
-//
-// Copies left by older builds carry no mark, and all there is to compare then is
-// when each was last started.
-static BOOL LCStagedContainerIsNewer(NSURL *staged, NSURL *local) {
-    LCContainerStamp stagedNow = LCReadContainerStamp(staged);
-    LCContainerStamp localNow = LCReadContainerStamp(local);
-    LCStagingMark mark;
-    if(getxattr(staged.path.fileSystemRepresentation, LCStagingMarkName, &mark, sizeof(mark), 0, 0) == sizeof(mark)) {
-        BOOL startedInCopy = !LCTimespecEqual(stagedNow.tmpLink, mark.staged.tmpLink) ||
-                             !LCTimespecEqual(stagedNow.folder, mark.staged.folder);
-        BOOL startedInLocal = !LCTimespecEqual(localNow.tmpLink, mark.local.tmpLink);
-        return startedInCopy && !startedInLocal;
-    }
-    struct timespec stagedStart = stagedNow.tmpLink.tv_sec || stagedNow.tmpLink.tv_nsec ? stagedNow.tmpLink : stagedNow.folder;
-    struct timespec localStart = localNow.tmpLink.tv_sec || localNow.tmpLink.tv_nsec ? localNow.tmpLink : localNow.folder;
-    return LCTimespecIsLater(stagedStart, localStart);
-}
-
-// Whether a process that is still running holds this container. The lock names
-// the process that took it and reads as free once that process has gone, so a
-// copy left by a FlekDeck that was killed is not mistaken for one in use.
-static BOOL LCContainerIsInUse(NSString *folderName) {
-    return [LCSharedUtils getContainerUsingLCSchemeWithFolderName:folderName] != nil;
-}
-
-// Settles a staged copy of a data container against the one in our Documents,
-// keeping whichever holds the later session and discarding the other. The caller
-// makes sure no running process still holds the copy.
-//
-// Runs when a window closes, and for a copy whose window never got to close,
-// because FlekDeck was killed with it open: at launch, and before the same
-// container is staged again. Putting the copy back unconditionally lost data
-// both ways round. A copy found at launch can be older than the container in
-// Documents if the app has been opened in single mode since. And with "Allow
-// Private Data access from LiveProcess" on, a window can run on the container in
-// Documents directly, leaving its copy untouched to be swapped back over it.
-static void LCReclaimStagedContainer(NSURL *stagedData, NSURL *localData, NSURL *appGroupLC) {
-    NSFileManager *fm = NSFileManager.defaultManager;
-    if(![fm fileExistsAtPath:stagedData.path]) {
-        return;
-    }
-    BOOL localExists = [fm fileExistsAtPath:localData.path];
-    if(localExists && !LCStagedContainerIsNewer(stagedData, localData)) {
-        LCDiscardTree(stagedData, appGroupLC);
-        return;
-    }
-    // Swapped back rather than deleted-and-copied. Besides trading a walk of
-    // every file for a single rename, this removes the window in which the
-    // local container had been deleted and its replacement not yet written:
-    // being killed in there used to lose the guest's data outright.
-    //
-    // Nothing below clears the local container until its replacement is
-    // somewhere safe, so a failure at any step costs the session's changes
-    // at worst, never the container.
-    if(!localExists) {
-        [fm createDirectoryAtURL:localData.URLByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:nil];
-    }
-    if(localExists &&
-       renameatx_np(AT_FDCWD, stagedData.path.fileSystemRepresentation,
-                    AT_FDCWD, localData.path.fileSystemRepresentation,
-                    RENAME_SWAP) == 0) {
-        // The swap left the older copy where the staged one was.
-        LCDiscardTree(stagedData, appGroupLC);
-    } else if(!localExists &&
-              rename(stagedData.path.fileSystemRepresentation, localData.path.fileSystemRepresentation) == 0) {
-        // First run of this container, so there was nothing to swap with.
-    } else {
-        // Swapping is unsupported here. Land a copy beside the container
-        // first and only then put it in place.
-        NSURL *incoming = [localData URLByAppendingPathExtension:@"incoming"];
-        LCDiscardTree(incoming, appGroupLC);
-        if(!LCCloneTree(stagedData, incoming)) {
-            NSLog(@"[LC] staging: could not copy container %@ back, leaving it staged", localData.lastPathComponent);
-            return;
-        }
-        LCDiscardTree(localData, appGroupLC);
-        if(rename(incoming.path.fileSystemRepresentation, localData.path.fileSystemRepresentation) != 0) {
-            NSLog(@"[LC] staging: failed to reclaim container %@: %s", localData.lastPathComponent, strerror(errno));
-            return;
-        }
-        LCDiscardTree(stagedData, appGroupLC);
-    }
-    // The mark describes a copy, and this is the container in Documents now.
-    removexattr(localData.path.fileSystemRepresentation, LCStagingMarkName, 0);
-}
-
 // Blocking; call on LCStagingQueue. Returns whether the app was claimed and so
-// has to be released through LCUnstageAppFromAppGroup later.
-static BOOL LCStageAppToAppGroup(NSString *bundleId, NSString *dataUUID) {
+// has to be released through LCUnstageAppFromAppGroup later, with the same owner.
+static BOOL LCStageAppToAppGroup(NSString *bundleId, NSString *dataUUID, NSUUID *owner) {
     NSURL *appGroupPath = [LCSharedUtils appGroupPath];
     if(!appGroupPath) {
         return NO;
@@ -333,16 +160,32 @@ static BOOL LCStageAppToAppGroup(NSString *bundleId, NSString *dataUUID) {
         LCStageTree(srcBundle, dstBundle, appGroupLC);
     }
 
-    // The data container belongs to this window alone, so it is always staged
-    // fresh and handed back when the window closes. A copy still here from a
-    // window FlekDeck was killed under is settled first rather than cleared: it
-    // may be the only place that session's changes exist.
+    // The data container belongs to this window alone, and is handed back once
+    // the window has closed. A copy still here from a window FlekDeck was killed
+    // under is settled first rather than cleared: it may be the only place that
+    // session's changes exist.
+    //
+    // A window closed a moment ago may not be gone yet either: its guest gets a
+    // few seconds between SIGTERM and SIGKILL to write out into this very copy,
+    // so wait for it to go. It has gone by the SIGKILL three seconds in.
     NSURL *srcData = [docURL URLByAppendingPathComponent:[NSString stringWithFormat:@"Data/Application/%@", dataUUID]];
     NSURL *dstData = [stagingRoot URLByAppendingPathComponent:[NSString stringWithFormat:@"Data/Application/%@", dataUUID]];
-    LCReclaimStagedContainer(dstData, srcData, appGroupLC);
-    if(LCStageTree(srcData, dstData, appGroupLC)) {
-        LCWriteStagingMark(dstData, srcData);
+    for(int i = 0; i < 40 && LCContainerIsInUse(dataUUID); i++) {
+        usleep(100 * 1000);
     }
+    NSMutableDictionary<NSString *, NSUUID *> *owners = LCStagedContainerOwners();
+    if(owners[dataUUID] && [fm fileExistsAtPath:dstData.path]) {
+        // Closed moments ago and still waiting to be put back: this window runs
+        // on that copy where it is. It holds the session that just ended, and
+        // moving it now is what LCStagedContainerPutBackDelay is there to avoid.
+        NSLog(@"[LC] staging: reopening container %@ on the copy its last window left", dataUUID);
+    } else {
+        LCReclaimStagedContainer(dstData, srcData, appGroupLC);
+        if(LCStageTree(srcData, dstData, appGroupLC)) {
+            LCWriteStagingMark(dstData, srcData);
+        }
+    }
+    owners[dataUUID] = owner;
 
     // Tweaks, refreshed every launch like the bundle and the container above.
     // Staging once froze this folder at whatever existed the first time the
@@ -386,10 +229,11 @@ static BOOL LCStageAppToAppGroup(NSString *bundleId, NSString *dataUUID) {
     return YES;
 }
 
-// Blocking; call on LCStagingQueue. reclaimData brings the guest's container
-// back over the local one if the guest ran in it — pass NO when the guest never
-// started.
-static void LCUnstageAppFromAppGroup(NSString *bundleId, NSString *dataUUID, BOOL reclaimData) {
+// Call on LCStagingQueue. Brings the guest's container back over the local one,
+// LCStagedContainerPutBackDelay later, if anything ran in the copy — so also
+// when this window's guest never started but it reopened a copy an earlier
+// window had left. owner is the one LCStageAppToAppGroup was given.
+static void LCUnstageAppFromAppGroup(NSString *bundleId, NSString *dataUUID, NSUUID *owner) {
     // Released first, and unconditionally: bailing out below with the claim still
     // held would pin the bundle for the rest of the session, so it would never be
     // re-staged and never cleaned up.
@@ -410,10 +254,16 @@ static void LCUnstageAppFromAppGroup(NSString *bundleId, NSString *dataUUID, BOO
 
     NSURL *stagedData = [stagingRoot URLByAppendingPathComponent:[NSString stringWithFormat:@"Data/Application/%@", dataUUID]];
     NSURL *localData = [docURL URLByAppendingPathComponent:[NSString stringWithFormat:@"Data/Application/%@", dataUUID]];
-    if(reclaimData) {
-        LCReclaimStagedContainer(stagedData, localData, appGroupLC);
+    // Only the window the container was last staged for settles it. Staged again
+    // or taken over by a newer window, it is that window's to bring back.
+    NSMutableDictionary<NSString *, NSUUID *> *owners = LCStagedContainerOwners();
+    if(![owners[dataUUID] isEqual:owner]) {
+        NSLog(@"[LC] staging: container %@ belongs to a newer window, leaving it to that one", dataUUID);
     } else {
-        LCDiscardTree(stagedData, appGroupLC);
+        // Once cfprefsd is done with the folder. FlekDeck killed before then
+        // leaves it to be settled after the home screen next opens, or before
+        // the app next starts in single mode.
+        LCSchedulePutBack(dataUUID, owner, stagedData, localData, appGroupLC);
     }
 
     // The bundle is shared between every window running this app, so it only
@@ -486,9 +336,16 @@ static void LCRecoverStagingRoot(NSURL *appGroupLC, NSURL *docURL) {
             anyInUse = YES;
             continue;
         }
-        NSLog(@"[LC] staging: settling container %@, left staged by a window FlekDeck was killed under", folderName);
-        LCReclaimStagedContainer([stagedDataDir URLByAppendingPathComponent:folderName],
-                                 [localDataDir URLByAppendingPathComponent:folderName], appGroupLC);
+        // Not at once, but as a closed window's copy is: FlekDeck closed right
+        // after the window leaves cfprefsd holding that window's last preference
+        // changes for this folder (see LCStagedContainerPutBackDelay), and the app
+        // opened in a window just after the relaunch came up logged out. A window
+        // opened meanwhile takes the copy over where it is.
+        NSLog(@"[LC] staging: container %@ was left staged by a window FlekDeck went away under, putting it back shortly", folderName);
+        NSUUID *owner = [NSUUID UUID];
+        LCStagedContainerOwners()[folderName] = owner;
+        LCSchedulePutBack(folderName, owner, [stagedDataDir URLByAppendingPathComponent:folderName],
+                          [localDataDir URLByAppendingPathComponent:folderName], appGroupLC);
     }
     if(anyInUse) {
         return;
@@ -570,6 +427,8 @@ static void LCRecoverLegacyStagedCopies(NSURL *appGroupLC, NSURL *docURL) {
 @property bool isNativeWindow;
 @property NSUUID* identifier;
 @property bool stagedToAppGroup;
+// Identifies this window's staging of its container; see LCStagedContainerOwners.
+@property NSUUID *stagingOwner;
 @end
 
 @interface AppSceneViewController()
@@ -752,8 +611,10 @@ static UIDeviceOrientation LCDeviceOrientationForInterface(UIInterfaceOrientatio
     } else {
         NSString *stagingBundleId = bundleId;
         NSString *stagingDataUUID = dataUUID;
+        NSUUID *stagingOwner = [NSUUID UUID];
+        self.stagingOwner = stagingOwner;
         dispatch_async(LCStagingQueue(), ^{
-            BOOL staged = LCStageAppToAppGroup(stagingBundleId, stagingDataUUID);
+            BOOL staged = LCStageAppToAppGroup(stagingBundleId, stagingDataUUID, stagingOwner);
             dispatch_async(dispatch_get_main_queue(), ^{
                 AppSceneViewController *strongSelf = weakSelf;
                 if(!strongSelf || strongSelf.isAppTerminationCleanUpCalled) {
@@ -761,7 +622,7 @@ static UIDeviceOrientation LCDeviceOrientationForInterface(UIInterfaceOrientatio
                     // bundle back rather than pinning it for the whole session.
                     if(staged) {
                         dispatch_async(LCStagingQueue(), ^{
-                            LCUnstageAppFromAppGroup(stagingBundleId, stagingDataUUID, NO);
+                            LCUnstageAppFromAppGroup(stagingBundleId, stagingDataUUID, stagingOwner);
                         });
                     }
                     return;
@@ -1120,8 +981,9 @@ static UIDeviceOrientation LCDeviceOrientationForInterface(UIInterfaceOrientatio
             self.stagedToAppGroup = false;
             NSString *bundleId = self.bundleId;
             NSString *dataUUID = self.dataUUID;
+            NSUUID *stagingOwner = self.stagingOwner;
             dispatch_async(LCStagingQueue(), ^{
-                LCUnstageAppFromAppGroup(bundleId, dataUUID, YES);
+                LCUnstageAppFromAppGroup(bundleId, dataUUID, stagingOwner);
             });
         }
 
