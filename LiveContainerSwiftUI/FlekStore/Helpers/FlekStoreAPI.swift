@@ -5,13 +5,11 @@
 //  Where FlekDeck reaches FlekSt0re's API: the catalog and its app pages,
 //  the device's status and record, the UDID profile, the pairing files.
 //
-//  The test server for now. It reads the same database as the production
-//  one, nestapi.flekstore.com, and what is new on the server, such as the
-//  device's number in the status answer, comes there first. The UDID lookup,
-//  findDeviceByFp, is on flekstore.com itself, which has no test server, and
-//  reads that same database.
+//  The production server. The test one, nestapitest.flekstore.com, reads the
+//  same database and gets what is new on the server first. The UDID lookup,
+//  findDeviceByFp, is on flekstore.com itself and reads that same database.
 //
 
 enum FlekStoreAPI {
-    static let base = "https://nestapitest.flekstore.com"
+    static let base = "https://nestapi.flekstore.com"
 }
