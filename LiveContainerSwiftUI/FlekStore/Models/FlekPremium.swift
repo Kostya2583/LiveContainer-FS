@@ -235,6 +235,13 @@ enum FlekPremium {
             AccessVerdictStore.save(response, for: deviceID)
             keep(response)
             keepUDID(response.udid)
+            // An answer without the device's number, as production's gives,
+            // leaves the checkout nothing to open: the answer by UDID has it.
+            if deviceNumber == nil, let udid = filedUDID,
+               case .answered(let byUDID) = await AccessVerificationService.fetchStatus(udid: udid),
+               let number = byUDID.deviceNumber {
+                keepDeviceNumber(number)
+            }
             return response.status
         }
         // Filed through the profile before FlekDeck kept the UDID for this:
