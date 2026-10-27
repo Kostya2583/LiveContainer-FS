@@ -671,7 +671,8 @@ static UIDeviceOrientation LCDeviceOrientationForInterface(UIInterfaceOrientatio
         settings.foreground = YES;
         // Baseline geometry for a windowed scene. A maximized one is re-derived
         // by the delegate at the bottom of this block, which has the last word.
-        settings.interfaceOrientation = UIApplication.sharedApplication.statusBarOrientation;
+        // Asked of the window scene: see LCHostInterfaceOrientation.
+        settings.interfaceOrientation = LCHostInterfaceOrientation(self.view);
         UIDeviceOrientation guestDevice = LCDeviceOrientationForInterface(settings.interfaceOrientation);
         // Only ever written with a real answer; unknown leaves the guest as it is.
         if(guestDevice != UIDeviceOrientationUnknown) settings.deviceOrientation = guestDevice;
