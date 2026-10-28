@@ -27,6 +27,9 @@ struct FlekStikDebugGuideView: View {
     private struct Reference: Identifiable {
         let title: String
         let url: URL
+        /// For a page wanted on a computer rather than on this device: its
+        /// address, shown under the link to be typed there.
+        var address: String? = nil
         var id: URL { url }
     }
 
@@ -54,7 +57,6 @@ struct FlekStikDebugGuideView: View {
         let entries: [Entry]
     }
 
-    private static let pairingGuideURL = URL(string: "https://github.com/StikDebug/StikDebug-Guide/blob/main/pairing_file.md")!
     private static let discordURL = URL(string: "https://discord.gg/ZnNcrRT3M8")!
     private static let projectURL = URL(string: "https://github.com/StikDebug/StikDebug")!
 
@@ -76,11 +78,13 @@ struct FlekStikDebugGuideView: View {
         let ready = [
             step("install", shots: [1]),
             step("vpn", links: [Reference(title: "lc.flek.jit.stikdebug.getVPN".loc, url: FlekBuiltInJITSection.localDevVPNURL)]),
-            step("pairing", links: [Reference(title: "lc.flek.jit.stikdebug.details".loc, url: pairingGuideURL)]),
+            step("pairing", links: [Reference(title: "lc.flek.jit.stikdebug.getFlekPair".loc,
+                                              url: FlekPairingImportHelpView.flekPairURL,
+                                              address: FlekPairingImportHelpView.flekPairAddress)]),
         ]
         let connect = [
-            step("connect", shots: [3]),
-            step("import", shots: [2]),
+            step("connect", shots: [2]),
+            step("import", shots: [3]),
             step("listed", shots: [4]),
             entry("importFails", mark: .symbol("exclamationmark")),
         ]
@@ -90,13 +94,13 @@ struct FlekStikDebugGuideView: View {
             step("launchWithJIT", shots: [7]),
         ]
         if needsScript {
-            use.append(step("script", shots: [10]))
+            use.append(step("script", shots: [8]))
         }
         use += [
-            step("start", shots: [8]),
+            step("start", shots: [9]),
             // What StikDebug says, at the foot of its screen, then what the
             // app does.
-            step("back", shots: [4, 11]),
+            step("back", shots: [10, 11]),
         ]
         let help = [
             entry("stops", mark: .symbol("exclamationmark")),
@@ -121,6 +125,28 @@ struct FlekStikDebugGuideView: View {
 #else
     private static let marksMissingScreenshots = false
 #endif
+
+    /// A step's pictures, opened full screen from the one tapped.
+    private struct Viewer: Identifiable {
+        let shots: [Int]
+        var id: Int { shots[0] }
+    }
+
+    /// The pictures open in the store's screenshot viewer: pinch and double-tap
+    /// to zoom, drag down to close, and on iOS 18 the zoom transition out of
+    /// the picture tapped. How the transition's source is kept steady is told
+    /// in FlekAppDetailSheet, where this comes from.
+    @State private var viewer: Viewer?
+    @State private var viewerIndex = 0
+    @Namespace private var pictureZoom
+    /// The picture the transition grows out of and shrinks back into, by its
+    /// number.
+    @State private var zoomSourceID = 0
+    @State private var zoomSourceFollowsPager = false
+
+    private static func pictureName(_ number: Int) -> String {
+        "StikDebugGuide\(number)"
+    }
 
     var body: some View {
         ScrollView {
@@ -147,6 +173,21 @@ struct FlekStikDebugGuideView: View {
         .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement: .principal) { Text("lc.flek.jit.stikdebug.title".loc).font(.headline) } }
+        .fullScreenCover(item: $viewer) { viewer in
+            FlekScreenshotViewer(photos: viewer.shots.map { .asset(Self.pictureName($0)) },
+                                 index: $viewerIndex)
+                .screenshotZoomTransition(id: zoomSourceID, in: pictureZoom)
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        zoomSourceFollowsPager = true
+                    }
+                }
+                .onDisappear { zoomSourceFollowsPager = false }
+        }
+        .onChange(of: viewerIndex) { newValue in
+            guard zoomSourceFollowsPager, let viewer, viewer.shots.indices.contains(newValue) else { return }
+            zoomSourceID = viewer.shots[newValue]
+        }
     }
 
     private func card(_ entry: Entry) -> some View {
@@ -164,6 +205,12 @@ struct FlekStikDebugGuideView: View {
                             .buttonStyle(.bordered)
                             .buttonBorderShape(.capsule)
                             .controlSize(.small)
+                        if let address = link.address {
+                            Text(String(format: "lc.flek.jit.stikdebug.address %@".loc, address))
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
                 // The title's line level with the mark beside it.
@@ -173,7 +220,7 @@ struct FlekStikDebugGuideView: View {
             // Under the text and across the card, not beside the mark, for the
             // width.
             ForEach(entry.shots, id: \.self) { shot in
-                picture(shot)
+                picture(shot, of: entry.shots)
             }
         }
         .padding(16)
@@ -198,24 +245,29 @@ struct FlekStikDebugGuideView: View {
         }
     }
 
-    /// How wide a screenshot is shown. Narrower than a card: at a card's width
-    /// a screen would stand about as tall as the one it is read on, and a step
-    /// would fill it.
-    private static let pictureWidth: CGFloat = 270
-
+    /// The pictures are wide bands, a part of a screen in a phone's frame, and
+    /// are shown across the card. A tap opens the step's pictures full screen.
     @ViewBuilder
-    private func picture(_ number: Int) -> some View {
-        let name = "StikDebugGuide\(number)"
+    private func picture(_ number: Int, of shots: [Int]) -> some View {
+        let name = Self.pictureName(number)
         let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
         if let image = UIImage(named: name) {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: Self.pictureWidth)
-                .clipShape(shape)
-                .overlay(shape.strokeBorder(Color.primary.opacity(0.1)))
-                .frame(maxWidth: .infinity)
-                .accessibilityHidden(true)
+            Button {
+                viewerIndex = shots.firstIndex(of: number) ?? 0
+                zoomSourceID = number
+                zoomSourceFollowsPager = false
+                viewer = Viewer(shots: shots)
+            } label: {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .clipShape(shape)
+                    .overlay(shape.strokeBorder(Color.primary.opacity(0.1)))
+            }
+            .buttonStyle(FlekScreenshotPressStyle())
+            .screenshotZoomSource(id: number, in: pictureZoom)
+            .frame(maxWidth: .infinity)
+            .accessibilityLabel("lc.flek.jit.stikdebug.picture".loc)
         } else if Self.marksMissingScreenshots {
             Text(verbatim: name)
                 .font(.system(size: 13, design: .monospaced))

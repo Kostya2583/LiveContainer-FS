@@ -826,29 +826,6 @@ private extension View {
     func detailSurface<S: Shape>(_ shape: S, interactive: Bool = false) -> some View {
         modifier(DetailSurface(shape: shape, interactive: interactive))
     }
-
-    /// Marks a gallery thumbnail as the place the viewer grows out of, and
-    /// shrinks back into. Nothing to do below iOS 18, which has no such thing.
-    // Erased to AnyView for the same reason as above: the iOS 18-only type this
-    // modifier produces would otherwise be baked into the caller's static type,
-    // which the runtime resolves before the availability check runs.
-    func screenshotZoomSource(id: Int, in namespace: Namespace.ID) -> AnyView {
-        if #available(iOS 18.0, *) {
-            return AnyView(self.matchedTransitionSource(id: id, in: namespace))
-        }
-        return AnyView(self)
-    }
-
-    /// Presents with the system's zoom transition: the shot grows out of its
-    /// thumbnail, and the drag that dismisses it — the system's own, from
-    /// anywhere on the shot — rubber-bands it back into the row it came from.
-    /// Erased to AnyView, as above.
-    func screenshotZoomTransition(id: Int, in namespace: Namespace.ID) -> AnyView {
-        if #available(iOS 18.0, *) {
-            return AnyView(self.navigationTransition(.zoom(sourceID: id, in: namespace)))
-        }
-        return AnyView(self)
-    }
 }
 
 /// The page's control and tile surface: Liquid Glass in dark mode on the systems
@@ -875,14 +852,5 @@ private struct DetailSurface<S: Shape>: ViewModifier {
             return AnyView(content.glassEffect(interactive ? .regular.interactive() : .regular, in: shape))
         }
         return AnyView(content.background(shape.fill(Color(.secondarySystemGroupedBackground))))
-    }
-}
-
-/// Screenshots dim slightly under a finger, so it's clear they open.
-private struct FlekScreenshotPressStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .opacity(configuration.isPressed ? 0.78 : 1)
-            .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
     }
 }

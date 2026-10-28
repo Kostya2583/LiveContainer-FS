@@ -874,10 +874,11 @@ struct FlekJITAppsView: View {
 /// Other Options, for whoever has one of them already, or is on Linux, which
 /// FlekPair is not built for.
 struct FlekPairingImportHelpView: View {
-    /// FlekPair's newest release, whichever that is by then.
-    private static let flekPairURL = URL(string: "https://github.com/flekstore/FlekPair/releases/latest")!
+    /// FlekPair's newest release, whichever that is by then. The StikDebug
+    /// guide sends its readers there too.
+    static let flekPairURL = URL(string: "https://github.com/flekstore/FlekPair/releases/latest")!
     /// The same address as it is read and typed.
-    private static let flekPairAddress = flekPairURL.absoluteString.replacingOccurrences(of: "https://", with: "")
+    static let flekPairAddress = flekPairURL.absoluteString.replacingOccurrences(of: "https://", with: "")
     private static let iloaderURL = URL(string: "https://github.com/nab138/iloader/releases/latest")!
     private static let idevicePairURL = URL(string: "https://github.com/jkcoxson/idevice_pair/releases/latest")!
 

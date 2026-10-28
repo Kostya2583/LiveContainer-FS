@@ -18276,6 +18276,17 @@
         }
       }
     },
+    "lc.flek.jit.stikdebug.address %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open it on your computer:\n%@"
+          }
+        }
+      }
+    },
     "lc.flek.jit.stikdebug.appSettings.body" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18386,17 +18397,6 @@
         }
       }
     },
-    "lc.flek.jit.stikdebug.details" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "More Details"
-          }
-        }
-      }
-    },
     "lc.flek.jit.stikdebug.discord" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18426,6 +18426,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose StikDebug"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.getFlekPair" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get FlekPair"
           }
         }
       }
@@ -18612,7 +18623,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "On a Mac or PC, install **iloader** from iloader.app and connect this device with a cable. Click **Manage Pairing File**, then **Export** and confirm. Send the file to this device: with AirDrop from a Mac, or through iCloud Drive or a message to yourself from a PC."
+            "value" : "On a Mac or Windows PC, install **FlekPair** and connect this device with a cable. Click **Start pairing**, tap **Trust** on your device if asked, then click **Save pairing file**. Send the file to this device: with AirDrop from a Mac, or through iCloud Drive or a message to yourself from a PC."
           }
         }
       }
@@ -18624,6 +18635,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Make a Pairing File"
+          }
+        }
+      }
+    },
+    "lc.flek.jit.stikdebug.picture" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Screenshot"
           }
         }
       }

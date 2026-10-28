@@ -2,9 +2,9 @@
 //  FlekScreenshotViewer.swift
 //  LiveContainerSwiftUI
 //
-//  Full-screen screenshot browser opened by tapping a shot on an app's page.
-//  Pages between them, zooms into one, and drags away downwards like the system
-//  photo viewer.
+//  Full-screen screenshot browser opened by tapping a shot on an app's page,
+//  or a picture in the StikDebug guide. Pages between them, zooms into one, and
+//  drags away downwards like the system photo viewer.
 //
 
 import SwiftUI
@@ -12,13 +12,30 @@ import UIKit
 import Kingfisher
 
 struct FlekScreenshotViewer: View {
-    let photos: [String]
+    /// A shot, from the web or from the app's own asset catalog.
+    enum Photo {
+        case remote(String)
+        case asset(String)
+    }
+
+    let photos: [Photo]
     /// Which shot is on screen. Owned by the page that opened the viewer, so the
     /// zoom transition knows which thumbnail to shrink back into after paging.
     @Binding var index: Int
     /// Shape of the gallery this opened from, so a shot still loading is held by
     /// a block of roughly the right size rather than a spinner in empty space.
     var aspect: CGFloat = FlekAppDetailModel.fallbackAspect
+
+    /// Shots at these web addresses.
+    init(photos: [String], index: Binding<Int>, aspect: CGFloat = FlekAppDetailModel.fallbackAspect) {
+        self.init(photos: photos.map(Photo.remote), index: index, aspect: aspect)
+    }
+
+    init(photos: [Photo], index: Binding<Int>, aspect: CGFloat = FlekAppDetailModel.fallbackAspect) {
+        self.photos = photos
+        self._index = index
+        self.aspect = aspect
+    }
 
     @Environment(\.dismiss) private var dismiss
     /// Room the multitask bar's chin takes along the bottom of the screen.
@@ -189,7 +206,7 @@ private extension View {
 /// One shot in the viewer: the zoom container, with the gallery's placeholder
 /// block behind it until the shot has loaded.
 private struct FlekZoomableScreenshot: View {
-    let photo: String
+    let photo: FlekScreenshotViewer.Photo
     let aspect: CGFloat
     /// Whether this is the shot on screen. One paged away from drops back to
     /// 1x, so coming back to it starts fitted rather than where it was left.
@@ -197,6 +214,18 @@ private struct FlekZoomableScreenshot: View {
     let onDismiss: () -> Void
 
     @State private var image: UIImage?
+
+    init(photo: FlekScreenshotViewer.Photo, aspect: CGFloat, isActive: Bool, onDismiss: @escaping () -> Void) {
+        self.photo = photo
+        self.aspect = aspect
+        self.isActive = isActive
+        self.onDismiss = onDismiss
+        // There from the first frame, so the zoom transition grows the picture
+        // itself rather than the placeholder.
+        if case .asset(let name) = photo {
+            _image = State(initialValue: UIImage(named: name))
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -216,9 +245,19 @@ private struct FlekZoomableScreenshot: View {
     }
 
     /// Memory only, as in the gallery this opens from — so the shot tapped is
-    /// already there, and nothing about it is left on disk afterwards.
+    /// already there, and nothing about it is left on disk afterwards. One in
+    /// the asset catalog is simply there.
     private func load() {
-        guard image == nil, let url = URL(string: photo) else { return }
+        guard image == nil else { return }
+        let address: String
+        switch photo {
+        case .asset(let name):
+            image = UIImage(named: name)
+            return
+        case .remote(let string):
+            address = string
+        }
+        guard let url = URL(string: address) else { return }
         KingfisherManager.shared.retrieveImage(with: url, options: [.cacheMemoryOnly]) { result in
             guard case .success(let value) = result else { return }
             withAnimation(.easeOut(duration: 0.15)) { image = value.image }
@@ -486,5 +525,39 @@ private final class FlekZoomScrollView: UIScrollView {
             }
             ancestor = current.superview
         }
+    }
+}
+
+extension View {
+    /// Marks a thumbnail as the place the viewer grows out of, and shrinks back
+    /// into. Nothing to do below iOS 18, which has no such thing.
+    // Erased to AnyView: the iOS 18-only type this modifier produces would
+    // otherwise be baked into the caller's static type, which the runtime
+    // resolves before the availability check runs.
+    func screenshotZoomSource(id: Int, in namespace: Namespace.ID) -> AnyView {
+        if #available(iOS 18.0, *) {
+            return AnyView(self.matchedTransitionSource(id: id, in: namespace))
+        }
+        return AnyView(self)
+    }
+
+    /// Presents with the system's zoom transition: the shot grows out of its
+    /// thumbnail, and the drag that dismisses it — the system's own, from
+    /// anywhere on the shot — rubber-bands it back into the place it came from.
+    /// Erased to AnyView, as above.
+    func screenshotZoomTransition(id: Int, in namespace: Namespace.ID) -> AnyView {
+        if #available(iOS 18.0, *) {
+            return AnyView(self.navigationTransition(.zoom(sourceID: id, in: namespace)))
+        }
+        return AnyView(self)
+    }
+}
+
+/// Screenshots dim slightly under a finger, so it's clear they open.
+struct FlekScreenshotPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.78 : 1)
+            .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
     }
 }
